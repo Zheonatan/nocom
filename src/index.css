@@ -1,0 +1,254 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Geist Variable, SÓ os subconjuntos latinos.
+   O entrypoint do @fontsource (`@import "@fontsource-variable/geist"`) declara
+   também cirílico, cirílico estendido e vietnamita — ~31KB de woff2 para
+   alfabetos que o produto não fala (pt-BR e en, Adendo 6). O `unicode-range`
+   impediria o DOWNLOAD no navegador, mas o Tauri empacota `dist/` inteiro no
+   binário: lá é peso que sempre viaja. Os dois @font-face abaixo são cópia
+   literal dos do pacote, sem os subconjuntos que sobram. */
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist/files/geist-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist/files/geist-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* O contrato pede dark mode seguindo o sistema, sem toggle. O preset do shadcn
+   vem com a variante presa à classe `.dark`; aqui ela passa a responder ao
+   prefers-color-scheme, para que os `dark:` internos dos componentes (button,
+   input, checkbox…) acompanhem o tema do SO sem nenhum JS. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/* A janela do Tauri é transparent: true e sem decoração. Nem html nem body
+   podem pintar fundo — quem desenha a superfície (com cantos e borda) é o
+   container raiz do App. Sem isso, os cantos arredondados aparecem sobre um
+   retângulo opaco. */
+html,
+body,
+#root {
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Adendo 3: nada é selecionável por padrão. Não é gosto — a janela é arrastada
+   pela própria interface, e arrastar disputa o mesmo movimento do mouse que
+   selecionar; tentar mover a janela pela barra de título selecionava o texto
+   "Mini To-Do". No `body`, uma vez, em vez de espalhar `select-none` por dezenas
+   de elementos. O cursor vai junto: seta onde não há seleção, para a interface
+   não prometer o que não cumpre. (`cursor` é herdado, então quem declara o
+   próprio — a label com `cursor-pointer`, os botões desabilitados — continua
+   mandando no seu.) */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Exceção única do contrato: campos de entrada. Sem isto não há como corrigir o
+   meio de uma palavra na edição inline.
+
+   O `-webkit-user-select` explícito não é redundância: o motor da webview do Tauri
+   no macOS é WebKit, e é lá que a herança do `none` morde a seleção dentro do
+   campo. Medido no navegador com `body` em `none`: arrastar com o mouse, duplo
+   clique na palavra e ⌘A funcionam nos dois campos.
+
+   O `cursor: text` é obrigatório junto: `cursor` é herdado, então sem esta linha
+   o campo pegaria a seta do `body`, e um input com cursor de seta esconde que dá
+   para editar. */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+/* Faixa de abas (Adendo 5): rola na horizontal sem barra visível. Numa faixa de
+   28px, os ~10px de barra do WebKit comeriam a altura do texto do chip — e a
+   regra do contrato é justamente "sem barra de rolagem visível e sem nunca gerar
+   rolagem horizontal na janela". A rolagem continua funcionando por gesto de
+   trackpad e pelo `scrollIntoView` da aba ativa. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@theme inline {
+  /* Os três tamanhos do sistema (DESIGN.md, "A Regra dos Três Tamanhos").
+     Estavam escritos como valores arbitrários (`text-[0.8125rem]`) em seis
+     lugares: o sistema existia no documento e não no código. `label` é o
+     `text-xs` que o Tailwind já dá. */
+  --text-body: 0.8125rem;
+  --text-micro: 0.6875rem;
+  /* A borda que IDENTIFICA um controle (checkbox, campo), separada da que só
+     desenha linha (`--border`: separadores, borda da janela). Duas coisas
+     diferentes que o preset tratava como uma: a decorativa pode ser discreta,
+     a funcional responde por WCAG 1.4.11 e precisa de 3:1. */
+  --color-control-border: var(--control-border);
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  /* 0.544 e não 0.556: o par mais apertado é texto secundário sobre `muted`
+     (a pílula do contador, o aviso de desfazer), que ficava em 4.34:1. */
+  --muted-foreground: oklch(0.544 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  /* 0.529 e não 0.577: a mensagem de erro é `destructive` sobre `destructive/10`,
+     e o fundo escurece junto com o texto — ficava em 3.99:1. É a única cor do
+     app e a mensagem mais importante dele. */
+  --destructive: oklch(0.529 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --control-border: oklch(0.643 0 0);
+  /* 0.48: o anel de foco precisa de 3:1 contra card, `muted` e a linha sob o
+     cursor — e precisa ser distinguível de `--control-border` em repouso.
+     Fica em ~6.5:1, bem abaixo dos 17.9:1 do checkbox marcado: foco se vê,
+     mas não grita mais alto que o gesto de concluir. */
+  --ring: oklch(0.48 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Fonte única dos tokens escuros. Aplicados por media query (e não pela classe
+   `.dark` do preset) para acompanhar o SO — ver @custom-variant acima. */
+@media (prefers-color-scheme: dark) {
+  :root {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --control-border: oklch(0.545 0 0);
+  --ring: oklch(0.72 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Sem `bg-background` no body: a janela é transparent e quem pinta a
+     superfície é o container raiz do App (ver regra html/body/#root acima). */
+  body {
+    @apply text-foreground;
+  }
+}

@@ -1,0 +1,458 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-18T20:22:27Z",
+  "title": "Design System: Mini To-Do",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Vidro",
+        "canonical": "oklch(1 0 0)",
+        "dark": "oklch(0.145 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "oklch(0.145 0 0)",
+        "dark": "oklch(0.985 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Superfície da Vidraça",
+        "canonical": "oklch(1 0 0)",
+        "dark": "oklch(0.205 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "card-foreground": {
+        "role": "neutral",
+        "displayName": "Tinta sobre Vidraça",
+        "canonical": "oklch(0.145 0 0)",
+        "dark": "oklch(0.985 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Bruma",
+        "canonical": "oklch(0.97 0 0)",
+        "dark": "oklch(0.269 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Névoa",
+        "canonical": "oklch(0.544 0 0)",
+        "dark": "oklch(0.708 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Grafite",
+        "canonical": "oklch(0.205 0 0)",
+        "dark": "oklch(0.922 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "primary-foreground": {
+        "role": "primary",
+        "displayName": "Contra-Grafite",
+        "canonical": "oklch(0.985 0 0)",
+        "dark": "oklch(0.205 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Fio (decorativo)",
+        "canonical": "oklch(0.922 0 0)",
+        "dark": "oklch(1 0 0 / 10%)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Fio (fundo de campo)",
+        "canonical": "oklch(0.922 0 0)",
+        "dark": "oklch(1 0 0 / 15%)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "ring": {
+        "role": "neutral",
+        "displayName": "Halo",
+        "canonical": "oklch(0.48 0 0)",
+        "dark": "oklch(0.72 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "destructive": {
+        "role": "tertiary",
+        "displayName": "Alarme",
+        "canonical": "oklch(0.529 0.245 27.325)",
+        "dark": "oklch(0.704 0.191 22.216)",
+        "tonalRamp": [
+          "oklch(0.15 0.06 27.325)",
+          "oklch(0.25 0.11 27.325)",
+          "oklch(0.37 0.17 27.325)",
+          "oklch(0.49 0.22 27.325)",
+          "oklch(0.61 0.23 27.325)",
+          "oklch(0.73 0.17 27.325)",
+          "oklch(0.85 0.10 27.325)",
+          "oklch(0.95 0.03 27.325)"
+        ]
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Fio de Controle",
+        "canonical": "oklch(0.643 0 0)",
+        "dark": "oklch(0.545 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.49 0 0)",
+          "oklch(0.61 0 0)",
+          "oklch(0.73 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Exclusivo do nome do app na barra de título. Único texto semibold da interface."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto das tarefas e campo de nova tarefa. Tudo que a pessoa escreveu está aqui."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tudo que a interface diz por conta própria: rodapé, abas, avisos, estado vazio, botões de texto."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Apenas o contador de pendentes na pílula da barra de título. Tabular por obrigação."
+      }
+    },
+    "shadows": [
+      {
+        "name": "janela",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "A única sombra do sistema. É a borda física do app contra a área de trabalho, aplicada uma vez no cartão raiz, porque a janela tem decorations:false e o SO não desenha moldura. Nunca use em nada dentro da janela."
+      },
+      {
+        "name": "anel-interno",
+        "value": "inset 0 0 0 1px oklch(0.145 0 0 / 10%)",
+        "purpose": "Sustenta o contorno da vidraça quando o fundo atrás é escuro demais para a sombra aparecer. Trabalha junto da borda de 1px, não no lugar dela."
+      }
+    ],
+    "motion": [
+      {
+        "name": "flip-reordenacao",
+        "value": "180ms ease-out",
+        "purpose": "Marcar uma tarefa a manda para o fim da lista; a linha desliza do lugar antigo até o novo em vez de saltar. Desligado sob prefers-reduced-motion."
+      },
+      {
+        "name": "revelacao",
+        "value": "transition-opacity",
+        "purpose": "Controles escondidos aparecendo no hover e no focus-visible. Sempre os dois."
+      },
+      {
+        "name": "afundamento",
+        "value": "translateY(1px)",
+        "purpose": "Estado :active de todo botão. A única resposta física do sistema."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Superfície da Vidraça",
+      "kind": "card",
+      "refersTo": "surface",
+      "description": "O cartão raiz. Existe um só no app inteiro e ele É a janela: dele saem os cantos, a borda, o fundo e a única sombra do sistema.",
+      "html": "<div class=\"ds-surface\"><div class=\"ds-surface-bar\"><span class=\"ds-surface-title\">Mini To-Do</span><span class=\"ds-badge\">3</span></div><div class=\"ds-surface-body\">Superfície de 360x480, não redimensionável.</div></div>",
+      "css": ".ds-surface { width: 360px; height: 200px; display: flex; flex-direction: column; background: var(--card, oklch(1 0 0)); color: var(--card-foreground, oklch(0.145 0 0)); border: 1px solid var(--border, oklch(0.922 0 0)); border-radius: 0.875rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1), inset 0 0 0 1px oklch(0.145 0 0 / 10%); overflow: hidden; font-family: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, sans-serif; } .ds-surface-bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; } .ds-surface-title { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.015em; } .ds-surface-body { flex: 1; padding: 12px; font-size: 0.75rem; color: var(--muted-foreground, oklch(0.544 0 0)); }"
+    },
+    {
+      "name": "Botão Ghost",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "O único variante de botão que o app usa de verdade. Sem fundo e sem borda em repouso; fundo Bruma no hover. Não existe um botão preenchido na interface.",
+      "html": "<button class=\"ds-btn-ghost\">Limpar concluídas</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 0.5rem; background: transparent; color: var(--foreground, oklch(0.145 0 0)); font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; cursor: default; transition: all 0.15s; } .ds-btn-ghost:hover { background: var(--muted, oklch(0.97 0 0)); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); } .ds-btn-ghost:active { transform: translateY(1px); } .ds-btn-ghost:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Botão de Ícone",
+      "kind": "button",
+      "refersTo": "button-icon-xs",
+      "description": "Quadrado de 24px com ícone de 12px. Fechar janela, nova aba, remover tarefa. Mesma gramática ghost do botão de texto.",
+      "html": "<button class=\"ds-btn-icon\" aria-label=\"Fechar janela\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button> <button class=\"ds-btn-icon\" aria-label=\"Nova aba\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></button>",
+      "css": ".ds-btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid transparent; border-radius: 0.5rem; background: transparent; color: var(--foreground, oklch(0.145 0 0)); cursor: default; transition: all 0.15s; } .ds-btn-icon svg { width: 12px; height: 12px; pointer-events: none; } .ds-btn-icon:hover { background: var(--muted, oklch(0.97 0 0)); } .ds-btn-icon:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); } .ds-btn-icon:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Campo de Nova Tarefa",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "O único elemento permanentemente presente que aceita digitação, e um dos dois únicos lugares selecionáveis da janela inteira. Recebe o foco toda vez que a janela aparece.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Nova tarefa…\" aria-label=\"Nova tarefa\" maxlength=\"200\" />",
+      "css": ".ds-input { width: 240px; height: 32px; padding: 4px 10px; border: 1px solid var(--control-border, oklch(0.643 0 0)); border-radius: 0.625rem; background: transparent; color: var(--foreground, oklch(0.145 0 0)); font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; user-select: text; cursor: text; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: var(--muted-foreground, oklch(0.544 0 0)); } .ds-input:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); }"
+    },
+    {
+      "name": "Checkbox",
+      "kind": "custom",
+      "refersTo": "checkbox",
+      "description": "16px de desenho, ~40px de alvo. Marcado, é o único preenchimento sólido do sistema inteiro — concluir é o gesto visualmente mais afirmativo do app.",
+      "html": "<span class=\"ds-check\" role=\"checkbox\" aria-checked=\"false\" tabindex=\"0\"></span> <span class=\"ds-check ds-check-on\" role=\"checkbox\" aria-checked=\"true\" tabindex=\"0\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span>",
+      "css": ".ds-check { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 1px solid var(--control-border, oklch(0.643 0 0)); border-radius: 4px; background: transparent; vertical-align: middle; cursor: default; transition: background-color 0.15s, border-color 0.15s; } .ds-check::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -12px; right: -12px; } .ds-check svg { width: 14px; height: 14px; } .ds-check-on { background: var(--primary, oklch(0.205 0 0)); border-color: var(--primary, oklch(0.205 0 0)); color: var(--primary-foreground, oklch(0.985 0 0)); } .ds-check:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); }"
+    },
+    {
+      "name": "Linha de Tarefa",
+      "kind": "custom",
+      "refersTo": "todo-row",
+      "description": "Componente-assinatura. Três gestos em três alvos sem sobreposição: o checkbox alterna, o duplo clique no título edita, o × remove. O × só existe no hover e no foco de teclado. Concluída desbota e risca — nunca some. F2 abre a edição pelo teclado, com o handler na linha para não custar parada de tabulação.",
+      "html": "<ul class=\"ds-list\"><li class=\"ds-row\"><span class=\"ds-check\" role=\"checkbox\" aria-checked=\"false\" tabindex=\"0\"></span><span class=\"ds-row-title\">Revisar o contrato antes de distribuir</span><button class=\"ds-row-del\" aria-label=\"Remover\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></li><li class=\"ds-row\"><span class=\"ds-check ds-check-on\" role=\"checkbox\" aria-checked=\"true\" tabindex=\"0\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span class=\"ds-row-title ds-row-done\">Trocar o ícone padrão do Tauri</span><button class=\"ds-row-del\" aria-label=\"Remover\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></li></ul>",
+      "css": ".ds-list { display: flex; flex-direction: column; gap: 2px; width: 320px; margin: 0; padding: 0; list-style: none; } .ds-row { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 0.5rem; font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; transition: background-color 0.15s; } .ds-row:hover { background: color-mix(in oklch, var(--muted, oklch(0.97 0 0)), transparent 40%); } .ds-row-title { flex: 1; min-width: 0; font-size: 0.8125rem; line-height: 1.25rem; color: var(--foreground, oklch(0.145 0 0)); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .ds-row-done { color: var(--muted-foreground, oklch(0.544 0 0)); text-decoration: line-through; } .ds-row-del { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; padding: 0; border: 1px solid transparent; border-radius: 0.5rem; background: transparent; color: var(--foreground, oklch(0.145 0 0)); opacity: 0; cursor: default; transition: opacity 0.15s, background-color 0.15s; } .ds-row-del svg { width: 12px; height: 12px; } .ds-row:hover .ds-row-del { opacity: 1; } .ds-row-del:focus-visible { opacity: 1; outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); } .ds-row-del:hover { background: var(--muted, oklch(0.97 0 0)); }"
+    },
+    {
+      "name": "Chip de Aba",
+      "kind": "chip",
+      "refersTo": "tab-chip",
+      "description": "24px de altura numa faixa de 28px. Ativa é fundo Bruma com peso 500; inativa é Névoa sem fundo. Trunca com reticências e leva o nome inteiro no title. O × é escondido quando só existe uma aba. O botão do nome ocupa a altura inteira do chip e o × é desenhado com 16px alcançando 24×24 por pseudo-elemento: o que cresce é a área de clique, não o desenho. A faixa reserva 2px acima e abaixo do chip: sem isso o contêiner que rola recorta o anel de foco.",
+      "html": "<div class=\"ds-tabs\" role=\"group\" aria-label=\"Abas\"><div class=\"ds-tab ds-tab-on\"><button class=\"ds-tab-name\" aria-current=\"true\" title=\"Trabalho\">Trabalho</button><button class=\"ds-tab-x\" aria-label=\"Fechar aba\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div><div class=\"ds-tab\"><button class=\"ds-tab-name\" title=\"Compras da semana\">Compras da semana</button><button class=\"ds-tab-x\" aria-label=\"Fechar aba\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div></div>",
+      "css": ".ds-tabs { display: flex; align-items: center; gap: 4px; height: 28px; padding-block: 2px; box-sizing: border-box; font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; } .ds-tab { display: flex; align-items: center; height: 24px; max-width: 8.5rem; flex-shrink: 0; padding-left: 8px; padding-right: 2px; border-radius: 0.5rem; font-size: 0.75rem; color: var(--muted-foreground, oklch(0.544 0 0)); transition: background-color 0.15s, color 0.15s; } .ds-tab:hover { background: color-mix(in oklch, var(--muted, oklch(0.97 0 0)), transparent 50%); } .ds-tab-on { background: var(--muted, oklch(0.97 0 0)); color: var(--foreground, oklch(0.145 0 0)); font-weight: 500; } .ds-tab-name { display: flex; align-items: center; height: 100%; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0.375rem; outline: none; cursor: default; } .ds-tab-name:focus-visible { box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); } .ds-tab-x { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 16px; height: 16px; margin-left: 4px; padding: 0; border: 0; border-radius: 0.25rem; background: transparent; color: inherit; opacity: 0; cursor: default; transition: opacity 0.15s, background-color 0.15s; } .ds-tab-x svg { width: 12px; height: 12px; } .ds-tab-on .ds-tab-x { opacity: 0.7; } .ds-tab:hover .ds-tab-x { opacity: 0.7; } .ds-tab-x:hover { opacity: 1; background: color-mix(in oklch, var(--background, oklch(1 0 0)), transparent 40%); } .ds-tab-x:focus-visible { opacity: 1; outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); } .ds-tab-x::after { content: ''; position: absolute; inset: -4px; }"
+    },
+    {
+      "name": "Pílula do Contador",
+      "kind": "custom",
+      "refersTo": "counter-badge",
+      "description": "O único elemento circular do sistema e o único uso do tamanho de 11px. Tabular por obrigação: sem isso o título ao lado saltita a cada tarefa marcada.",
+      "html": "<span class=\"ds-badge\" aria-label=\"3 pendentes\">3</span>",
+      "css": ".ds-badge { display: inline-block; padding: 2px 6px; border-radius: 9999px; background: var(--muted, oklch(0.97 0 0)); color: var(--muted-foreground, oklch(0.544 0 0)); font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.6875rem; line-height: 1; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Faixa de Aviso",
+      "kind": "custom",
+      "refersTo": "notice-error",
+      "description": "A única aparição de cor em todo o app, e o único lugar onde o vermelho existe. Erro e desfazer dividem a mesma faixa porque a janela não tem altura para duas, e ambas se dispensam sozinhas em 6 segundos.",
+      "html": "<div class=\"ds-notice ds-notice-err\" role=\"alert\"><p class=\"ds-notice-text\">Não foi possível salvar a tarefa.</p><button class=\"ds-notice-x\" aria-label=\"Dispensar aviso\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div><div class=\"ds-notice ds-notice-undo\" role=\"status\"><p class=\"ds-notice-text\">Tarefa removida.</p><button class=\"ds-btn-ghost\">Desfazer</button><button class=\"ds-notice-x\" aria-label=\"Dispensar aviso\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div>",
+      "css": ".ds-notice { display: flex; align-items: flex-start; gap: 4px; width: 320px; margin-bottom: 8px; padding: 4px 8px; border-radius: 0.5rem; font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; } .ds-notice-err { background: color-mix(in oklch, var(--destructive, oklch(0.529 0.245 27.325)), transparent 90%); color: var(--destructive, oklch(0.529 0.245 27.325)); } .ds-notice-undo { background: var(--muted, oklch(0.97 0 0)); color: var(--muted-foreground, oklch(0.544 0 0)); } .ds-notice-text { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } .ds-notice-x { flex-shrink: 0; padding: 2px; border: 0; border-radius: 0.25rem; background: transparent; color: inherit; opacity: 0.7; cursor: default; transition: opacity 0.15s; } .ds-notice-x svg { width: 12px; height: 12px; } .ds-notice-x:hover { opacity: 1; } .ds-notice-x:focus-visible { opacity: 1; outline: none; box-shadow: 0 0 0 2px var(--ring, oklch(0.48 0 0)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A Vidraça",
+    "overview": "Uma lâmina de vidro pousada sobre o trabalho real. A janela flutua permanentemente acima de tudo — editor, planilha, navegador — e por isso ela não pode ter cor própria: qualquer pigmento seu competiria, o dia inteiro, com o conteúdo que realmente importa. O sistema inteiro é acromático de propósito. Toda a paleta é OKLCH com croma exatamente 0: cinzas puros, sem uma gota de matiz. A única exceção em todo o app é o vermelho de erro, e é essa escassez que o torna impossível de ignorar.\n\nA vidraça é pequena e não redimensiona: 360x480 px, fixos. Isso não é um detalhe de configuração, é a restrição que governa cada decisão aqui. Não há hierarquia tipográfica em cascata porque não há altura para ela; há três tamanhos de texto e um quarto minúsculo para o contador. Não há sombras internas porque profundidade custa espaço visual que a janela não tem — a única sombra do app é a que ele projeta sobre a área de trabalho, e ela existe apenas porque a janela dispensou a decoração do sistema operacional e precisa se descolar do que está atrás. Os controles somem em repouso e voltam quando a mão (ou o foco do teclado) chega perto.\n\nO sistema é deliberadamente anti-expressivo. Não é um app de produtividade colorido, não é um widget de vidro fosco, não é um dashboard de métricas, e não imita o cromo de nenhum sistema operacional — o app roda em três, e imitar um quebra nos outros dois. A qualidade não está na aparência; está no ajuste. Um checkbox de 16px com área de clique de 40px de largura. Um título de 200 caracteres sem um espaço que nunca vaza pela borda. Uma linha que desliza 180ms até o novo lugar em vez de saltar.",
+    "keyCharacteristics": [
+      "Acromático absoluto — croma 0 em toda a paleta, exceto o vermelho de erro",
+      "Superfície única: um cartão de 14px de raio é o app inteiro, com borda e sombra próprias",
+      "Densidade extrema — faixas de altura fixa de 40px, 28px e 24px em 480px de janela",
+      "Três tamanhos de texto (13px / 12px / 11px), uma família só (Geist Variable)",
+      "Plano por dentro; a única sombra é a da janela contra a área de trabalho",
+      "Controles discretos que se revelam no hover e no foco de teclado, nunca só no mouse",
+      "Alvos de clique maiores que o desenho que os representa",
+      "Tema claro e escuro pelo sistema operacional, sem toggle"
+    ],
+    "rules": [
+      {
+        "name": "A Regra da Linha que Informa",
+        "body": "Uma linha que só divide pode ser discreta; uma linha que identifica um controle carrega informação e precisa de 3:1 (WCAG 1.4.11). Por isso o sistema tem dois cinzas de traço: `border` para separador e moldura, `control-border` para a borda de checkbox e campo. Confundir os dois deixou o checkbox desmarcado em 1.26:1, praticamente invisível sobre branco.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Anel que Cabe",
+        "body": "O anel de foco é box-shadow, desenhado 2px para fora da caixa. Todo contêiner com overflow diferente de visible recorta o que sai dele — e overflow-x: auto faz o overflow-y computar como auto junto. Um contêiner de rolagem com a altura exata do seu conteúdo apaga o anel de foco de tudo que está dentro dele. Reserve 2px em cada eixo, ou o indicador existe no CSS e não existe na tela.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra dos 2px de Vizinhança",
+        "body": "Dois elementos focáveis vizinhos precisam de pelo menos 4px entre as caixas, ou os anéis de um invadem o outro. Vale entre bandas, não dentro de um mesmo controle composto.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra do Editor que Cabe",
+        "body": "Um editor que substitui conteúdo no lugar herda a forma e o tamanho do que substituiu — mesmo raio, mesma altura — e sinaliza foco por dentro. Crescer para fora empurra o layout e, dentro de um contêiner que rola, some recortado.",
+        "section": "components"
+      },
+      {
+        "name": "A Regra do Pigmento Único",
+        "body": "Cor não decora, não categoriza e não hierarquiza — cor reporta falha, e nada mais. Todo o resto do sistema é croma 0. Um segundo acento colorido, mesmo discreto, gastaria a raridade que faz o erro saltar aos olhos numa janela cinza. Teste: se um pixel colorido apareceu na tela e nada deu errado, é bug.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Desbotamento",
+        "body": "Concluir uma tarefa nunca a apaga nem a esconde — move para muted-foreground com riscado, e a manda para o fim da lista. Estado resolvido é estado com menos contraste, jamais estado ausente.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra dos Três Tamanhos",
+        "body": "13px, 12px, 11px. Não existe um quarto tamanho, e não existe nada acima de 13px. Numa janela de 480px de altura, uma escala tipográfica em cascata gastaria em hierarquia o espaço que pertence às tarefas. Hierarquia aqui se faz com peso e com cinza, não com tamanho.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Número Tabular",
+        "body": "Todo número que muda no lugar — o contador da barra de título, o \"N pendentes\" do rodapé — usa tabular-nums. Sem isso, o texto ao redor saltita lateralmente a cada tarefa marcada.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Texto que Não Vaza",
+        "body": "Nenhum texto pode ultrapassar a borda da janela em nenhuma largura, nem gerar rolagem horizontal. Título de tarefa: wrap-anywhere + line-clamp-2, com o texto inteiro no title. Nome de aba: truncate com title. Mensagem de erro: wrap-anywhere + line-clamp-3 com title. Teste: uma tarefa de 200 caracteres sem um único espaço tem que caber.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra da Faixa Fixa",
+        "body": "Só a lista é elástica. Qualquer elemento novo entra com altura declarada e shrink-0, ou entra dentro da lista. Um segundo elemento elástico faria as duas partes disputarem a altura e a lista encolheria sozinha.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra do Custo de Altura",
+        "body": "Nada ocupa altura permanente sem justificar o que empurrou para fora da dobra. Dicas, avisos e estados de ajuda são passageiros (auto-dispensa) ou vivem no espaço vazio que some quando há tarefas.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra da Sombra Externa",
+        "body": "Sombra é a borda do app contra a área de trabalho, não um recurso de interface. Nenhum elemento dentro da janela projeta sombra — nem no hover, nem no foco, nem em elevação. Se um componente novo parece precisar de sombra para se destacar, ele precisa é de muted atrás dele.",
+        "section": "elevation"
+      },
+      {
+        "name": "A Regra do Raio Decrescente",
+        "body": "Quanto menor o elemento, menor o raio: 14px na janela, 10px nos controles, 8px nas linhas e chips, 4px no checkbox. Um raio constante em elementos de 480px e de 16px faria o pequeno parecer uma pastilha e o grande parecer uma caixa.",
+        "section": "shapes"
+      },
+      {
+        "name": "A Regra da Revelação com Teclado",
+        "body": "Todo controle que se esconde em repouso deve reaparecer tanto no hover quanto no focus-visible. Esconder é permitido; tornar exclusivo de mouse, nunca. Vale para o × de remover tarefa e para o × de fechar aba, e vale para qualquer controle futuro que use o mesmo padrão.",
+        "section": "components"
+      },
+      {
+        "name": "A Regra do Alvo Maior que o Desenho",
+        "body": "O tamanho visível de um controle nunca é maior que a sua área de clique — no mínimo os dois coincidem, e onde dá, o alvo cresce por baixo. Piso de 24×24 em todo controle. O chip de aba já foi a exceção: media 24px de desenho e respondia em 16.",
+        "section": "components"
+      },
+      {
+        "name": "A Regra de Um Gesto, Um Alvo",
+        "body": "Nenhuma região responde a dois gestos concorrentes. O título já foi uma label ligada ao checkbox, e o duplo clique para editar disparava duas gravações no disco por edição. Alternar é do checkbox, editar é do título.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do manter croma 0 em toda cor nova. Se um token novo tem matiz, ele precisa de uma justificativa tão forte quanto a do vermelho de erro — e provavelmente não tem.",
+      "Do declarar altura fixa e shrink-0 em toda faixa nova, ou colocá-la dentro da lista.",
+      "Do usar muted como fundo para destacar. É o recurso de destaque do sistema, no lugar de cor, sombra ou borda.",
+      "Do dar min-w-0 a todo contêiner que pode encolher e truncamento declarado (truncate ou wrap-anywhere + line-clamp) a todo texto vindo do usuário, sempre com o texto inteiro no title.",
+      "Do manter o par hover + focus-visible em qualquer controle que se esconda.",
+      "Do respeitar prefers-reduced-motion em qualquer animação nova, como o FLIP da lista faz.",
+      "Do manter os três tamanhos de texto. Hierarquia nova se faz com peso e com cinza.",
+      "Do oferecer desfazer em vez de confirmação para qualquer gesto destrutivo novo.",
+      "Do dar caminho de teclado a todo gesto que existe no mouse. F2 renomeia, na tarefa e na aba.",
+      "Do dar o anel de 2px a todo controle que se esconde: opacidade sozinha não diz onde o foco está."
+    ],
+    "donts": [
+      "Don't introduzir cor decorativa, etiquetas coloridas, prioridade por cor, emoji, gradiente ou barra de progresso. Isto não é um app de produtividade colorido, e a cor gasta seria o sinal de erro.",
+      "Don't usar blur, backdrop-filter, brilho ou borda iluminada. A janela é transparente por necessidade técnica do Tauri, não por estilo — glassmorphism seria ler a restrição como estética.",
+      "Don't acrescentar estatística, streak, gráfico, gamificação ou qualquer painel de métrica. Custaria a altura que a janela não tem.",
+      "Don't imitar o cromo nativo de um sistema operacional (Aqua, Fluent, Material). O app roda em três; imitar um quebra a coerência nos outros dois.",
+      "Don't projetar sombra em nada que esteja dentro da janela.",
+      "Don't usar botão preenchido ou botão vermelho de destruição. Todo gesto destrutivo aqui é reversível, e vermelho prometeria uma gravidade que ele não tem.",
+      "Don't criar um segundo padrão de edição. Edição é inline, no lugar do texto, com o componente que já existe.",
+      "Don't usar espaçamento acima de 12px fora do estado vazio.",
+      "Don't anunciar semântica ARIA que a interface não cumpre (foi por isso que a faixa de abas é group e não tablist)."
+    ]
+  }
+}

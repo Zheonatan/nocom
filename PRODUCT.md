@@ -79,8 +79,8 @@ outro produto:
 **Funcionalidade confirmada** (detalhe normativo em `CONTRACT.md` — este é o índice, não a
 duplicata): tarefas com criar/concluir/renomear/remover, "Limpar concluídas", desfazer curto
 para todo gesto destrutivo (sem caixa de confirmação), abas com criar/renomear/fechar/restaurar,
-aba ativa persistida, atalho global, tray com contagem, posição de janela persistida, migração
-do formato antigo de `todos.json`.
+aba ativa persistida, **atalho global com a combinação escolhida pelo usuário**, tray com
+contagem, posição de janela persistida, migração do formato antigo de `todos.json`.
 
 **Vocabulário do produto:** *tarefa* (não "item"), *aba* (não "lista" nem "projeto"),
 *pendentes* (não "abertas"), *concluídas* (não "feitas"). O nome padrão de aba nova é
@@ -98,6 +98,12 @@ do formato antigo de `todos.json`.
   cantos e borda; `html`/`body` não podem pintar fundo.
 - Estado otimista com rollback em erro, sem biblioteca de estado além de `useState`/`useEffect`.
 - Dark mode segue o sistema (`prefers-color-scheme`), sem toggle.
+- **A única configuração do app é o atalho global** (Adendo 9), e ela existe porque é a
+  única decisão que o sistema operacional não pode tomar pelo usuário: um atalho global
+  vence o do aplicativo em foco, e o que já está ocupado depende da máquina dele. Idioma,
+  tema e posição continuam vindo do sistema, sem seletor. Configuração nova precisa passar
+  pelo mesmo teste, e o painel do atalho não é uma "tela de preferências" onde a próxima
+  entra de carona.
 - shadcn/ui obrigatório para os componentes de base.
 - **Nenhum caminho pode apagar tarefa antiga.** É a única falha declarada inaceitável.
 
@@ -106,12 +112,14 @@ nenhum lado):
 
 - **Alcance multiplataforma vs. contrato escrito em macOS.** O alvo confirmado é
   **macOS, Windows e Linux**, mas várias decisões do `CONTRACT.md` foram raciocinadas só
-  em macOS e precisam ser reabertas antes de distribuir nos três: a escolha de `⌃⌥T`
-  (justificada por eliminação contra atalhos do macOS), `macOSPrivateApi: true` (o que
-  viabiliza a transparência no mac), o comportamento do tray e a própria transparência da
-  janela em Linux. **Resolvido em parte pelo Adendo 6:** a *forma escrita* do atalho já
-  segue a convenção de cada sistema nos dois lados do IPC. A *escolha* da combinação, a
-  transparência e o tray continuam abertos.
+  em macOS e precisam ser reabertas antes de distribuir nos três: `macOSPrivateApi: true`
+  (o que viabiliza a transparência no mac), o comportamento do tray e a própria
+  transparência da janela em Linux. **Resolvido em parte pelo Adendo 6:** a *forma escrita*
+  do atalho segue a convenção de cada sistema nos dois lados do IPC. **A escolha da
+  combinação saiu da lista com o Adendo 9:** `⌃⌥T` continua sendo o padrão, com o
+  argumento de eliminação que o justificou, mas deixou de ser a única possível — quem
+  descobre que ela está ocupada no sistema dele troca pela engrenagem, sem esperar uma
+  versão nova. A transparência e o tray continuam abertos.
 - **Identidade visual e nome.** Nem "Mini To-Do" nem o ícone estão fechados. O ícone
   empacotado hoje é o **logo padrão do Tauri**, provisório, e não pode ser distribuído
   como identidade do produto.

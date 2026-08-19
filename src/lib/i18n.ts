@@ -43,7 +43,12 @@ type Params = Record<string, string | number>;
  * de voltar a ser bilíngue pela metade.
  */
 const pt = {
-  "window.close": "Fechar janela",
+  // **"Esconder", e não "Fechar".** O nome acessível dizia "Fechar janela" num
+  // botão que esconde, e para quem usa leitor de tela era o único botão
+  // permanente da interface prometendo encerrar o app. Numa janela sem decoração,
+  // fora da barra de tarefas, "fechei e não sei voltar" é o desfecho que este app
+  // mais precisa evitar — o nome do gesto tem que ser o gesto.
+  "window.hide": "Esconder janela",
   "window.closeHint": "Esconder — {shortcut} traz de volta",
 
   "pending.count": {
@@ -116,7 +121,12 @@ const pt = {
   "notice.dismiss": "Dispensar aviso",
   "notice.undo": "Desfazer",
 
-  "undo.taskRemoved": "Tarefa removida.",
+  // Plural porque remoções seguidas se juntam num desfazer só: a faixa é uma, e
+  // sem o lote a segunda remoção matava o desfazer da primeira em silêncio.
+  "undo.tasksRemoved": {
+    one: "Tarefa removida.",
+    other: "{n} tarefas removidas.",
+  },
   "undo.completedRemoved": {
     one: "1 concluída removida.",
     other: "{n} concluídas removidas.",
@@ -127,8 +137,62 @@ const pt = {
     other: 'Aba "{name}" fechada. {n} tarefas voltam com ela.',
   },
 
+  // --- painel do atalho global (Adendo 9) ---
+  //
+  // A combinação é escolha do usuário, e este é o único lugar do app onde existe
+  // configuração. As frases falam de TECLAS e de o que acontece com elas — nunca de
+  // "preferências" nem de "opções", que é vocabulário de painel de controle e não
+  // do único gesto que este painel oferece.
+  "shortcut.open": "Trocar o atalho",
+  "shortcut.title": "Atalho para mostrar e esconder",
+  "shortcut.explain": "Vale de qualquer aplicativo, com o To-Do em segundo plano.",
+  // O rótulo do capturador em repouso e o da captura em curso. "Aperte as teclas" é
+  // instrução, e não pergunta: o gesto é apertar a combinação que se quer usar.
+  "shortcut.current": "Atalho",
+  "shortcut.press": "Aperte as teclas…",
+  // Nome acessível do capturador em repouso: um leitor de tela anunciando só "⌃⌥T"
+  // não diria o que o botão faz.
+  "shortcut.change": "Trocar o atalho (agora {shortcut})",
+  // A regra única, e ela fica na tela antes de qualquer tentativa: uma tecla sem
+  // modificador registrada globalmente sequestraria a digitação no sistema inteiro.
+  //
+  // Duas frases, uma por convenção de teclado — a mesma decisão de `tray.place*`, e
+  // pelo mesmo motivo: "⌃, ⌥ ou ⌘" numa tela de Windows não nomeia tecla nenhuma. A
+  // versão de fora do Mac não anuncia a tecla Windows de propósito: ela é aceita,
+  // mas o sistema reserva quase tudo que a usa, e apontar para ela seria mandar o
+  // usuário tentar o caminho que mais falha. Quem escolhe entre as duas é
+  // `MODIFIER_RULE`, em `lib/shortcut.ts`.
+  "shortcut.needsModifierMac": "Use ⌃, ⌥ ou ⌘ junto de outra tecla.",
+  "shortcut.needsModifierOther": "Use Ctrl ou Alt junto de outra tecla.",
+  "shortcut.saved": "Pronto: {shortcut} mostra e esconde a janela.",
+  // O caso sutil, na mesma honestidade do `error.tabRemember`: valeu agora, e a
+  // próxima abertura volta ao anterior.
+  "shortcut.notRemembered":
+    "{shortcut} vale agora, mas não será lembrado na próxima abertura.",
+  // O backend registra a combinação nova ANTES de soltar a antiga, então a frase
+  // pode dizer o que continua valendo — e não só o que falhou.
+  "shortcut.taken":
+    "Outro aplicativo já usa essa combinação. {shortcut} continua valendo.",
+  // O app abriu e o sistema recusou a combinação: a janela não pode ensinar uma
+  // tecla morta.
+  "shortcut.inactive":
+    "{shortcut} não está valendo — outro aplicativo tomou a combinação. Escolha outra.",
+  // O custo do `⌘`, dito como aviso e não como proibição (Adendo 9): a escolha é do
+  // usuário, e um atalho global vence o do aplicativo em foco.
+  "shortcut.stealsCommand":
+    "Combinações com ⌘ deixam de funcionar nos outros aplicativos.",
+  "shortcut.stealsSuper":
+    "Combinações com a tecla Windows podem ser reservadas pelo sistema.",
+  "shortcut.reset": "Restaurar padrão",
+  "shortcut.done": "Concluir",
+
   "tabs.label": "Abas",
   "tabs.new": "Nova aba",
+  "tabs.newHint": "Nova aba ({shortcut})",
+  // O nome inteiro da aba mais a tecla que salta até ela. Vive no `title` do chip
+  // porque o chip trunca e o `title` já precisava existir; o atalho pega a carona
+  // e deixa de ser invisível.
+  "tabs.withShortcut": "{name} ({shortcut})",
   "tabs.close": 'Fechar aba "{name}"',
   "tabs.rename": "Renomear aba",
   "tabs.defaultName": "Lista {n}",
@@ -138,6 +202,12 @@ const pt = {
   // tarefa sumiu ou não — e o Princípio 5 do produto é justamente que falha
   // nunca pode ser indistinguível de perda de dados.
   "error.load": "Não foi possível carregar suas tarefas. Nada foi perdido.",
+  // **O aviso que não se dispensa sozinho.** O app abriu com uma lista vazia
+  // porque não entendeu o arquivo, e uma lista vazia é indistinguível de tudo
+  // perdido. O arquivo antigo foi guardado ao lado e o caminho dele fica no
+  // `title`. É o único aviso do app que espera ser lido.
+  "error.rescued":
+    "Não foi possível ler o arquivo das suas tarefas. Ele foi guardado inteiro ao lado e o app abriu com uma lista nova.",
   "error.add": "Não foi possível adicionar. O texto voltou para o campo.",
   "error.toggle": "Não foi possível marcar a tarefa. Nada mudou.",
   "error.rename": "Não foi possível renomear. O título anterior foi mantido.",
@@ -153,13 +223,17 @@ const pt = {
   "error.hide":
     "Não foi possível esconder a janela. Use {shortcut} ou o ícone na bandeja.",
   "error.drag": "Não foi possível mover a janela.",
+  // A leitura do atalho falhou, então o painel não tem o que mostrar. O atalho em si
+  // continua registrado no backend — o que não deu foi perguntar qual é.
+  "error.shortcutRead":
+    "Não foi possível ler o atalho. O painel não pode abrir agora.",
   "error.focus": "O cursor pode não ir para o campo ao abrir a janela.",
 } satisfies Dict;
 
 export type MessageKey = keyof typeof pt;
 
 const en: Record<MessageKey, Entry> = {
-  "window.close": "Close window",
+  "window.hide": "Hide window",
   "window.closeHint": "Hide — {shortcut} brings it back",
 
   "pending.count": {
@@ -191,7 +265,10 @@ const en: Record<MessageKey, Entry> = {
   "notice.dismiss": "Dismiss notice",
   "notice.undo": "Undo",
 
-  "undo.taskRemoved": "Task removed.",
+  "undo.tasksRemoved": {
+    one: "Task removed.",
+    other: "{n} tasks removed.",
+  },
   "undo.completedRemoved": {
     one: "1 completed task removed.",
     other: "{n} completed tasks removed.",
@@ -202,13 +279,39 @@ const en: Record<MessageKey, Entry> = {
     other: 'Tab "{name}" closed. {n} tasks come back with it.',
   },
 
+  "shortcut.open": "Change the shortcut",
+  "shortcut.title": "Shortcut to show and hide",
+  "shortcut.explain": "Works from any app, with the To-Do in the background.",
+  "shortcut.current": "Shortcut",
+  "shortcut.press": "Press the keys…",
+  "shortcut.change": "Change the shortcut (now {shortcut})",
+  "shortcut.needsModifierMac": "Use ⌃, ⌥ or ⌘ along with another key.",
+  "shortcut.needsModifierOther": "Use Ctrl or Alt along with another key.",
+  "shortcut.saved": "Done: {shortcut} shows and hides the window.",
+  "shortcut.notRemembered":
+    "{shortcut} works now, but it won't be remembered next time.",
+  "shortcut.taken":
+    "Another app already uses that combination. {shortcut} still works.",
+  "shortcut.inactive":
+    "{shortcut} isn't working — another app took the combination. Pick another one.",
+  "shortcut.stealsCommand":
+    "Combinations with ⌘ stop working inside other apps.",
+  "shortcut.stealsSuper":
+    "Combinations with the Windows key may be reserved by the system.",
+  "shortcut.reset": "Restore default",
+  "shortcut.done": "Done",
+
   "tabs.label": "Tabs",
   "tabs.new": "New tab",
+  "tabs.newHint": "New tab ({shortcut})",
+  "tabs.withShortcut": "{name} ({shortcut})",
   "tabs.close": 'Close tab "{name}"',
   "tabs.rename": "Rename tab",
   "tabs.defaultName": "List {n}",
 
   "error.load": "Couldn't load your tasks. Nothing was lost.",
+  "error.rescued":
+    "Couldn't read your task file. It was kept intact alongside, and the app opened with a fresh list.",
   "error.add": "Couldn't add the task. Your text is back in the field.",
   "error.toggle": "Couldn't update the task. Nothing changed.",
   "error.rename": "Couldn't rename it. The previous title was kept.",
@@ -221,6 +324,7 @@ const en: Record<MessageKey, Entry> = {
   "error.tabRemember": "The tab changed, but it won't be remembered next time.",
   "error.hide": "Couldn't hide the window. Use {shortcut} or the tray icon.",
   "error.drag": "Couldn't move the window.",
+  "error.shortcutRead": "Couldn't read the shortcut. The panel can't open right now.",
   "error.focus": "The cursor may not land in the field when the window opens.",
 };
 

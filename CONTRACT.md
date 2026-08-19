@@ -652,3 +652,360 @@ empacota `dist/` inteiro no binário. De 76KB para 46KB.
 - Todo controle tem alvo efetivo de **24×24** no mínimo.
 - Todo gesto disponível no mouse tem caminho de teclado.
 - Nenhum controle sinaliza foco só por opacidade.
+
+---
+
+# Adendo 8 — integridade do arquivo e atrito do dia a dia (2026-08-19)
+
+Origem: uma análise do app inteiro pedida em aberto ("procure por melhorias e problemas
+que o usuário possa ter"), lendo os dois lados do IPC contra o que os documentos
+prometem. O que ela achou se divide em duas naturezas muito diferentes, e vale registrar a
+diferença: **três furos que contrariavam princípios já escritos** e um punhado de atritos
+que nenhum documento cobria porque nunca foram ditos em voz alta.
+
+Nada aqui inventa recurso. É tudo consequência de regras que já existiam.
+
+## O caminho que apagava a lista
+
+**O defeito.** `persistencia::ler` devolvia `Option<T>`, e com isso "não há arquivo" e "não
+entendi o arquivo" eram o mesmo `None`. Os dois casos abriam uma aba `Tarefas` vazia, sem
+aviso nenhum, e a **primeira mutação gravava por cima** — a única cópia da lista do usuário
+saía do disco por causa de um JSON truncado.
+
+Isso contrariava as duas afirmações mais fortes do `PRODUCT.md` de uma vez: "nenhum caminho
+pode apagar tarefa antiga" (a única falha declarada inaceitável) e o Princípio 5, "falha faz
+barulho, nunca limpa a tela".
+
+**A correção, em três partes.**
+
+1. `persistencia::ler` devolve `Leitura<T>`: `Lido`, `Ausente` ou `Ilegivel`. Arquivo
+   ausente ou de zero byte é `Ausente` — não há lista ali para preservar. Quem não tem o que
+   fazer com a diferença (a posição da janela) usa `ler_opcional`.
+2. Ilegível nos **dois** formatos é movido para `todos.corrupt.json` antes de qualquer
+   gravação. O arquivo **sai do caminho** em vez de ser copiado, então a próxima mutação
+   cria um novo em branco sem destruir nada. Um backup existente nunca é sobrescrito: o
+   primeiro é o que tem mais chance de conter a lista inteira.
+3. O formato antigo continua sendo **migrado**, e nunca resgatado. Ele é um array e falha
+   como formato novo, então a segunda tentativa vem antes do resgate — sem essa ordem,
+   atualizar o app viraria "sua lista está num arquivo ao lado".
+
+**Comando IPC novo.**
+
+| Comando | Args | Retorno |
+|---|---|---|
+| `get_startup_rescue` | — | `Result<Option<String>, String>` — caminho do backup, ou `null` |
+
+Devolve **caminho, não frase**: as mensagens são do frontend desde o Adendo 6, e um texto em
+português vindo do Rust apareceria numa interface em inglês. A tela mostra `error.rescued`
+com o caminho no `title`.
+
+Este é o **único aviso do app que não se dispensa sozinho** (`sticky`). Todo outro fala de um
+gesto que a pessoa acabou de fazer e cujo desfecho ela está vendo; este fala de algo que
+aconteceu antes de a janela existir. Seis segundos para um aviso que ninguém estava
+esperando é a mesma coisa que não avisar.
+
+## `rename` não era a garantia que parecia ser
+
+`persistencia::gravar` escrevia num `.tmp` e renomeava por cima — o que protege contra
+arquivo truncado, e era o que estava documentado. Mas **renomear é atômico quanto ao nome, e
+não quanto ao conteúdo**: sem `fsync`, o sistema pode publicar o nome novo com os blocos de
+dados ainda em cache, e uma queda de energia nesse instante deixa um `todos.json` existente,
+válido para o sistema de arquivos e **vazio**. É exatamente a perda que o temporário existe
+para evitar.
+
+Agora: `File::create` → `write_all` → **`sync_all`** → `rename` → `fsync` do diretório em
+melhor esforço (não é possível no Windows, e o que se perde ali é a durabilidade do *nome*,
+não a do conteúdo — falhar a gravação por causa disso seria trocar uma garantia menor por um
+erro na tela).
+
+## Fechar é esconder, em todo caminho
+
+A janela é a única do app, e destruí-la deixava `alternar_janela` sem nada para achar: o
+atalho global e o clique no tray paravam de fazer qualquer coisa, e **o app ficava vivo,
+invisível e inalcançável** — só "Sair" e relançar.
+
+Não era hipótese. O Tauri instala o menu padrão do macOS quando nenhum menu é definido, e
+esse menu traz `close_window` em dois lugares (`⌘W` nos submenus File e Window).
+
+**`WindowEvent::CloseRequested` passa a chamar `prevent_close`, gravar a posição e esconder**
+— o mesmo desfecho do `×` que o frontend desenha, agora para todo caminho de fechamento,
+incluindo os que o sistema oferece sem avisar. Junto: `alternar_janela` trata **minimizada
+como escondida** e chama `unminimize` antes de mostrar, porque o mesmo menu traz `⌘M` e uma
+janela sem decoração e fora da barra de tarefas minimizada não tem gesto que a alcance.
+
+## A aba errada na tela
+
+O selo de carga (`loadRef`) protegia os `list_todos`; as **mutações** estavam sem nada
+equivalente, e uma classe inteira de defeito saía disso:
+
+- `clear_completed` grava em disco, o usuário clica noutra aba enquanto isso, a resposta
+  chega e o `setTodos` põe as tarefas da aba anterior na lista da aba nova. **No caminho de
+  sucesso, sem erro nenhum a que culpar.**
+- Todos os rollbacks (`toggle`, `delete`, `rename`, `clear`) repunham a lista da aba antiga
+  na tela da nova — e faziam isso no caminho de erro, que é justamente onde o app promete
+  que a tela continua contando a verdade.
+
+**Regra:** toda escrita de estado depois de um `await` confere `activeTabRef.current` contra
+a aba em que o gesto começou. Vale para quem acrescentar o próximo comando.
+
+Defeito irmão, corrigido junto: digitar e dar Enter enquanto um `list_todos` está em voo
+fazia a resposta da carga varrer a linha otimista; o `map` de `add_todo` não achava id
+nenhum, não repunha nada, e **a tarefa ficava gravada no disco e invisível** até sair e
+voltar da aba. Agora, se nem a otimista nem a definitiva estão na lista, a definitiva entra.
+
+## Teclado da faixa de abas
+
+Trocar de aba era, na prática, gesto de mouse: do campo de nova tarefa até o primeiro chip
+são vários `⇧Tab`, passando pelo `+` e pelo `×` de cada aba no caminho. O Adendo 7 já
+estabeleceu que **todo gesto disponível no mouse tem caminho de teclado**; este não tinha.
+
+| Tecla | Gesto |
+|---|---|
+| `⌘1`…`⌘9` / `Ctrl+1`…`Ctrl+9` | salta para a n-ésima aba da faixa |
+| `Ctrl+Tab` / `Ctrl+⇧Tab` | próxima / anterior, circular |
+| `⌘T` / `Ctrl+T` | nova aba |
+| `↓` no campo de nova tarefa | entra na lista |
+| `↑` / `↓` na lista | percorre as linhas; `↑` na primeira volta ao campo |
+
+São idiomas de navegador **de propósito**: esta faixa é a coisa mais parecida com abas de
+navegador que existe na janela, e um atalho que já se sabe não precisa ser ensinado
+(Princípio 3). Ficam descobríveis no `title` do chip e do `+`, que já existiam por causa do
+truncamento — nenhuma superfície nova.
+
+**Não são atalhos globais**, e por isso podem usar `⌘`: a proibição do Adendo 2 fala de
+sequestrar teclas pelo sistema inteiro, e estas valem só com a janela em foco. O modificador
+segue a convenção de cada sistema (`⌘` no Mac, `Ctrl` fora), como o letreiro já fazia.
+
+Nada roda com edição inline aberta — saltar de aba no meio de um nome sendo digitado
+salvaria pelo blur e trocaria a tela no mesmo gesto. E o bloco de `⌘` recusa `Alt` junto: se
+o registro do atalho global falhar, `⌃⌥T` chega ao webview como evento normal, e no Windows
+ele passaria por "modificador de comando + T" — criando uma aba a cada tentativa de mostrar
+a janela.
+
+**`⌘Z` continua sendo o desfazer de TEXTO**, e não o do app. No macOS o menu padrão o
+consome antes de o webview ver a tecla, então um desfazer de app ali funcionaria em dois
+sistemas de três e falharia em silêncio no terceiro; e dentro do campo de nova tarefa o
+desfazer de texto é o mais útil dos dois. O botão da faixa fica a **um** `Tab` do campo.
+
+## Desfazer que não se perde
+
+Duas correções de um mesmo problema: o gesto de volta era oferecido e tirado sem o usuário
+ter feito nada.
+
+- **Remoções seguidas viram um desfazer só.** A faixa é uma, e apagar duas tarefas trocava o
+  aviso da primeira pelo da segunda — matando o desfazer dela em silêncio. Remoções da mesma
+  aba se acumulam num lote enquanto o aviso segue na tela (`restore_todos` já recebe array, e
+  o tudo-ou-nada vale igual para uma ou cinco). Chave nova: `undo.tasksRemoved`, plural.
+- **O relógio de 6 segundos só corre com a janela em foco.** O ciclo do app é esconder e
+  voltar dezenas de vezes por dia, e a contagem rodava com a janela escondida: apagar uma
+  tarefa e apertar `⌃⌥T` gastava a janela inteira de desfazer sem ninguém olhando. Voltar ao
+  foco reinicia a contagem — o aviso ainda não foi lido.
+
+## Definição de pronto (adicional)
+
+- Um `todos.json` ilegível **nunca** é sobrescrito: ele é movido para `todos.corrupt.json` e
+  o fato aparece na tela num aviso que não se dispensa sozinho.
+- Toda gravação passa por `sync_all` antes do `rename`.
+- Nenhum caminho de fechamento destrói a janela.
+- Toda escrita de estado depois de um `await` confere a aba em que o gesto começou.
+- Todo gesto de aba tem tecla, e as teclas aparecem no `title` do controle.
+
+---
+
+# Adendo 9 — o atalho passa a ser escolha do usuário (2026-08-19)
+
+Pedido do usuário: "gostaria que meu usuário pudesse escolher a tecla de atalho para
+abrir e fechar as notas."
+
+O Adendo 2 escolheu `⌃⌥T` por eliminação contra os atalhos do macOS, e a escolha
+continua boa — **como padrão**. O que ela não pode ser é a única possível: um atalho
+global vence o do aplicativo em foco no sistema inteiro, e quem sabe o que já está
+ocupado na máquina é quem está sentado na frente dela. Era também a última decisão do
+`CONTRACT.md` que valia para os três sistemas tendo sido raciocinada só em um.
+
+## O que muda no modelo
+
+A combinação deixa de ser constante e passa a ser **dado persistido**, em arquivo
+próprio: `app_data_dir()/atalho.json`, `{"accelerator": "control+alt+KeyT"}`. Arquivo
+próprio pela mesma razão de `janela.json` — um `todos.json` truncado não pode levar
+junto o atalho, nem o contrário.
+
+**Um `atalho.json` ilegível cai no padrão em silêncio**, ao contrário do `todos.json`
+(preservado e relatado, Adendo 8). A diferença é o que se perde: ali é a lista do
+usuário, aqui é uma preferência de uma linha que ele refaz em dois segundos. O que
+não pode acontecer é o app subir sem atalho por causa de um arquivo torto.
+
+## Formato: `event.code`, não `event.key`
+
+O acelerador é escrito em códigos de tecla (`control+alt+KeyT`), que é a língua que o
+parser do plugin de atalho global já fala e a que o `event.code` do teclado da webview
+entrega. Não há tabela de conversão no meio dos dois lados.
+
+`event.key` seria a letra **produzida**, que muda com o layout e com os modificadores
+apertados: em ABNT, `⌥T` produz caractere diferente do que produz em ANSI, e o atalho
+gravado dependeria do teclado que estava plugado na hora de escolher.
+
+## Validação: uma regra só, e ela vale nos dois lados
+
+**Pelo menos um de `⌃`, `⌥` ou `⌘`.** Uma tecla sozinha registrada globalmente
+sequestra a digitação do sistema inteiro — apertar `T` em qualquer campo de qualquer
+aplicativo mostraria o To-Do — e `⇧` com uma letra é a mesma coisa com maiúscula.
+
+O frontend checa para poder dizer o que falta sem ir e voltar do backend; o backend
+checa porque é ele que grava. Mesma relação que o `maxLength` do campo tem com o
+limite de 200 caracteres do Adendo 1.
+
+**`⌘` é aceito, e isto relaxa o Adendo 2.** A proibição continua escrita onde ela
+nasceu: no argumento do **padrão**, e o teste que a prende passou a falar do padrão.
+Uma combinação com `⌘` escolhida pelo usuário rouba do navegador em foco a tecla
+equivalente — e a tela diz isso na hora, em vez de recusar. Quem decide o que vale
+mais naquela máquina é ele.
+
+## Comandos IPC novos
+
+| Comando | Args (JS) | Retorno | Erro |
+|---|---|---|---|
+| `get_shortcut` | — | `GlobalShortcut` | `string` |
+| `set_shortcut` | `{ accelerator: string }` | `GlobalShortcut` (o estado novo) | `string` se a combinação é inválida, não tem modificador, ou o sistema recusou o registro |
+| `pause_shortcut` | `{ paused: boolean }` | `GlobalShortcut` (o estado depois) | — (nunca falha para cima) |
+
+```ts
+type GlobalShortcut = {
+  accelerator: string;         // canônico: "control+alt+KeyT"
+  label: string;               // para os olhos: "⌃⌥T" no Mac, "Ctrl+Alt+T" fora
+  default_accelerator: string; // o padrão de fábrica
+  active: boolean;             // o sistema aceitou o registro
+  remembered: boolean;         // a escolha chegou ao disco
+};
+```
+
+**A ordem de `set_shortcut` é registrar o novo e só depois soltar o antigo.** Se o
+sistema recusar a combinação nova, o comando devolve erro e **o atalho anterior
+continua registrado e funcionando** — soltar primeiro deixaria o usuário sem atalho
+nenhum como preço de uma tentativa. A mensagem na tela diz o que continua valendo, e
+não só o que falhou.
+
+**`remembered: false` é o caso sutil**, e existe pela mesma razão que
+`error.tabRemember`: o atalho vale nesta execução e a próxima abertura volta à
+combinação anterior. Dizer "pronto" quando só metade valeu é falha silenciosa.
+
+## O defeito da primeira versão: a captura escutava no elemento
+
+**Relato do usuário: "não reconhece o que estou apertando."** O capturador era um
+`button` com `onKeyDown`, o que amarra a captura ao foco de teclado — e **no WebKit do
+macOS um clique num `button` não dá foco a ele** (é o motivo de existir o "acesso
+completo por teclado" nas preferências do sistema). O painel abria, dizia "aperte as
+teclas" e não via nenhuma: elas iam para o campo de nova tarefa, que continua montado
+atrás do painel.
+
+**A captura passou a escutar na janela, em fase de captura.** O painel vê a tecla antes
+de qualquer campo, de qualquer lugar da interface, sem depender de foco nenhum — e isso
+tira também o clique que era cobrado antes de apertar a combinação: com o painel aberto,
+o primeiro modificador apertado já começa a captura. O anel de foco no capturador
+continua sendo pedido no clique, mas só como indicador de onde o painel está ouvindo.
+
+**Tecla sem modificador continua passando.** Só modificador (ou combinação com
+`⌃`/`⌥`/`⌘`) começa a captura, então digitar letras com o painel aberto segue chegando
+ao campo. O preço assumido é que um `⌘A` com o painel aberto vira escolha de atalho em
+vez de "selecionar tudo" — o painel existe para pegar teclas, e sai com um `Escape`.
+
+**A leitura do atalho não pode derrubar a lista, nem travar a engrenagem.** O
+`get_shortcut` da carga inicial tem `catch` próprio: ele é a menos importante das quatro
+leituras, e uma falha nele viraria "não foi possível carregar suas tarefas" com as
+tarefas intactas no disco. Em troca, abrir o painel é a **segunda chance** da leitura —
+sem isso, uma falha de IPC na abertura deixaria a engrenagem clicando sem fazer nada
+pelo resto da execução, que é o defeito que ninguém reporta como defeito.
+
+## `pause_shortcut` — o atalho engole as próprias teclas
+
+**Um atalho global é consumido pelo sistema antes de chegar à webview.** Com `⌃⌥T`
+registrado, apertar `⌃⌥T` no capturador **esconde a janela** em vez de escolher a
+combinação — e reconfirmar a tecla que já vale é justamente o gesto de quem quer
+testá-la. Sem suspender, a única combinação que o painel não conseguiria capturar
+seria a que ele existe para mostrar.
+
+Então o registro sai da mão do sistema enquanto o capturador escuta, e volta quando
+ele para. Três regras que isso impõe:
+
+- **A devolução vive na limpeza do efeito, não num handler.** Ela precisa acontecer em
+  todo caminho de saída da captura, inclusive nos que ainda não existem: salvar,
+  `Escape`, clicar fora, fechar o painel, a janela perder o foco, desmontar. Um
+  caminho que esquecesse de devolver deixaria o usuário sem atalho até reiniciar o
+  app — a pior falha possível nesta tela.
+- **A janela perder o foco encerra a captura.** Senão o atalho ficaria suspenso com a
+  janela escondida, que é o único estado em que a pessoa mais precisa dele. Durante a
+  suspensão, o ícone da bandeja é a via de volta — o papel que ele tem desde o Adendo 2.
+- **Suspenso não é "não está valendo".** São dois estados diferentes no backend:
+  `active` continua `true` durante a suspensão, senão o aviso de "outro aplicativo
+  tomou a combinação" apareceria por dois segundos a cada captura, dizendo uma coisa
+  que não é verdade. Trocar a combinação encerra a suspensão junto — a nova já foi
+  registrada, e devolver duas vezes o mesmo registro é o erro que a tela leria como
+  combinação tomada.
+
+**`active: false` é a falha da abertura, que antes só ia para o `stderr`.** A
+combinação gravada pode ter sido tomada por outro aplicativo desde a última execução;
+o app continua subindo (Adendo 2 não muda), mas agora a janela sabe e diz — uma tela
+que ensina uma tecla morta é a pior versão deste app.
+
+## O rótulo para os olhos nasce só no backend
+
+Antes havia duas escritas da mesma frase: `ATALHO_VISIVEL` no Rust, para o tray, e
+`TOGGLE_SHORTCUT` no TypeScript, para a janela. Eram duas constantes que alguém tinha
+que lembrar de trocar juntas — e com a combinação virando dado, elas divergiriam no
+primeiro atalho que não fosse o padrão: o menu do tray anunciaria uma tecla e a janela
+outra.
+
+Agora o backend descreve (`label`) e o frontend mostra o que recebeu. O `label` segue
+a convenção do sistema: símbolos na ordem da Apple (`⌃⌥⇧⌘`) no macOS, palavras fora
+dele — o que o Adendo 6 já estabeleceu, agora num lugar só.
+
+**O item do menu do tray é reescrito a cada troca.** O handle do `MenuItem` fica no
+estado do app: sem ele, o menu continuaria anunciando a tecla que valia quando o
+ícone nasceu.
+
+## Frontend — o painel
+
+**Ocupa o lugar da lista, e não uma camada por cima dela.** O `DESIGN.md` não tem
+modal, popover nem sombra interna, e uma janela de 360x480 não tem espaço para uma
+segunda superfície flutuando dentro da primeira. O painel entra onde a lista estava,
+como os dois estados vazios já entram: mesma área elástica, mesma animação de
+chegada, zero altura permanente gasta.
+
+- **Entrada:** engrenagem no cabeçalho, ao lado do botão de esconder — é o mesmo
+  assunto, as duas teclas que fazem a janela ir e voltar. `aria-expanded`, porque é
+  alternador de vista.
+- **A captura é a interface.** Não há campo onde escrever "Ctrl+Alt+T" nem menus de
+  modificador: o gesto é apertar a combinação que se quer. É o único gesto que não
+  exige aprendizado, e o único que prova na hora que a tecla existe naquele teclado.
+- **Prévia dos modificadores.** Enquanto a tecla principal não chega, o campo mostra
+  o que já está apertado (`⌃⌥`). Sem isso, ele fica parado dizendo "aperte as teclas"
+  enquanto a pessoa já está apertando.
+- **Toda resposta é no painel**, e não na faixa de aviso lá em cima: as quatro
+  respostas possíveis (aceita, já tomada, sem modificador, não será lembrada) são
+  frases embaixo do campo, onde a pessoa está olhando.
+- **O painel é a camada de fora do Escape:** com ele aberto, `Escape` fecha o painel
+  e não a janela. As teclas de aba (`⌘T`, `⌘1`–`⌘9`, `Ctrl+Tab`) ficam desligadas
+  enquanto ele está aberto, e a captura para a propagação do evento — `⌘T` não pode
+  criar uma aba enquanto a pessoa está dizendo que quer usar `⌘T`.
+- **O foco de janela não rouba o capturador:** o `onFocusChanged` que devolve o cursor
+  ao campo de nova tarefa (Adendo 4) para de agir com o painel aberto, senão voltar ao
+  app cancelaria a combinação sendo apertada.
+
+Chaves novas no dicionário: `shortcut.*` (14, nas duas línguas). A regra da combinação
+tem duas frases — `shortcut.needsModifierMac` e `...Other` — pela mesma decisão de
+`tray.place*`: "⌃, ⌥ ou ⌘" numa tela de Windows não nomeia tecla nenhuma.
+
+## Definição de pronto (adicional)
+
+- `npm run build` passa sem erros; `cargo check` e `cargo test` continuam limpos.
+- Trocar o atalho vale **na hora**, sem reiniciar o app, e o menu do tray passa a
+  anunciar a combinação nova.
+- A escolha atravessa o fechamento do app; um `atalho.json` ilegível cai no padrão.
+- Uma combinação recusada pelo sistema **não** deixa o app sem atalho: o anterior
+  continua valendo, e a tela diz qual é.
+- Sair da captura por qualquer caminho devolve o atalho ao sistema. Nenhuma sequência
+  de abrir painel, apertar teclas e desistir deixa o app sem atalho registrado.
+- A combinação que já está valendo pode ser reconfirmada no capturador sem que a
+  janela se esconda no meio do gesto.
+- Nenhuma frase da interface anuncia uma combinação diferente da que está registrada
+  — inclusive o menu do tray, inclusive depois de trocar.

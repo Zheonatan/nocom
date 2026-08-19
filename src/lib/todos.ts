@@ -14,20 +14,17 @@ export const TITLE_MAX_LENGTH = 200;
 export const TAB_NAME_MAX_LENGTH = 40;
 
 /**
- * O atalho do Adendo 2 escrito para os olhos do usuário, **na convenção do
- * sistema em que o app está rodando**.
+ * Se o app está rodando num Mac. Decide toda escrita de tecla da interface — o
+ * macOS escreve modificadores como símbolos e todo menu do sistema faz assim,
+ * enquanto Windows e Linux escrevem por extenso, e "⌃⌥T" numa tela de Windows não
+ * significa nada.
  *
- * O macOS escreve modificadores como símbolos e todo menu do sistema faz assim;
- * Windows e Linux escrevem por extenso, e "⌃⌥T" numa tela de Windows não
- * significa nada. O backend já resolvia isto com `#[cfg]` (`ATALHO_VISIVEL` em
- * `lib.rs`) enquanto o frontend tinha o glifo fixo — então fora do Mac o menu do
- * tray dizia "Ctrl+Alt+T" e a janela dizia "⌃⌥T", para a mesma tecla.
- *
- * **As duas constantes precisam continuar de acordo.** Mudar o atalho é mexer
- * aqui e em `ATALHO_VISIVEL`, e a combinação real (`ATALHO_GLOBAL`) é sempre a
- * mesma nos três sistemas — muda só como ela é escrita.
+ * **O atalho global não passa mais por aqui.** A combinação é escolha do usuário
+ * (Adendo 9) e quem escreve o rótulo dela é o backend, que também escreve o do
+ * tray: duas escritas do mesmo dado divergiriam no primeiro atalho que não fosse o
+ * padrão. O que sobrou aqui são os atalhos da janela em foco, que são constantes.
  */
-function isMac(): boolean {
+export function isMac(): boolean {
   // Sniffing de user agent é aceitável aqui e só aqui: o app roda numa webview
   // que nós mesmos embarcamos, e o custo de errar é um glifo fora de convenção,
   // não uma função quebrada. `navigator.platform` está obsoleto e
@@ -35,11 +32,59 @@ function isMac(): boolean {
   return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-export const TOGGLE_SHORTCUT: string = isMac() ? "\u2303\u2325T" : "Ctrl+Alt+T";
+/**
+ * O modificador de comando de aplicativo, escrito na convenção do sistema —
+ * `⌘` no Mac, `Ctrl+` fora dele. Mesma decisão do `isMac` acima, mesmo lugar.
+ *
+ * Note que **não é o mesmo modificador do atalho global**: o padrão daquele é `⌃⌥`
+ * nos três sistemas de propósito (Adendo 2), porque um atalho global vence o app em
+ * foco e sequestrar `⌘` seria roubar teclas que o usuário usa o dia inteiro — e o
+ * padrão é o que vale para quem nunca abriu o painel. Estes aqui valem só com a
+ * janela em foco, então podem usar a tecla que cada sistema reserva justamente para
+ * comandos de aplicativo, sem escolha nenhuma a fazer.
+ */
+const MOD_LABEL: string = isMac() ? "\u2318" : "Ctrl+";
+
+/**
+ * As teclas de aba, escritas para os olhos. São idiomas de navegador de propósito
+ * — `⌘1`, `⌘T`, `Ctrl+Tab` — porque a faixa de abas é a coisa mais parecida com
+ * abas de navegador que existe nesta janela, e um atalho que já se sabe não
+ * precisa ser aprendido.
+ */
+export const NEW_TAB_SHORTCUT: string = `${MOD_LABEL}T`;
+
+/** `⌘1`, `⌘2`, … — o salto direto para a n-ésima aba da faixa. */
+export function tabShortcut(posicao: number): string {
+  return `${MOD_LABEL}${posicao}`;
+}
+
+/**
+ * Quantas abas a faixa alcança por tecla. Nove porque `{MOD}0` não segue de `9`
+ * em convenção nenhuma, e uma décima tecla sem nome seria um atalho que só quem
+ * escreveu conhece. Da décima aba em diante o caminho é `Ctrl+Tab` ou o clique.
+ */
+export const TAB_SHORTCUT_LIMIT = 9;
+
+/**
+ * O modificador de comando de aplicativo apertado, para os atalhos com a janela
+ * em foco. `⌘` no Mac e `Ctrl` fora dele — a convenção de cada sistema, do lado
+ * do teclado e não só do letreiro.
+ *
+ * Recusa a combinação com os DOIS apertados: `⌃⌘1` não é `⌘1`, e tratar como se
+ * fosse tornaria imprevisível qualquer atalho de sistema que use as duas teclas.
+ */
+export function hasModKey(evento: {
+  metaKey: boolean;
+  ctrlKey: boolean;
+}): boolean {
+  return isMac()
+    ? evento.metaKey && !evento.ctrlKey
+    : evento.ctrlKey && !evento.metaKey;
+}
 
 /**
  * Onde o ícone da bandeja fica, escrito na convenção do sistema — a mesma
- * decisão do `TOGGLE_SHORTCUT`, e por isso o vizinho dele.
+ * decisão do `isMac`, e por isso o vizinho dele.
  *
  * O estado vazio da primeira execução aponta para o ícone como a segunda via de
  * volta, e apontar para o lugar errado da tela é pior que não apontar: no Mac o
@@ -76,6 +121,27 @@ export type Tab = {
   name: string;
   /** epoch millis */
   created_at: number;
+};
+
+/**
+ * Espelha o struct `Descricao` de `atalho.rs` — o atalho global como ele está
+ * agora (Adendo 9).
+ *
+ * `label` é o único texto de atalho que a interface mostra, e vem escrito do
+ * backend de propósito: é ele quem também escreve o rótulo do item do tray, e duas
+ * escritas do mesmo dado divergiriam no primeiro atalho que não fosse o padrão.
+ */
+export type GlobalShortcut = {
+  /** Canônico (`control+alt+KeyT`). Serve para comparar e para reenviar; não é texto de tela. */
+  accelerator: string;
+  /** A combinação para os olhos, na convenção do sistema (`⌃⌥T`, `Ctrl+Alt+T`). */
+  label: string;
+  /** O padrão de fábrica, para o painel poder oferecer "restaurar" sem uma segunda cópia da constante. */
+  default_accelerator: string;
+  /** O sistema aceitou o registro? `false` significa que a combinação não faz nada. */
+  active: boolean;
+  /** A escolha chegou ao disco? `false` = vale nesta execução e não na próxima. */
+  remembered: boolean;
 };
 
 /** O que `close_tab` devolve: exatamente o que apagou, para o desfazer repor. */
@@ -164,6 +230,60 @@ export function setActiveTab(id: string): Promise<void> {
 
 export function getActiveTab(): Promise<string> {
   return invoke<string>("get_active_tab");
+}
+
+/**
+ * Onde o `todos.json` ilegível da abertura foi guardado, ou `null` — que é a
+ * resposta em toda abertura normal.
+ *
+ * Existe porque um arquivo que o backend não entende faz o app abrir com uma aba
+ * vazia, e **uma lista vazia é indistinguível de uma lista perdida**. O arquivo
+ * antigo é movido para o lado antes de qualquer gravação; isto é a metade que
+ * conta o fato para a tela, que é o que o Princípio 5 exige.
+ *
+ * Devolve **caminho, não frase**: a mensagem é montada aqui, em `error.rescued`,
+ * na língua da interface (Adendo 6).
+ */
+export function getStartupRescue(): Promise<string | null> {
+  return invoke<string | null>("get_startup_rescue");
+}
+
+/**
+ * O atalho global como ele está agora. Chamado uma vez, na carga inicial, junto das
+ * abas e das tarefas: as frases que ensinam a via de volta não podem aparecer na
+ * tela antes de saber qual é a tecla.
+ */
+export function getShortcut(): Promise<GlobalShortcut> {
+  return invoke<GlobalShortcut>("get_shortcut");
+}
+
+/**
+ * Troca a combinação. Recebe o acelerador canônico (`control+alt+KeyT`) montado
+ * pelo `event.code` da tecla apertada — ver `lib/shortcut.ts`.
+ *
+ * **Rejeita sem trocar nada**: o backend registra a nova antes de soltar a antiga,
+ * então uma combinação que o sistema recusa (outro aplicativo já a tomou) deixa o
+ * atalho anterior valendo. A resposta é o estado completo, inclusive `remembered`
+ * — que é `false` no caso sutil de o atalho valer agora e não na próxima abertura.
+ */
+export function setShortcut(accelerator: string): Promise<GlobalShortcut> {
+  return invoke<GlobalShortcut>("set_shortcut", { accelerator });
+}
+
+/**
+ * Suspende (e devolve) o atalho global enquanto o painel captura teclas.
+ *
+ * **Um atalho global é consumido pelo sistema antes de chegar à webview**: com `⌃⌥T`
+ * registrado, apertar `⌃⌥T` no capturador esconderia a janela em vez de escolher a
+ * combinação — e reconfirmar a tecla que já vale é justamente o gesto de quem quer
+ * testá-la. Enquanto o painel escuta, o registro sai da mão do sistema.
+ *
+ * Não rejeita por falha de registro: devolve o estado, e um `active: false` no
+ * retorno é a combinação tendo sido tomada por outro aplicativo nesses segundos.
+ * Durante a suspensão, o ícone da bandeja é a via de volta — como sempre foi.
+ */
+export function pauseShortcut(paused: boolean): Promise<GlobalShortcut> {
+  return invoke<GlobalShortcut>("pause_shortcut", { paused });
 }
 
 export function hideWindow(): Promise<void> {

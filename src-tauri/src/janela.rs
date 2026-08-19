@@ -50,7 +50,7 @@ struct Estado {
 
 impl Janela {
     pub fn abrir(arquivo: PathBuf) -> Self {
-        let gravada: Option<Posicao> = persistencia::ler(&arquivo);
+        let gravada: Option<Posicao> = persistencia::ler_opcional(&arquivo);
         Self {
             estado: Mutex::new(Estado {
                 atual: gravada,

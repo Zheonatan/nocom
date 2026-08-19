@@ -101,6 +101,136 @@ textarea {
   }
 }
 
+/* A faixa de abas continua além da vista, e é preciso dizer isso.
+
+   A barra de rolagem foi tirada acima por uma razão de layout (ela comeria a
+   altura do texto do chip numa faixa de 28px), e com ela foi embora a única pista
+   de que existem mais abas do que as visíveis: com três ou quatro nomes longos,
+   as outras respondem por atalho e por clique e não aparecem em lugar nenhum.
+
+   O que fica no lugar é um esmaecimento de 20px na beirada por onde a faixa
+   continua. Não é sombra nem borda — é a própria tinta do chip se apagando, feita
+   com `mask-image`, então não gasta cor, não gasta um pixel de altura e funciona
+   igual nos dois temas sem nenhum token novo. Um chip cortado ao meio pelo degradê
+   é exatamente a leitura desejada: tem mais coisa desse lado.
+
+   `data-overflow` é escrito pelo JS porque CSS não sabe medir transbordo. Os
+   valores são os quatro estados possíveis, e a ausência do atributo é o caso
+   comum: cabe tudo, nada é mascarado. */
+.tab-scroller[data-overflow="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+}
+.tab-scroller[data-overflow="start"] {
+  mask-image: linear-gradient(to right, transparent, #000 20px);
+}
+.tab-scroller[data-overflow="both"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 20px,
+    #000 calc(100% - 20px),
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   MOVIMENTO
+
+   Três coisas se mexem sozinhas nesta janela, e são exatamente as três que o app
+   anima: a tinta que assenta no checkbox, a linha que muda de lugar por causa
+   dela, e a faixa de aviso que toma altura da lista sem ninguém ter pedido.
+
+   A razão de a lista ser tão curta é o ciclo do produto — ⌃⌥T → digitar → Enter
+   → ⌃⌥T, dezenas de vezes por dia. Movimento no caminho de abrir a janela, de
+   trocar de aba ou de acrescentar uma tarefa não é acabamento; é latência com
+   outro nome. O que se anima aqui é só o que mudou de lugar por conta própria,
+   e sempre abaixo de 200ms.
+--------------------------------------------------------------------------- */
+
+/* Tudo que passa a ocupar a área da lista CHEGA do mesmo jeito: uma linha nova,
+   a lista inteira ao trocar de aba, o estado vazio que substitui a última
+   tarefa. Um vocabulário só — a área da lista é a única região do app onde o
+   conteúdo troca de identidade, e três formas diferentes de aparecer nela
+   seriam três coisas a aprender numa janela que não ensina nada.
+
+   Sob `prefers-reduced-motion` a chegada perde os 4px e mantém a opacidade. O
+   que incomoda é o deslocamento espacial; apagar o aviso de que algo apareceu
+   seria tirar informação, não movimento. */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes arrive-in-place {
+  from {
+    opacity: 0;
+  }
+}
+.arrive {
+  animation: arrive 150ms var(--motion-settle);
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrive {
+    animation: arrive-in-place 120ms linear;
+  }
+}
+
+/* O CHECK QUE SE DESENHA — o momento autoral do app.
+
+   Concluir uma tarefa é o único preenchimento sólido de toda a interface
+   (DESIGN.md, "Grafite"): num sistema de croma 0, é o gesto mais afirmativo que
+   existe aqui. O fundo do quadrado já atravessava para `primary` em 150ms pelo
+   `transition-colors`; a marca em cima dele APARECIA seca, e o descompasso fazia
+   o check parecer um carimbo colado sobre uma cor que ainda estava chegando.
+
+   Agora ela é desenhada. O traço é a segunda matéria do sistema — "profundidade
+   é feita por tom e por linha" —, então a marca nasce como qualquer outra linha
+   daqui: riscada.
+
+   A matemática do tracejado: o path do CheckIcon é `M20 6 9 17l-5-5`, ou seja
+   vai de (20,6) — a ponta ALTA — até (4,12), passando pelo canto (9,17); ~22.7
+   unidades no viewBox de 24. `stroke-dasharray: 24 24` cria um traço maior que o
+   path inteiro seguido de um vão do mesmo tamanho, e o `stroke-dashoffset`
+   escolhe qual dos dois cai em cima do desenho.
+
+   O offset é **negativo**, e o sinal é a decisão inteira. Offset positivo revela
+   o path a partir do começo dele — que é a ponta alta —, e aí a marca cresce de
+   cima para baixo e o braço curto só aparece nos últimos 15%, num piparote.
+   Medido na tela, é feio. Com o offset indo de `-24` a `0`, o vão sai pelo outro
+   lado: o traço nasce na ponta do braço curto, desce até o canto e sobe até a
+   ponta alta — a ordem em que uma mão desenha um check, e que termina na
+   subida longa em vez de terminar num tique.
+
+   Sem `stroke-dashoffset` na regra base de propósito: o valor de repouso é o 0
+   padrão do SVG, isto é, o check inteiro. `backwards` segura o `-24` durante os
+   30ms de atraso, a animação percorre até 0, e quando ela acaba o desenho fica
+   onde estava — sem `forwards`, sem fill preso e sem a marca sumir no fim.
+
+   Só na entrada. Desmarcar não é comemoração, é correção: o Radix desmonta o
+   indicador na hora e o quadrado esvazia em 75ms (ver `checkbox.tsx`). A
+   assimetria é a mensagem. */
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: -24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+[data-slot="checkbox-indicator"] svg {
+  stroke-dasharray: 24 24;
+  /* Os 30ms de atraso existem para a tinta do fundo sair na frente: primeiro o
+     quadrado enche, depois a marca é feita. */
+  animation: check-draw 160ms var(--motion-settle) 30ms backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="checkbox-indicator"] svg {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 @theme inline {
   /* Os três tamanhos do sistema (DESIGN.md, "A Regra dos Três Tamanhos").
      Estavam escritos como valores arbitrários (`text-[0.8125rem]`) em seis
@@ -113,6 +243,10 @@ textarea {
      diferentes que o preset tratava como uma: a decorativa pode ser discreta,
      a funcional responde por WCAG 1.4.11 e precisa de 3:1. */
   --color-control-border: var(--control-border);
+  /* A curva de chegada do sistema (`ease-settle`). Desaceleração exponencial:
+     a coisa sai rápido e encosta devagar, que é como algo POUSA. Uma curva com
+     volta (bounce, elastic) prometeria brincadeira num app que não brinca. */
+  --ease-settle: var(--motion-settle);
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -190,6 +324,10 @@ textarea {
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  /* Declarada aqui, e não só no `@theme inline`, porque o CSS escrito à mão
+     acima (a chegada, o desenho do check) também precisa dela em runtime —
+     `@theme inline` embute o valor nas utilidades e não emite a variável. */
+  --motion-settle: cubic-bezier(0.16, 1, 0.3, 1);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);

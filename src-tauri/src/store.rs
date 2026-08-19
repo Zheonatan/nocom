@@ -12,7 +12,7 @@
 //! esse instante é justamente o que o processo pode ser morto no meio.
 
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -104,6 +104,10 @@ struct TodoAntigo {
 pub struct Store {
     estado: Mutex<Estado>,
     arquivo: PathBuf,
+    /// Onde o arquivo ilegível da abertura foi guardado, se houve um. Lido uma
+    /// vez pela tela, para o usuário saber que a lista não foi perdida e onde ela
+    /// está. `None` na esmagadora maioria das aberturas.
+    resgate: Option<String>,
 }
 
 impl Store {
@@ -113,9 +117,18 @@ impl Store {
     /// um objeto JSON e o antigo é um array, então nenhum dos dois é aceito pelo
     /// desserializador do outro e não há como confundi-los.
     ///
-    /// **Ausente ou corrompido vira uma aba "Tarefas" vazia**, e não pânico: o
-    /// arquivo é estado local, e derrubar o aplicativo por causa de um JSON
-    /// truncado deixaria o usuário sem app e sem as tarefas.
+    /// **Ausente vira uma aba "Tarefas" vazia. Ilegível vira a mesma aba, mas o
+    /// arquivo sai do caminho primeiro** — e é aí que está a diferença que
+    /// importa. Enquanto os dois casos eram o mesmo `None`, um `todos.json` que o
+    /// desserializador não entendia abria como instalação nova, sem aviso nenhum,
+    /// e a primeira tarefa digitada gravava por cima da única cópia da lista do
+    /// usuário. Derrubar o app não é a resposta (ele é a única via de acesso às
+    /// tarefas), mas abrir em silêncio e apagar em seguida é pior: o PRODUCT.md
+    /// declara "nenhum caminho pode apagar tarefa antiga" como a única falha
+    /// inaceitável.
+    ///
+    /// Então o ilegível é **preservado** ao lado, com o caminho guardado em
+    /// `resgate` para a tela poder dizer o que aconteceu. Falha faz barulho.
     ///
     /// Nada é gravado aqui. Uma migração que gravasse na abertura trocaria o
     /// arquivo antigo pelo novo antes de o usuário ter feito nada — e se a
@@ -123,14 +136,50 @@ impl Store {
     /// sido substituído. Convertido em memória, o arquivo antigo continua
     /// intacto no disco até a primeira mutação de verdade.
     pub fn abrir(arquivo: PathBuf) -> Self {
-        let mut estado = persistencia::ler::<Estado>(&arquivo)
-            .or_else(|| persistencia::ler::<Vec<TodoAntigo>>(&arquivo).map(migrar))
-            .unwrap_or_default();
+        let (mut estado, resgate) = Self::carregar(&arquivo);
         normalizar(&mut estado);
         Self {
             estado: Mutex::new(estado),
             arquivo,
+            resgate,
         }
+    }
+
+    /// As três respostas possíveis do disco, cada uma com o seu desfecho.
+    ///
+    /// O formato antigo só é tentado quando o novo saiu `Ilegivel`: um array de
+    /// tarefas não é aceito pelo desserializador do `Estado`, então "ilegível como
+    /// formato novo" é justamente o sinal de que talvez seja o formato anterior.
+    /// `Ausente` não tenta nada — não há bytes para interpretar de duas maneiras.
+    fn carregar(arquivo: &Path) -> (Estado, Option<String>) {
+        match persistencia::ler::<Estado>(arquivo) {
+            persistencia::Leitura::Lido(estado) => (estado, None),
+            persistencia::Leitura::Ausente => (Estado::default(), None),
+            persistencia::Leitura::Ilegivel => {
+                if let persistencia::Leitura::Lido(antigos) =
+                    persistencia::ler::<Vec<TodoAntigo>>(arquivo)
+                {
+                    return (migrar(antigos), None);
+                }
+                // Nenhum dos dois formatos. O arquivo sai do caminho ANTES de a
+                // primeira mutação poder gravar por cima dele.
+                let resgate = persistencia::preservar(arquivo)
+                    .map(|caminho| caminho.display().to_string());
+                (Estado::default(), resgate)
+            }
+        }
+    }
+
+    /// Onde o arquivo ilegível da abertura foi guardado, ou `None`. A tela mostra
+    /// isso uma vez, na carga inicial: um app que abriu vazio porque não entendeu
+    /// o arquivo tem que dizer, senão ele é indistinguível de um app que perdeu
+    /// tudo — e o Princípio 5 do produto proíbe exatamente essa confusão.
+    ///
+    /// Devolve o **caminho**, e não uma frase: as mensagens são do frontend desde
+    /// o Adendo 6, e um texto em português vindo do Rust apareceria numa interface
+    /// em inglês.
+    pub fn resgate(&self) -> Option<String> {
+        self.resgate.clone()
     }
 
     // --- abas ---
@@ -2633,6 +2682,206 @@ mod tests_migracao {
             );
             assert_eq!(store.listar_tudo().expect("listar tudo").len(), 1);
         }
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+}
+
+/// **O arquivo que o app não entende.** Estes testes existem por causa de uma
+/// falha real do caminho de abertura: `ler` devolvia `None` tanto para "não há
+/// arquivo" quanto para "não entendi o arquivo", os dois casos abriam uma aba
+/// "Tarefas" vazia sem aviso nenhum, e a primeira tarefa digitada gravava por
+/// cima da única cópia da lista do usuário.
+///
+/// O PRODUCT.md declara "nenhum caminho pode apagar tarefa antiga" como a única
+/// falha inaceitável do produto, e o Princípio 5 proíbe que um erro seja
+/// indistinguível de perda de dados. Estes testes prendem as duas metades da
+/// correção: o arquivo sai do caminho, e o fato é contável para a tela.
+#[cfg(test)]
+mod tests_resgate {
+    use super::*;
+    use std::fs;
+
+    fn diretorio_limpo(nome: &str) -> PathBuf {
+        let diretorio =
+            std::env::temp_dir().join(format!("minitodo-resgate-{nome}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&diretorio);
+        let _ = fs::remove_file(&diretorio);
+        fs::create_dir_all(&diretorio).expect("criar o diretório");
+        diretorio
+    }
+
+    /// Um JSON truncado no meio — o que sobra de uma gravação interrompida antes
+    /// de o `sync_all` e o rename existirem, ou de uma edição à mão malfeita.
+    const TRUNCADO: &str = r#"{ "tabs": [ { "id": "a", "name": "Tarefas", "created"#;
+
+    /// **O teste que fecha o caminho de perda.** A lista ilegível é movida para
+    /// um arquivo ao lado, e não fica onde a próxima gravação vai passar.
+    #[test]
+    fn arquivo_ilegivel_e_guardado_de_lado_antes_de_qualquer_gravacao() {
+        let diretorio = diretorio_limpo("guardado");
+        let arquivo = diretorio.join("todos.json");
+        fs::write(&arquivo, TRUNCADO).expect("gravar o arquivo torto");
+
+        let store = Store::abrir(arquivo.clone());
+        let backup = diretorio.join("todos.corrupt.json");
+
+        assert!(
+            backup.exists(),
+            "o arquivo ilegível precisa ter sido preservado"
+        );
+        assert_eq!(
+            fs::read_to_string(&backup).expect("ler o backup"),
+            TRUNCADO,
+            "o backup precisa ser byte a byte o que estava no disco"
+        );
+        assert!(
+            !arquivo.exists(),
+            "o ilegível sai do caminho: quem fica ali é o arquivo novo, criado na \
+             primeira mutação"
+        );
+
+        // A primeira mutação de verdade grava um arquivo novo — e não toca no
+        // backup, que é o único lugar onde a lista antiga ainda existe.
+        let aba = store.listar_abas().expect("listar abas")[0].id.clone();
+        store.acrescentar("a primeira depois do estrago", &aba).expect("acrescentar");
+        assert!(arquivo.exists(), "a mutação grava um todos.json novo");
+        assert_eq!(
+            fs::read_to_string(&backup).expect("ler o backup"),
+            TRUNCADO,
+            "gravar não pode encostar no backup"
+        );
+    }
+
+    /// A outra metade: o fato chega à tela. Sem isto, o app abre vazio em
+    /// silêncio e o usuário não tem como distinguir isso de ter perdido tudo.
+    #[test]
+    fn o_caminho_do_resgate_e_contavel_para_a_tela() {
+        let diretorio = diretorio_limpo("contavel");
+        let arquivo = diretorio.join("todos.json");
+        fs::write(&arquivo, TRUNCADO).expect("gravar o arquivo torto");
+
+        let store = Store::abrir(arquivo);
+        let resgate = store.resgate().expect("a abertura ilegível precisa relatar");
+        assert!(
+            resgate.ends_with("todos.corrupt.json"),
+            "o resgate precisa apontar para o backup de verdade, e não para uma \
+             frase: {resgate}"
+        );
+    }
+
+    /// **Abertura normal não relata nada.** Um aviso em toda abertura viraria
+    /// ruído, e ruído é o que faz um aviso de verdade não ser lido.
+    #[test]
+    fn abertura_normal_e_primeira_execucao_nao_relatam_resgate() {
+        let diretorio = diretorio_limpo("silencio");
+
+        // Primeira execução: não há arquivo.
+        let store = Store::abrir(diretorio.join("todos.json"));
+        assert!(store.resgate().is_none(), "arquivo ausente não é resgate");
+        let aba = store.listar_abas().expect("listar abas")[0].id.clone();
+        store.acrescentar("uma tarefa", &aba).expect("acrescentar");
+        drop(store);
+
+        // Segunda abertura: o arquivo existe e é legível.
+        let store = Store::abrir(diretorio.join("todos.json"));
+        assert!(store.resgate().is_none(), "arquivo legível não é resgate");
+        assert_eq!(store.listar_tudo().expect("listar").len(), 1);
+    }
+
+    /// Um arquivo de zero byte é o que sobra de uma gravação que morreu antes de
+    /// escrever qualquer coisa. Não há lista nenhuma ali para preservar, e tratá-lo
+    /// como resgate mandaria o usuário procurar tarefas num arquivo vazio.
+    #[test]
+    fn arquivo_vazio_e_primeira_execucao_e_nao_resgate() {
+        let diretorio = diretorio_limpo("vazio");
+        let arquivo = diretorio.join("todos.json");
+        fs::write(&arquivo, "   \n").expect("gravar o vazio");
+
+        let store = Store::abrir(arquivo);
+        assert!(store.resgate().is_none());
+        assert_eq!(store.listar_abas().expect("listar abas").len(), 1);
+    }
+
+    /// **O formato antigo continua sendo migrado, e não resgatado.** Ele é um
+    /// array e falha como formato novo — se o resgate se metesse antes da segunda
+    /// tentativa, atualizar o app viraria "sua lista está num arquivo ao lado".
+    #[test]
+    fn o_formato_antigo_e_migrado_e_nunca_tratado_como_ilegivel() {
+        let diretorio = diretorio_limpo("antigo");
+        let arquivo = diretorio.join("todos.json");
+        fs::write(
+            &arquivo,
+            r#"[{ "id": "x", "title": "pão", "done": false, "created_at": 10 }]"#,
+        )
+        .expect("gravar o formato antigo");
+
+        let store = Store::abrir(arquivo);
+        assert!(store.resgate().is_none(), "migração não é resgate");
+        assert!(
+            !diretorio.join("todos.corrupt.json").exists(),
+            "migração não move arquivo nenhum de lugar"
+        );
+        assert_eq!(store.listar_tudo().expect("listar").len(), 1);
+    }
+
+    /// **Um backup existente nunca é sobrescrito.** Se o app abrir ilegível duas
+    /// vezes, o primeiro backup é o que tem mais chance de conter a lista inteira
+    /// — e o caminho relatado continua sendo o dele, porque é para lá que o
+    /// usuário precisa ser mandado.
+    #[test]
+    fn o_primeiro_backup_sobrevive_a_um_segundo_estrago() {
+        let diretorio = diretorio_limpo("dois");
+        let arquivo = diretorio.join("todos.json");
+        let backup = diretorio.join("todos.corrupt.json");
+
+        fs::write(&arquivo, TRUNCADO).expect("gravar o primeiro estrago");
+        let primeira = Store::abrir(arquivo.clone());
+        assert!(primeira.resgate().is_some());
+        drop(primeira);
+
+        fs::write(&arquivo, "outro estrago, outro dia").expect("gravar o segundo");
+        let segunda = Store::abrir(arquivo);
+        assert!(
+            segunda.resgate().is_some(),
+            "o segundo estrago também precisa ser relatado"
+        );
+        assert_eq!(
+            fs::read_to_string(&backup).expect("ler o backup"),
+            TRUNCADO,
+            "o backup preservado precisa continuar sendo o PRIMEIRO"
+        );
+    }
+}
+
+/// A gravação em si: temporário, `sync_all`, rename. O que estes testes prendem é
+/// o desfecho observável — o arquivo final íntegro e nenhum `.tmp` sobrando —,
+/// porque a durabilidade contra queda de energia não é testável em processo.
+#[cfg(test)]
+mod tests_gravacao {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn a_gravacao_nao_deixa_temporario_para_tras() {
+        let diretorio =
+            std::env::temp_dir().join(format!("minitodo-tmp-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&diretorio);
+        let arquivo = diretorio.join("todos.json");
+        let store = Store::abrir(arquivo.clone());
+        let aba = store.listar_abas().expect("listar abas")[0].id.clone();
+        store.acrescentar("uma tarefa", &aba).expect("acrescentar");
+
+        assert!(arquivo.exists());
+        assert!(
+            !diretorio.join("todos.json.tmp").exists(),
+            "o temporário é renomeado, não copiado: sobrar um significa que o \
+             rename não aconteceu"
+        );
+        // E o que ficou no disco é lido de volta inteiro.
+        let relido = Store::abrir(arquivo);
+        assert!(relido.resgate().is_none(), "o que gravamos tem que ser legível");
+        assert_eq!(relido.listar_tudo().expect("listar").len(), 1);
 
         let _ = fs::remove_dir_all(&diretorio);
     }

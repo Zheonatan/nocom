@@ -188,6 +188,9 @@ nunca vaza pela borda. Uma linha que desliza 180ms até o novo lugar em vez de s
 - Controles discretos que se revelam no hover **e no foco de teclado**, nunca só no mouse
 - Alvos de clique maiores que o desenho que os representa
 - Tema claro e escuro pelo sistema operacional, sem toggle
+- Movimento reservado a três coisas que se mexem sozinhas — a tinta do checkbox, a linha
+  que muda de lugar por causa dela, e a faixa de aviso que toma altura da lista; nada
+  acima de 200ms, nada no caminho de abrir a janela
 
 ## Colors
 
@@ -440,6 +443,17 @@ aparência.
   da janela inteira, e os únicos com cursor de texto. O resto usa `user-select: none`
   porque arrastar a janela e selecionar texto disputam o mesmo movimento do mouse.
 
+### Campo de nova tarefa — o contador dos últimos 20
+- Nos últimos 20 caracteres do limite, e **só** neles, aparece a conta do que resta:
+  `text-micro`, cinza, `tabular-nums`, dentro do campo à direita. Chega a zero exatamente
+  quando o campo para de aceitar.
+- **Por que existe:** o `maxLength` truncava em silêncio. Colar um parágrafo punha 200
+  caracteres no campo e jogava o resto fora sem sinal nenhum — o usuário só descobria lendo
+  a tarefa depois. Fora dos últimos 20 o contador seria mobília, e mobília não ocupa o campo
+  mais usado do app.
+- `aria-hidden`: o `maxLength` do input já é anunciado por leitor de tela, e um número solto
+  seria a mesma informação dita duas vezes, uma delas sem unidade.
+
 ### Chips (abas)
 - **Style:** 24px de altura, raio de 8px, máximo de 8.5rem de largura, texto de 12px,
   truncado com reticências e nome inteiro no `title`.
@@ -455,6 +469,20 @@ aparência.
   ARIA de abas promete navegação por setas e painel associado, e prometer sem cumprir é
   pior para leitor de tela do que um grupo honesto de botões.
 
+### Faixa de abas — transbordo
+- **A faixa esmaece na beirada por onde ela continua.** 20px de `mask-image`, no lado que
+  transborda (ou nos dois). Não é sombra nem borda: é a própria tinta do chip se apagando,
+  então não gasta cor, não gasta um pixel de altura e funciona igual nos dois temas sem
+  token novo.
+- **Por que existe:** a barra de rolagem foi tirada por razão de layout (numa faixa de 28px
+  ela comeria a altura do texto do chip), e com ela foi embora a única pista de que existem
+  mais abas do que as visíveis. Com três ou quatro nomes longos, as outras respondem por
+  atalho e por clique e não apareciam em lugar nenhum. Um chip cortado ao meio pelo degradê
+  é exatamente a leitura desejada.
+- CSS não sabe medir transbordo: `data-overflow` é escrito pelo JS (scroll, troca de aba,
+  `ResizeObserver`), e a **ausência** do atributo é o caso comum — cabe tudo, nada é
+  mascarado.
+
 ### Cards / Containers
 - **Uso:** existe **um** cartão no app inteiro, e ele é a janela. Raio de 14px, fundo
   `card`, borda de 1px, anel interno de `foreground/10`, sombra externa,
@@ -464,9 +492,19 @@ aparência.
 ### Checkbox
 - **Style:** 16px, raio de 4px, borda de 1px. Marcado, preenche com `primary` e mostra
   o check em `primary-foreground` — o único preenchimento sólido do sistema.
-- **Área de clique:** expandida por pseudo-elemento muito além do desenho — 12px acima e
-  abaixo, 16px à esquerda (até a borda interna do cartão) e 12px à direita. **Para na
-  direita de propósito:** avançar mais comeria o título e roubaria o duplo clique de editar.
+- **Marcar é o momento autoral do app, e é desenhado.** O fundo atravessa para `primary`
+  em 150ms e, 30ms depois, o check **se risca**: `stroke-dasharray: 24 24` com o
+  `stroke-dashoffset` indo de `-24` a `0` em 160ms. O sinal negativo é a decisão — ele
+  faz o traço nascer na ponta do braço curto, descer até o canto e subir até a ponta
+  alta, que é a ordem em que uma mão desenha um check. Positivo, a marca cresce ao
+  contrário e o braço curto aparece nos últimos 15%, num piparote.
+- **Desmarcar é assimétrico de propósito:** 75ms, o indicador desmonta na hora e não há
+  desenho nenhum. Marcar é afirmação; desmarcar é correção, e correção não tem cerimônia.
+- **Área de clique:** expandida por pseudo-elemento muito além do desenho, e **medida pela
+  linha**: a altura inteira da linha (uma ou duas alturas de texto), 8px à esquerda até a
+  borda interna do cartão, 44px de largura total — terminando 12px depois do quadrado.
+  **Para na direita de propósito:** avançar mais comeria o título e roubaria o duplo clique
+  de editar. Ver a Regra do Alvo Medido pela Linha.
 
 ### Lista de tarefas (componente-assinatura)
 - **Linha:** raio de 8px, padding de 8px, `hover:bg-muted/60`. Sem borda, sem separador
@@ -475,9 +513,15 @@ aparência.
   Três gestos, três alvos, sem sobreposição.
 - **Ordem de exibição:** pendentes primeiro, concluídas depois, cada grupo por data de
   criação. É regra de exibição, aplicada só na borda da renderização.
-- **Movimento (FLIP):** marcar uma tarefa a manda para o fim da lista, e ela **desliza**
-  180ms com `ease-out` até o novo lugar em vez de saltar. Respeita
-  `prefers-reduced-motion: reduce`, e nesse caso troca de posição sem animação.
+- **Movimento — viajar.** Marcar uma tarefa a manda para o fim da lista, e ela
+  **desliza** 180ms até o novo lugar em vez de saltar (FLIP: `offsetTop` antes do
+  reflow, `translateY` depois). Vale igual para o buraco que uma remoção deixa: as
+  linhas de baixo sobem deslizando. **Com 70ms de atraso**, para a viagem se ler como
+  consequência da tinta e não como parte dela — ver a Regra da Batida em Três Tempos.
+  Sob `prefers-reduced-motion` a linha troca de posição sem animação.
+- **Movimento — chegar.** Uma linha que **passa a existir** não viaja de lugar nenhum:
+  ela chega, com os mesmos 150ms de tudo que passa a ocupar a área da lista. Nunca as
+  duas coisas na mesma linha no mesmo instante.
 
 ### Edição inline
 - Um campo de 24px de altura substitui o texto **no lugar dele** — mesma linha, mesma
@@ -503,6 +547,12 @@ aparência.
   por uma dica. Quem chega para ensinar cede a vez a quem chega para avisar que algo
   falhou, e a dica se perde em silêncio — o estado vazio acabou de dizer a mesma coisa
   com mais espaço.
+- **Ela cresce e encolhe, não pisca.** É a única coisa que muda o layout da janela sem
+  ninguém ter pedido: aparece tomando ~28px da lista e devolve os 28px seis segundos
+  depois, sozinha. `grid-template-rows: 0fr → 1fr` (a altura de destino varia — o erro
+  vai de uma a três linhas), 200ms para entrar e 150ms para sair. Fechada mede
+  exatamente 0 e é `inert`: o texto continua montado só para poder encolher, e não pode
+  sobrar na ordem de tabulação nem na árvore de acessibilidade.
 
 ### Estados vazios (são dois)
 A lista vazia é o único lugar da janela com espaço de sobra, e o único que pode gastar
@@ -521,6 +571,33 @@ não é cosmética: eles falam com pessoas que sabem coisas diferentes.**
   explicar o óbvio, mas a via de volta continua valendo a repetição — é ela que se perde
   quando a janela se esconde.
 
+### Painel de atalho (a única troca de vista do app)
+A combinação que mostra e esconde a janela é escolha do usuário (Adendo 9), e escolher
+uma tecla precisa de uma superfície onde apertá-la. Ela **entra no lugar da lista**, e
+não por cima dela.
+
+- **Não é camada.** Não há modal, popover nem sombra interna neste sistema, e uma janela
+  de 360x480 não tem espaço para uma segunda superfície flutuando dentro da primeira. O
+  painel ocupa a área elástica — a mesma que os dois estados vazios ocupam — com a mesma
+  animação `arrive`, e por isso não gasta um pixel de altura permanente.
+- **Entrada pela engrenagem no cabeçalho**, ao lado do botão de esconder: é o mesmo
+  assunto, as duas teclas que fazem a janela ir e voltar. `aria-expanded`, porque
+  alterna vista em vez de levar para outro lugar; o `ghost` já pinta `muted` aberto.
+- **O capturador herda a forma do campo de nova tarefa** — 32px, `rounded-lg`, borda de
+  controle — porque é o mesmo tipo de coisa: o lugar onde se põe algo dentro. Capturando,
+  o fundo vira `muted` e a borda vira `ring`: é o "estou ouvindo" feito com tom e linha,
+  como a Regra da Sombra Externa exige.
+- **Prévia dos modificadores enquanto a tecla principal não chega** (`⌃⌥…`). Sem ela o
+  campo fica parado dizendo "aperte as teclas" com a mão já em cima do teclado, e a
+  dúvida de "ele está me ouvindo?" é o que faz alguém desistir de um capturador.
+- **Uma linha de resposta, reservada.** Aceita, já tomada por outro aplicativo, sem
+  modificador, ou "vale agora e não na próxima abertura": as quatro são a mesma linha de
+  11px embaixo do campo, `destructive` quando é recusa e névoa quando não é. A altura
+  dela é reservada mesmo vazia — uma linha que nasce empurra o resto do painel para
+  baixo no instante em que a pessoa está lendo o que aconteceu.
+- **"Restaurar padrão" só existe quando há o que restaurar.** Um botão que não faz nada
+  é mobília, e esta janela não tem espaço para mobília.
+
 ### Named Rules
 
 **A Regra da Volta que Sobrevive ao Estado Vazio.** O estado vazio é o melhor lugar do
@@ -538,6 +615,14 @@ anterior é reconhecido pelo uso que já tem: tarefa em disco ou mais de uma aba
 o assunto. Uma atualização que se apresentasse como instalação nova explicaria o app a
 quem já tem o hábito.
 
+**A Regra da Vista que Troca em Vez de Empilhar.** Uma superfície nova não sobe por cima
+da interface: ela ocupa a área da lista, que é a única elástica, e sai quando termina.
+Modal, popover e sombra interna não existem neste sistema — e o custo de altura de uma
+faixa a mais é o orçamento inteiro. Enquanto uma vista dessas está aberta, ela é a camada
+de fora do teclado: o `Escape` é dela, e os atalhos da vista que ela cobriu ficam
+desligados (`⌘T` não pode criar uma aba enquanto a pessoa está dizendo que quer usar
+`⌘T`).
+
 **A Regra da Revelação com Teclado.** Todo controle que se esconde em repouso **deve**
 reaparecer tanto no `hover` quanto no `focus-visible`. Esconder é permitido; tornar
 exclusivo de mouse, nunca. Vale para o × de remover tarefa e para o × de fechar aba, e
@@ -551,6 +636,80 @@ pequeno e o alvo cresce por baixo — mas nunca a ponto de invadir o alvo vizinh
 **A Regra de Um Gesto, Um Alvo.** Nenhuma região responde a dois gestos concorrentes.
 O título já foi uma `label` ligada ao checkbox, e o duplo clique para editar disparava
 duas gravações no disco por edição. Alternar é do checkbox, editar é do título.
+
+**A Regra do Movimento que se Paga.** Só três coisas se animam neste app, e todas pelo
+mesmo motivo: **elas se mexem sozinhas**. A tinta que assenta no checkbox, a linha que
+muda de lugar por causa dela, e a faixa de aviso que toma e devolve altura da lista sem
+ninguém ter tocado em nada. Tudo o mais aparece seco. O ciclo do produto é `⌃⌥T →
+digitar → Enter → ⌃⌥T`, dezenas de vezes por dia: movimento no caminho de abrir a
+janela, de trocar de aba ou de dar foco a um campo não é acabamento, é latência com
+outro nome. Nada passa de 200ms; a saída é sempre mais curta que a entrada.
+
+**A Regra do Vocabulário de Chegada.** Tudo que passa a ocupar a área da lista chega do
+mesmo jeito — 150ms, opacidade mais 4px de subida (`arrive`). Uma linha nova, a lista
+inteira ao trocar de aba, as tarefas que o desfazer repõe, os dois estados vazios. A
+lista é a única região do app onde o conteúdo troca de identidade, e três formas
+diferentes de aparecer nela seriam três coisas a aprender numa janela que não ensina
+nada. Corolário: uma linha ou **chega** ou **viaja**, nunca as duas.
+
+**A Regra da Batida em Três Tempos.** Concluir uma tarefa é um gesto e três
+consequências — o check se desenha, o título desbota, a linha vai para o fim da lista.
+As três no mesmo instante viram uma só, e a linha sai debaixo do olho no meio do gesto
+que a marcou. Por isso o desbotamento acompanha a tinta (150ms, a mesma frase dita em
+dois lugares) e a viagem entra **70ms depois**: tempo curto demais para se ler como
+espera, longo o bastante para se ler como consequência.
+
+**A Regra da Chegada que Sobrevive à Troca de Id.** Uma linha otimista troca de id
+quando o backend responde, e o `key` do React troca junto — o `<li>` não é atualizado, é
+destruído e refeito. Medido: a chegada morria no meio e a linha definitiva aparecia
+seca. Quem anima por identidade de nó neste app precisa passar o estado adiante junto
+com o id (`carryOver` em `useFlipRows`), ou a animação some exatamente no gesto mais
+frequente que existe aqui.
+
+**A Regra do Movimento Reduzido é Menos, Não Nada.** Sob `prefers-reduced-motion` sai o
+deslocamento espacial — a viagem da linha, os 4px da chegada, a altura da faixa. Ficam a
+opacidade e a cor, porque avisar que algo apareceu, mudou ou falhou é informação, e não
+é o incômodo que a preferência pede para tirar.
+
+**A Regra do Alvo Medido pela Linha.** O alvo ampliado de um controle dentro de uma linha
+de conteúdo é medido **pela linha**, e não pelo desenho do controle. O checkbox usa
+`position: static` para que o `::after` dele resolva contra a `li`, e `inset-y-0` passa a
+significar "a altura desta linha, qualquer que ela seja". Antes eram 40px fixos medidos do
+quadrado: acertavam a linha de uma altura por coincidência e deixavam 6px mortos em cima e
+embaixo na de duas — invertendo a Regra do Alvo Maior que o Desenho justamente onde a linha
+é maior. Corolário: a **geometria** do alvo não mora no componente de base (ele não sabe
+quanto padding a linha tem nem onde começa o texto ao lado); ela mora em quem usa. A base dá
+só o mecanismo, e sem geometria o alvo colapsa no desenho — que é o desfecho certo para um
+esquecimento.
+
+**A Regra do Aviso que Espera para Ser Lido.** A faixa se dispensa em 6 segundos porque todo
+aviso dela fala de um gesto que a pessoa acabou de fazer e cujo desfecho ela está vendo. Um
+aviso que fala de algo acontecido **antes de a janela existir** — o arquivo de tarefas que
+não pôde ser lido — não tem esse contexto, e 6 segundos para ele é o mesmo que não avisar:
+ele é `sticky` e espera o `×`. É a única exceção, e o teste para admitir outra é esse
+mesmo: a pessoa estava olhando quando a causa aconteceu?
+
+**A Regra do Relógio que Só Anda na Frente.** A contagem dos 6 segundos corre **só com a
+janela em foco**. O ciclo do produto é esconder e voltar dezenas de vezes por dia, e um
+relógio que anda com a janela escondida gastava a janela inteira de desfazer sem ninguém
+olhando — o gesto de volta era oferecido e expirava fora da vista. Voltar ao foco reinicia a
+contagem, porque o aviso ainda não foi lido.
+
+**A Regra da Espera que Não Pisca.** Nenhum estado de carregamento aparece antes de 140ms.
+Ler a lista de uma aba chega em milissegundos, e o "Carregando…" entrava e saía no mesmo
+piscar a cada troca de aba — um aviso que ninguém consegue ler não informa nada, só faz a
+área da lista tremer. Abaixo do limiar a área fica **em branco** (nunca o estado vazio, que
+diria "Nada por aqui" sobre uma lista a caminho); acima dele o texto aparece, porque aí há
+espera de verdade e espera sem explicação é pior que o tremor.
+
+**A Regra da Confirmação que Cabe na Vista.** Um gesto cujo resultado nasce fora da vista
+não foi confirmado. O viewport da lista cabe oito linhas: com mais que isso, a tarefa nova
+aparecia abaixo da dobra e o Enter — o gesto mais frequente do app — ficava sem nenhum sinal
+na tela além de um contador que ninguém olha enquanto digita. A linha nova é trazida à vista
+num efeito de **layout** (antes da pintura, então não há um quadro em que a lista pareça não
+ter mudado) e com rolagem **seca**: a linha ainda chega pelo `arrive`, mas rolagem animada no
+caminho de acrescentar seria a latência com outro nome que a Regra do Movimento que se Paga
+proíbe.
 
 ## Do's and Don'ts
 
@@ -566,10 +725,17 @@ duas gravações no disco por edição. Alternar é do checkbox, editar é do t�
 - **Do** manter o par hover + `focus-visible` em qualquer controle que se esconda, **e dar
   a ele o anel de 2px**: opacidade sozinha não diz onde o foco está. Botões escritos à mão
   (fora do componente `Button`) são justamente os que esquecem.
-- **Do** dar caminho de teclado a todo gesto que existe no mouse. `F2` renomeia.
-- **Do** respeitar `prefers-reduced-motion` em qualquer animação nova, como o FLIP da lista faz.
+- **Do** dar caminho de teclado a todo gesto que existe no mouse. `F2` renomeia, `↑`/`↓`
+  percorrem a lista, `⌘1..9` / `Ctrl+Tab` / `⌘T` mandam na faixa de abas — e o atalho
+  aparece no `title` do controle, que já existia por causa do truncamento. Atalho que não
+  aparece em lugar nenhum é atalho que só quem escreveu conhece.
+- **Do** respeitar `prefers-reduced-motion` em qualquer animação nova, tirando o
+  deslocamento e mantendo o que informa — como a viagem e a chegada da lista fazem.
 - **Do** manter os três tamanhos de texto. Hierarquia nova se faz com peso e com cinza.
 - **Do** oferecer desfazer em vez de confirmação para qualquer gesto destrutivo novo.
+- **Do** usar a curva `ease-settle` (`--motion-settle`, `cubic-bezier(0.16, 1, 0.3, 1)`)
+  em qualquer movimento novo. Desaceleração exponencial: a coisa sai rápido e encosta
+  devagar, que é como algo pousa.
 
 ### Don't:
 - **Don't** introduzir cor decorativa, etiquetas coloridas, prioridade por cor, emoji,
@@ -583,10 +749,27 @@ duas gravações no disco por edição. Alternar é do checkbox, editar é do t�
 - **Don't** imitar o cromo nativo de um sistema operacional (Aqua, Fluent, Material). O
   app roda em três; imitar um quebra a coerência nos outros dois.
 - **Don't** projetar sombra em nada que esteja dentro da janela.
+- **Don't** resolver uma superfície nova com modal, popover ou camada elevada. Vista nova
+  troca de lugar com a lista e devolve o espaço ao sair — ver a Regra da Vista que Troca
+  em Vez de Empilhar.
 - **Don't** usar botão preenchido ou botão vermelho de destruição. Todo gesto destrutivo
   aqui é reversível, e vermelho prometeria uma gravidade que ele não tem.
 - **Don't** criar um segundo padrão de edição. Edição é inline, no lugar do texto, com o
   componente que já existe.
 - **Don't** usar espaçamento acima de 12px fora do estado vazio.
+- **Don't** animar nada no caminho de abrir a janela, dar foco ao campo ou trocar de
+  aba, e nada acima de 200ms. Movimento que a pessoa espera acabar é atrito.
+- **Don't** usar curva com volta (bounce, elastic), animação em laço, `pulse`, skeleton
+  animado ou qualquer movimento que continue depois de a causa dele ter passado.
+- **Don't** animar uma quarta coisa sem que ela se mexa sozinha. Se a pessoa causou o
+  movimento diretamente e ele é instantâneo, ele já está explicado.
 - **Don't** anunciar semântica ARIA que a interface não cumpre (foi por isso que a faixa
   de abas é `group` e não `tablist`).
+- **Don't** pôr `aria-label` em elemento genérico (`span`, `div`). A ARIA não permite nome
+  acessível ali, e o que várias tecnologias assistivas faziam com a pílula do contador era
+  ler "3", sem unidade. O número é a leitura rápida para o olho (`aria-hidden`); a leitura
+  anunciada é a frase por extenso do rodapé, que é a região viva. **Um estado, uma voz.**
+- **Don't** nomear um controle pelo que ele parece fazer em vez do que ele faz. O botão do
+  cabeçalho esconde a janela, e chamava-se "Fechar janela" para quem usa leitor de tela —
+  numa janela sem decoração e fora da barra de tarefas, "fechei e não sei voltar" é o pior
+  desfecho que existe aqui.

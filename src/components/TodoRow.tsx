@@ -50,7 +50,15 @@ export const TodoRow = memo(function TodoRow({
         e.preventDefault();
         onStartEdit(todo.id);
       }}
-      className="group flex items-center gap-2 rounded-md px-2 py-2 hover:bg-muted/60"
+      // String literal, e precisa continuar sendo: `useFlipRows` põe a classe
+      // `arrive` nesta `li` por fora do React quando a linha é nova. O React só
+      // reescreve `className` quando o VALOR da prop muda — com uma string
+      // constante ele nunca toca no atributo. Montar esta classe a partir de
+      // estado apagaria a chegada no meio da animação.
+      // `relative`: é esta caixa que dá altura ao alvo do checkbox — ver o
+      // comentário dele abaixo. A classe continua sendo uma string literal, que é
+      // o que o `useFlipRows` exige.
+      className="group relative flex items-center gap-2 rounded-md px-2 py-2 hover:bg-muted/60"
     >
       <Checkbox
         checked={todo.done}
@@ -60,11 +68,25 @@ export const TodoRow = memo(function TodoRow({
         aria-labelledby={`todo-title-${todo.id}`}
         // O quadrado continua com 16px, mas a área de clique não: concluir é a
         // ação mais frequente do app e virou o único alvo depois que o título
-        // parou de alternar. O pseudo-elemento do Radix vai daqui até a borda
-        // interna do cartão (`-left-4` cobre os dois `px-2` à esquerda) e ocupa a
-        // altura inteira da linha. Para a direita fica em `-right-3`, de propósito:
-        // mais do que isso comeria o título e roubaria o duplo clique de editar.
-        className="shrink-0 after:-inset-y-3 after:-left-4 after:-right-3"
+        // parou de alternar.
+        //
+        // **O alvo é medido pela LINHA, e não pelo quadrado.** `static` aqui tira o
+        // checkbox de contexto posicionado, então o `::after` resolve contra a `li`
+        // (que é `relative`): `inset-y-0` passa a significar "exatamente a altura
+        // desta linha", qualquer que seja ela.
+        //
+        // Antes era `-inset-y-3` — 40px fixos, medidos do quadrado. Isso acertava a
+        // linha de uma altura por coincidência e errava a de duas por 6px em cima e
+        // 6px embaixo: numa tarefa de título longo, a beirada da linha não alternava
+        // nada, invertendo a Regra do Alvo Maior que o Desenho justamente onde a
+        // linha é maior. E na linha de uma altura os 40px passavam 2px para dentro
+        // do vão entre as linhas, encostando no alvo da vizinha.
+        //
+        // Horizontal: `-left-2` cobre o `px-2` da lista e leva o alvo até a borda
+        // interna do cartão; `w-11` (44px) termina 12px depois do quadrado. **Para
+        // na direita de propósito** — mais que isso comeria o título e roubaria o
+        // duplo clique de editar.
+        className="static shrink-0 after:inset-y-0 after:-left-2 after:right-auto after:w-11"
       />
       {editing ? (
         // `key` no id: trocar de linha em edição remonta o editor com o texto
@@ -99,6 +121,14 @@ export const TodoRow = memo(function TodoRow({
             // nunca alarga a janela nem some sob a borda. O título completo fica
             // no `title` e na edição inline.
             "min-w-0 flex-1 text-body leading-5 wrap-anywhere line-clamp-2",
+            // O desbotamento é a segunda batida de concluir, e leva o mesmo
+            // tempo que a tinta do checkbox: os dois são a mesma frase dita em
+            // dois lugares ("isto está resolvido"), e chegando juntos se leem
+            // como um gesto só. O risco continua caindo seco, no instante do
+            // clique — ele é o carimbo, não o assentamento; e `line-through`
+            // não é animável em texto de duas linhas sem trocar a decoração por
+            // um pseudo-elemento, que riscaria só a primeira delas.
+            "transition-colors duration-150 ease-settle",
             todo.done ? "text-muted-foreground line-through" : "text-foreground",
           ].join(" ")}
           title={todo.title}

@@ -7,6 +7,7 @@
 //! é por isso que o contrato descreve `{ tabId }` do lado do JS e `tab_id` do
 //! lado do Rust sem nenhum `rename` no meio.
 
+mod atalho;
 mod idioma;
 mod janela;
 mod persistencia;
@@ -15,7 +16,9 @@ mod store;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewWindow, WindowEvent};
+use tauri_plugin_global_shortcut::Shortcut;
 
+use atalho::Atalho;
 use idioma::Idioma;
 use janela::{Janela, Posicao, Retangulo};
 use store::{AbaFechada, Store, Tab, Todo};
@@ -25,24 +28,13 @@ use store::{AbaFechada, Store, Tab, Todo};
 /// não faz nada se alguém renomeasse a janela.
 const JANELA: &str = "main";
 
-/// Combinação do atalho global, num lugar só para trocar sem caçar string.
+/// O item "Mostrar/Esconder" do menu do tray, guardado para poder ser reescrito.
 ///
-/// `Control+Option+T` é `⌃⌥T`, escolhido por eliminação no Adendo 2: `⌘Space` e
-/// `⌘⌥Space` são do Spotlight, `⌃Space` alterna fonte de entrada no macOS, e
-/// `⌘⇧T` reabre a última aba do navegador — um atalho **global** vence o do app
-/// em foco, então sequestrá-lo tiraria do usuário uma função que ele usa o dia
-/// inteiro. O teste de unidade prende essa decisão: trocar a constante por algo
-/// com `⌘` quebra a suíte de propósito.
-#[cfg(desktop)]
-const ATALHO_GLOBAL: &str = "Control+Option+T";
-
-/// A mesma combinação escrita para os olhos do usuário, no menu do tray. O macOS
-/// escreve modificadores como símbolos; escrever "Control+Option+T" numa tela de
-/// Mac destoaria de todos os outros menus do sistema.
-#[cfg(target_os = "macos")]
-const ATALHO_VISIVEL: &str = "\u{2303}\u{2325}T";
-#[cfg(not(target_os = "macos"))]
-const ATALHO_VISIVEL: &str = "Ctrl+Alt+T";
+/// O rótulo dele carrega a combinação (é ali que o atalho fica descobrível), e a
+/// combinação agora é escolha do usuário: sem o handle, o menu continuaria
+/// anunciando a tecla que valia quando o ícone nasceu, e um menu que anuncia um
+/// atalho que não existe é pior que menu nenhum.
+struct ItemAlternar(MenuItem<tauri::Wry>);
 
 // --- abas ---
 
@@ -105,6 +97,119 @@ async fn set_active_tab(id: String, app: AppHandle, store: State<'_, Store>) -> 
 #[tauri::command]
 async fn get_active_tab(store: State<'_, Store>) -> Result<String, String> {
     store.aba_ativa()
+}
+
+/// Onde o `todos.json` ilegível da abertura foi guardado, ou `None` — que é a
+/// resposta em toda abertura normal.
+///
+/// **Existe porque abrir vazio em silêncio é indistinguível de perder tudo.** Um
+/// arquivo que o desserializador não entende faz o app abrir com uma aba vazia;
+/// sem este comando, a tela não tem como saber a diferença entre isso e uma
+/// instalação nova, e o usuário veria a lista dele simplesmente desaparecida. A
+/// `Store` já move o arquivo para o lado antes de qualquer gravação; isto é a
+/// metade que conta o fato.
+///
+/// Devolve **caminho, não frase**: as mensagens são do frontend desde o Adendo 6.
+/// Não devolve `Result` porque não há falha possível — é a leitura de um campo
+/// decidido na abertura.
+#[tauri::command]
+async fn get_startup_rescue(store: State<'_, Store>) -> Result<Option<String>, String> {
+    Ok(store.resgate())
+}
+
+// --- atalho global ---
+
+/// A combinação que mostra e esconde a janela, como ela está agora.
+///
+/// A janela precisa dela para **três frases que ensinam a via de volta** (o estado
+/// vazio, a faixa da primeira tarefa e a dica do botão de esconder) e para o painel
+/// da engrenagem. Vem do backend já escrita para os olhos (`label`) porque é o
+/// backend quem também escreve o rótulo do tray: duas escritas do mesmo dado
+/// divergiriam no primeiro atalho que não fosse o padrão.
+#[tauri::command]
+async fn get_shortcut(atalho: State<'_, Atalho>) -> Result<atalho::Descricao, String> {
+    Ok(atalho.descrever())
+}
+
+/// Troca a combinação. Recebe o acelerador (`control+alt+KeyT`), que é o formato
+/// que o `event.code` da webview monta e que o parser do plugin entende.
+///
+/// **A ordem é registrar o novo, e só depois soltar o antigo.** Se o sistema
+/// recusar a combinação nova — outro aplicativo já a tomou —, o `?` volta com erro
+/// e o atalho anterior continua registrado e funcionando. Soltar primeiro deixaria
+/// o usuário sem atalho nenhum como preço de uma tentativa.
+#[tauri::command]
+async fn set_shortcut(
+    accelerator: String,
+    app: AppHandle,
+    atalho: State<'_, Atalho>,
+) -> Result<atalho::Descricao, String> {
+    let novo = atalho::interpretar(&accelerator)?;
+    let antes = atalho.situacao();
+    // Repetir a combinação atual não é no-op: ela pode não estar na mão do sistema —
+    // porque o painel a suspendeu para poder ouvir as teclas, ou porque o registro da
+    // abertura falhou. Insistir é justamente o gesto de quem acabou de fechar o
+    // aplicativo que a tinha tomado.
+    if novo != antes.combinacao || !antes.registrada {
+        registrar_atalho(&app, novo)?;
+    }
+    // Só solta o que de fato estava registrado: pedir a liberação de uma combinação
+    // que o sistema não tem na mão devolveria um erro que não significa nada.
+    if novo != antes.combinacao && antes.registrada {
+        desregistrar_atalho(&app, antes.combinacao);
+    }
+    atalho.definir(novo);
+    // O menu do tray anuncia a tecla; sem isto ele seguiria anunciando a antiga.
+    atualizar_rotulo_tray(&app);
+    Ok(atalho.descrever())
+}
+
+/// Suspende e devolve o atalho enquanto o painel captura teclas.
+///
+/// **Um atalho global é consumido pelo sistema antes de chegar à webview.** Com
+/// `⌃⌥T` registrado, apertar `⌃⌥T` no capturador esconderia a janela em vez de
+/// escolher a combinação — o painel não conseguiria nem reconfirmar a tecla que já
+/// está valendo, que é justamente o gesto de quem quer testá-la. Então o registro
+/// sai da mão do sistema enquanto o painel escuta, e volta quando ele para.
+///
+/// **Nunca falha para cima**, e devolve o estado completo: uma suspensão que
+/// terminasse em erro deixaria a tela sem saber se o atalho voltou. Se a combinação
+/// tiver sido tomada por outro aplicativo nesses segundos, quem conta isso é o
+/// `active` do retorno — e a mesma frase que já existe para esse caso.
+///
+/// O tray continua sendo a via de volta garantida durante a suspensão, que é o
+/// papel que ele tem desde o Adendo 2.
+#[tauri::command]
+async fn pause_shortcut(
+    paused: bool,
+    app: AppHandle,
+    atalho: State<'_, Atalho>,
+) -> Result<atalho::Descricao, String> {
+    let antes = atalho.situacao();
+    if paused {
+        if antes.registrada {
+            desregistrar_atalho(&app, antes.combinacao);
+        }
+        atalho.pausar();
+        return Ok(atalho.descrever());
+    }
+
+    atalho.retomar();
+    // Já está na mão do sistema (a troca pelo painel registrou a nova), ou nunca
+    // esteve porque outro aplicativo a tomou — nos dois casos não há o que devolver.
+    if antes.registrada || !antes.valendo {
+        return Ok(atalho.descrever());
+    }
+    match registrar_atalho(&app, antes.combinacao) {
+        Ok(()) => atalho.marcar(true),
+        Err(erro) => {
+            // Alguém tomou a combinação nesses segundos. O estado passa a dizer a
+            // verdade, e a tela avisa com a frase que já existe para isso.
+            atalho.marcar(false);
+            eprintln!("[atalho] {erro}");
+        }
+    }
+    Ok(atalho.descrever())
 }
 
 // --- tarefas ---
@@ -276,10 +381,20 @@ fn alternar_janela(app: &AppHandle) {
     let Some(janela) = app.get_webview_window(JANELA) else {
         return;
     };
-    if janela.is_visible().unwrap_or(false) {
+    // **Minimizada conta como escondida.** O menu padrão do macOS traz ⌘M, e uma
+    // janela sem decoração e fora da barra de tarefas minimizada não tem gesto que
+    // a alcance. Sem esta checagem, `is_visible` respondia `true` para ela e o
+    // atalho a "escondia" — o usuário apertava ⌃⌥T duas vezes para trazer de volta
+    // o que ele achava que estava fora da tela uma vez.
+    let minimizada = janela.is_minimized().unwrap_or(false);
+    if janela.is_visible().unwrap_or(false) && !minimizada {
         descarregar_posicao(app);
         let _ = janela.hide();
     } else {
+        // Antes do `show`: mostrar uma janela minimizada a deixa minimizada.
+        if minimizada {
+            let _ = janela.unminimize();
+        }
         let _ = janela.show();
         let _ = janela.set_focus();
     }
@@ -324,73 +439,147 @@ fn restaurar_posicao(janela: &WebviewWindow) {
     }
 }
 
-fn acompanhar_movimento(janela: &WebviewWindow) {
+/// Os dois eventos de janela que este app precisa interceptar. Um handler só de
+/// propósito: `on_window_event` aceita vários, e dois registros separados
+/// esconderiam de quem lê que o mesmo evento pode ter dois donos.
+fn acompanhar_janela(janela: &WebviewWindow) {
     let app = janela.app_handle().clone();
-    janela.on_window_event(move |evento| {
-        let WindowEvent::Moved(posicao) = evento else {
-            return;
-        };
-        // Uma janela escondida pode reportar posições artificiais em algumas
-        // plataformas, e gravá-las trocaria o lugar escolhido pelo usuário por
-        // um valor que ele nunca viu.
-        let visivel = app
-            .get_webview_window(JANELA)
-            .and_then(|alvo| alvo.is_visible().ok())
-            .unwrap_or(false);
-        if !visivel {
-            return;
+    janela.on_window_event(move |evento| match evento {
+        // **Fechar é esconder, sempre.** A janela é a ÚNICA do app, e destruí-la
+        // deixa `alternar_janela` sem nada para achar: o atalho global e o clique
+        // no tray param de fazer qualquer coisa, e o app fica vivo, invisível e
+        // inalcançável — só "Sair" e relançar.
+        //
+        // Não é hipótese. O Tauri instala o menu padrão do macOS quando nenhum
+        // menu é definido, e esse menu traz `close_window` em dois lugares (⌘W nos
+        // submenus File e Window). O botão × que o frontend desenha já chamava
+        // `hide_window`; este é o mesmo desfecho para todo caminho de fechamento
+        // que não passa por ele, incluindo os que o sistema oferece sem avisar.
+        WindowEvent::CloseRequested { api, .. } => {
+            api.prevent_close();
+            descarregar_posicao(&app);
+            if let Some(alvo) = app.get_webview_window(JANELA) {
+                let _ = alvo.hide();
+            }
         }
-        if let Some(estado) = app.try_state::<Janela>() {
-            estado.registrar(Posicao {
-                x: posicao.x,
-                y: posicao.y,
-            });
+        WindowEvent::Moved(posicao) => {
+            // Uma janela escondida pode reportar posições artificiais em algumas
+            // plataformas, e gravá-las trocaria o lugar escolhido pelo usuário por
+            // um valor que ele nunca viu.
+            let visivel = app
+                .get_webview_window(JANELA)
+                .and_then(|alvo| alvo.is_visible().ok())
+                .unwrap_or(false);
+            if !visivel {
+                return;
+            }
+            if let Some(estado) = app.try_state::<Janela>() {
+                estado.registrar(Posicao {
+                    x: posicao.x,
+                    y: posicao.y,
+                });
+            }
         }
+        _ => {}
     });
 }
 
-/// Registra `⌃⌥T` como atalho de sistema. **Não devolve `Result` de propósito.**
+/// Sobe o plugin de atalho global e registra a combinação escolhida. **Não devolve
+/// `Result` de propósito.**
 ///
 /// A combinação pode já pertencer a outro aplicativo, e nesse caso o registro
 /// falha. Deixar essa falha subir pelo `setup` trocaria uma conveniência por um
 /// app que não abre — enquanto o tray, que é o caminho garantido, continua ali
 /// funcionando. Então tudo aqui é registrado em `stderr` e seguido em frente.
+///
+/// O que a falha **não** faz mais é passar em silêncio pela janela: ela fica no
+/// estado (`Atalho::marcar`), e é dela que o painel da engrenagem tira o aviso de
+/// que a combinação não está valendo. Uma tela que ensina um atalho morto é a pior
+/// versão deste app.
 #[cfg(desktop)]
 fn montar_atalho_global(app: &AppHandle) {
-    use std::str::FromStr;
-    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
-
-    let atalho = match Shortcut::from_str(ATALHO_GLOBAL) {
-        Ok(atalho) => atalho,
-        Err(erro) => {
-            eprintln!("[atalho] '{ATALHO_GLOBAL}' não é uma combinação válida: {erro}");
-            return;
-        }
-    };
-
     if let Err(erro) = app.plugin(tauri_plugin_global_shortcut::Builder::new().build()) {
         eprintln!("[atalho] o plugin de atalho global não subiu: {erro}");
+        if let Some(estado) = app.try_state::<Atalho>() {
+            estado.marcar(false);
+        }
         return;
     }
 
-    let registro = app.global_shortcut().on_shortcut(atalho, |app, _, evento| {
-        // **Uma pressionada, uma alternância.** O plugin entrega `Pressed` e
-        // `Released`; reagir aos dois mostraria e esconderia a janela no mesmo
-        // gesto, e o atalho pareceria não funcionar.
-        if evento.state == ShortcutState::Pressed {
-            // A mesma função do clique esquerdo no tray, e não um segundo
-            // caminho: dois caminhos divergem no dia em que um precisar fazer
-            // algo a mais.
-            alternar_janela(app);
+    let Some(estado) = app.try_state::<Atalho>() else {
+        return;
+    };
+    let combinacao = estado.atual();
+    match registrar_atalho(app, combinacao) {
+        Ok(()) => estado.marcar(true),
+        Err(erro) => {
+            estado.marcar(false);
+            eprintln!(
+                "[atalho] {erro}. Provavelmente a combinação já está em uso por outro \
+                 aplicativo. O app segue funcionando pelo tray, e a engrenagem da janela \
+                 permite escolher outra."
+            );
         }
-    });
+    }
+}
 
-    if let Err(erro) = registro {
+/// O registro em si, num lugar só: a abertura e a troca pela engrenagem precisam
+/// registrar exatamente o mesmo comportamento, e dois caminhos divergiriam no dia
+/// em que um deles precisasse fazer algo a mais.
+fn registrar_atalho(app: &AppHandle, combinacao: Shortcut) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+
+    app.global_shortcut()
+        .on_shortcut(combinacao, |app, _, evento| {
+            // **Uma pressionada, uma alternância.** O plugin entrega `Pressed` e
+            // `Released`; reagir aos dois mostraria e esconderia a janela no mesmo
+            // gesto, e o atalho pareceria não funcionar.
+            if evento.state == ShortcutState::Pressed {
+                // A mesma função do clique esquerdo no tray, e não um segundo
+                // caminho: dois caminhos divergem no dia em que um precisar fazer
+                // algo a mais.
+                alternar_janela(app);
+            }
+        })
+        .map_err(|erro| {
+            format!(
+                "não foi possível registrar {}: {erro}",
+                combinacao.into_string()
+            )
+        })
+}
+
+/// Solta a combinação antiga depois que a nova já está valendo. Falha aqui é
+/// **silenciosa**: o que o usuário pediu (a tecla nova) já aconteceu, e uma tecla
+/// velha que continuou registrada não tira nada dele — ela só continua alternando a
+/// janela até o próximo reinício, que é o desfecho menos ruim possível.
+fn desregistrar_atalho(app: &AppHandle, combinacao: Shortcut) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    if let Err(erro) = app.global_shortcut().unregister(combinacao) {
         eprintln!(
-            "[atalho] não foi possível registrar {ATALHO_GLOBAL}, provavelmente já está \
-             em uso por outro aplicativo: {erro}. O app segue funcionando pelo tray."
+            "[atalho] a combinação antiga {} não foi liberada: {erro}",
+            combinacao.into_string()
         );
     }
+}
+
+/// Reescreve o rótulo do item do tray com a combinação que vale agora.
+///
+/// **Nada aqui pode falhar para cima.** O atalho novo já está registrado e gravado
+/// quando esta função roda; transformar "não consegui reescrever um rótulo de menu"
+/// em erro de `set_shortcut` faria a tela dizer que a troca não aconteceu.
+fn atualizar_rotulo_tray(app: &AppHandle) {
+    let Some(item) = app.try_state::<ItemAlternar>() else {
+        return;
+    };
+    let Some(estado) = app.try_state::<Atalho>() else {
+        return;
+    };
+    let etiqueta = atalho::etiqueta(&estado.atual());
+    let _ = item
+        .0
+        .set_text(idioma::menu_alternar(&etiqueta, idioma::atual()));
 }
 
 /// **A via de volta da janela escondida.** Sem decoração do sistema e fora da
@@ -404,7 +593,13 @@ fn montar_tray(app: &AppHandle) -> tauri::Result<()> {
     // caminho, e o atalho global já é quem cuida disso. Aqui ela é só o letreiro
     // que torna o atalho descobrível.
     let lingua = idioma::atual();
-    let rotulo = idioma::menu_alternar(ATALHO_VISIVEL, lingua);
+    // A combinação sai do estado, e não de uma constante: ela é escolha do usuário
+    // desde o Adendo 9, e o `atalho.json` dele pode ter outra.
+    let etiqueta = app
+        .try_state::<Atalho>()
+        .map(|estado| atalho::etiqueta(&estado.atual()))
+        .unwrap_or_default();
+    let rotulo = idioma::menu_alternar(&etiqueta, lingua);
     let alternar = MenuItem::with_id(app, "alternar", &rotulo, true, None::<&str>)?;
     let sair = MenuItem::with_id(app, "sair", idioma::menu_sair(lingua), true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&alternar, &sair])?;
@@ -439,8 +634,22 @@ fn montar_tray(app: &AppHandle) -> tauri::Result<()> {
     if let Some(icone) = app.default_window_icon().cloned() {
         builder = builder.icon(icone);
     }
-    // O handle fica no estado porque o tooltip é redesenhado a cada mutação, e
-    // sem guardá-lo o ícone só saberia a contagem que existia quando ele nasceu.
+    // **Na barra de menus do macOS, ícone é silhueta.** Sem isto, o ícone entra
+    // com as cores dele no meio de um cromo monocromático — e no tema escuro um
+    // desenho de tinta escura sobre barra escura simplesmente desaparece, levando
+    // com ele a via de volta GARANTIDA da janela. `icon_as_template` deixa o
+    // sistema pintar a forma na cor certa dos dois temas.
+    //
+    // Só no macOS: Windows e Linux desenham o ícone da bandeja com as cores dele,
+    // e uma silhueta ali seria um borrão.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.icon_as_template(true);
+    }
+    // Os dois handles ficam no estado porque o ícone é reescrito depois de nascer: o
+    // tooltip a cada mutação (a contagem muda) e o rótulo do item a cada troca de
+    // atalho. Sem guardá-los, o tray só saberia o que valia no `setup`.
+    app.manage(ItemAlternar(alternar));
     app.manage(builder.build(app)?);
     Ok(())
 }
@@ -457,12 +666,15 @@ pub fn run() {
             // Arquivo próprio, ao lado das tarefas e não dentro delas: um JSON de
             // tarefas corrompido não pode levar junto a posição, nem o contrário.
             app.manage(Janela::abrir(diretorio.join("janela.json")));
+            // Mesma regra, terceiro arquivo. Antes do tray de propósito: o rótulo do
+            // item "Mostrar/Esconder" anuncia a combinação, e ele nasce ali.
+            app.manage(Atalho::abrir(diretorio.join("atalho.json")));
 
             if let Some(janela) = app.get_webview_window(JANELA) {
                 // Nesta ordem: restaurar antes de acompanhar evita que o próprio
                 // reposicionamento seja registrado como movimento do usuário.
                 restaurar_posicao(&janela);
-                acompanhar_movimento(&janela);
+                acompanhar_janela(&janela);
             }
 
             montar_tray(app.handle())?;
@@ -482,6 +694,10 @@ pub fn run() {
             restore_tab,
             set_active_tab,
             get_active_tab,
+            get_startup_rescue,
+            get_shortcut,
+            set_shortcut,
+            pause_shortcut,
             list_todos,
             add_todo,
             rename_todo,
@@ -494,60 +710,6 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-#[cfg(all(test, desktop))]
-mod tests_atalho {
-    use super::*;
-    use std::str::FromStr;
-    use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
-
-    fn atalho() -> Shortcut {
-        Shortcut::from_str(ATALHO_GLOBAL).expect("a constante precisa ser uma combinação válida")
-    }
-
-    /// A constante é lida por um parser, então um erro de digitação nela só
-    /// apareceria em execução — e apareceria como "o atalho não faz nada", que é
-    /// exatamente o sintoma difícil de diagnosticar.
-    #[test]
-    fn a_constante_do_atalho_e_control_option_t() {
-        assert_eq!(
-            atalho(),
-            Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyT)
-        );
-    }
-
-    /// **Prende a decisão do Adendo 2.** Um atalho global vence o do app em foco,
-    /// então uma combinação com `⌘` roubaria do navegador coisas como `⌘⇧T`
-    /// (reabrir aba) pelo sistema inteiro. Trocar a constante por algo com
-    /// Command quebra este teste de propósito, e não em silêncio no uso.
-    #[test]
-    fn o_atalho_nao_sequestra_combinacoes_de_command() {
-        assert!(
-            !atalho().mods.contains(Modifiers::SUPER),
-            "combinação com Command rouba atalhos do app em foco pelo sistema inteiro"
-        );
-    }
-
-    /// Sem modificador, a tecla sozinha ficaria capturada globalmente: digitar
-    /// "t" em qualquer lugar abriria o To-Do.
-    #[test]
-    fn o_atalho_tem_modificadores() {
-        assert!(
-            !atalho().mods.is_empty(),
-            "uma tecla sozinha como atalho global sequestraria a digitação normal"
-        );
-    }
-
-    /// O letreiro do tray e a combinação registrada precisam falar da mesma
-    /// tecla: um menu que anuncia um atalho que não existe é pior que menu nenhum.
-    #[test]
-    fn o_letreiro_do_tray_combina_com_a_tecla_registrada() {
-        assert!(
-            ATALHO_VISIVEL.to_uppercase().ends_with('T'),
-            "o letreiro '{ATALHO_VISIVEL}' não termina na tecla registrada"
-        );
-    }
 }
 
 #[cfg(test)]

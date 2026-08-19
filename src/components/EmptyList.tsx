@@ -1,5 +1,5 @@
 import { t } from "@/lib/i18n";
-import { TOGGLE_SHORTCUT, TRAY_PLACE } from "@/lib/todos";
+import { TRAY_PLACE } from "@/lib/todos";
 
 /**
  * A lista vazia — o único lugar da janela com espaço de sobra, e o único que pode
@@ -20,14 +20,31 @@ import { TOGGLE_SHORTCUT, TRAY_PLACE } from "@/lib/todos";
  * tarefa, e é essa a razão de o ensino da volta continuar na faixa de aviso
  * (`onboarding.roundTrip`): a instrução tem que sobreviver ao instante em que
  * este componente sai da tela.
+ *
+ * `arrive` nos dois ramos: este bloco entra no lugar exato de onde a última
+ * tarefa acabou de sair, e é a mesma animação com que uma linha nova aparece
+ * (`useFlipRows`) e com que a lista de outra aba se instala. Tudo que passa a
+ * ocupar a área da lista chega igual — ver o bloco MOVIMENTO em index.css.
  */
-export function EmptyList({ firstRun }: { firstRun: boolean }) {
+/**
+ * `shortcut` chega por prop, e não de uma constante importada: a combinação é
+ * escolha do usuário desde o Adendo 9, e quem a conhece é o `App` (que a pediu ao
+ * backend na carga inicial). Uma constante aqui voltaria a prometer `⌃⌥T` a quem
+ * trocou a tecla — e é justamente esta a tela que ensina a via de volta.
+ */
+export function EmptyList({
+  firstRun,
+  shortcut,
+}: {
+  firstRun: boolean;
+  shortcut: string;
+}) {
   if (!firstRun) {
     return (
-      <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+      <p className="arrive px-2 py-6 text-center text-xs text-muted-foreground">
         {t("empty.title")}
         <span className="mt-1.5 block">
-          {t("empty.hint", { shortcut: TOGGLE_SHORTCUT })}
+          {t("empty.hint", { shortcut })}
         </span>
       </p>
     );
@@ -38,7 +55,7 @@ export function EmptyList({ firstRun }: { firstRun: boolean }) {
     // ele, a linha de cima quebrava com "Enter." sozinho embaixo e a do meio
     // quebrava depois de "de", pendurando a preposição no fim da linha. Uma
     // largura menor não resolvia — só mudava onde o rio ficava feio.
-    <div className="px-2 py-6 text-center text-balance">
+    <div className="arrive px-2 py-6 text-center text-balance">
       {/* Cinza, e não tinta: é a frase que menos precisa ser dita nesta tela.
           O cursor já está piscando no campo logo acima — o campo convida
           sozinho, e a instrução aqui só confirma o que fazer com o Enter. */}
@@ -48,7 +65,7 @@ export function EmptyList({ firstRun }: { firstRun: boolean }) {
           espaçamento: é o corte entre "o que fazer agora" e "como voltar
           depois", que são dois assuntos e não uma lista de três dicas. */}
       <p className="mt-6 text-xs font-medium text-foreground">
-        {t("empty.wayBackShortcut", { shortcut: TOGGLE_SHORTCUT })}
+        {t("empty.wayBackShortcut", { shortcut })}
       </p>
 
       {/* A hierarquia se faz com peso e com cinza, e não com um quarto tamanho:

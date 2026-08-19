@@ -1,0 +1,19 @@
+<!doctype html>
+<!-- O `lang` é definido em tempo de execução por `applyDocumentLocale()`, a
+     partir do locale do sistema: a interface fala português ou inglês, e o
+     leitor de tela precisa saber qual para não ler um com a pronúncia do outro.
+     O valor aqui é só o estado antes do primeiro render — o React troca antes de
+     haver texto na tela. -->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/tauri.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini To-Do</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

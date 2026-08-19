@@ -1,0 +1,42 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# `macos-private-api` é o que faz `transparent: true` valer no macOS; sem ela a
+# janela sobe opaca. Anda em par com `app.macOSPrivateApi` no tauri.conf.json, e
+# o preço é conhecido: um app que a usa não entra na Mac App Store.
+tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+
+# Idioma do sistema, para o tray falar a mesma lingua que a janela. A janela le
+# `navigator.languages` na webview; o tray e desenhado pelo Rust antes de a
+# webview existir, e por isso precisa da propria leitura. E a mesma crate que o
+# `tauri-plugin-os` usa por dentro, sem dependencia nenhuma no desktop -- o
+# plugin inteiro entraria aqui para expor uma funcao so.
+sys-locale = "0.3"
+
+# Atalho global (Control+Option+T). Fica sob um alvo de desktop porque atalho de
+# sistema nao existe em Android nem iOS: como dependencia comum, o plugin entraria
+# na compilacao mobile so para nao poder ser usado.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "2.3.2"
+

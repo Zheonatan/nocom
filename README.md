@@ -182,8 +182,11 @@ Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 ## Apoiar
 
 O NoCom é gratuito, sem conta, sem nuvem e sem telemetria — e vai continuar
-assim. Se ele te economiza alguns segundos por dia e você quiser retribuir,
-tem um [LivePix](https://livepix.gg/zheo).
+assim. Se ele te economiza alguns segundos por dia e você quiser retribuir:
+
+<a href="https://livepix.gg/zheo">
+  <img alt="Apoiar via LivePix" src="https://img.shields.io/badge/LivePix-Apoiar%20o%20projeto-14539A?style=for-the-badge&logo=pix&logoColor=white" />
+</a>
 
 Contribuir com código, relatar um bug ou só contar como você usa o app vale o
 mesmo. Nada aqui é atrás de paywall.

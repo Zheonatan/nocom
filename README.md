@@ -8,6 +8,7 @@ Aparece com um atalho de teclado, some com `Escape`, e guarda tudo no seu
 computador. Sem conta, sem nuvem, sem sincronização.
 
 [![Download](https://img.shields.io/github/v/release/Zheonatan/nocom?label=download&style=for-the-badge)](https://github.com/Zheonatan/nocom/releases/latest)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoiar-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/zheos)
 
 </div>
 
@@ -162,10 +163,14 @@ Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 ## Apoiar
 
 O NoCom é gratuito, sem conta, sem nuvem e sem telemetria — e vai continuar
-assim. Se ele te economiza alguns segundos por dia e você quiser retribuir:
+assim. Se ele te economiza alguns segundos por dia e você quiser retribuir —
+por Pix no LivePix, ou por cartão no Ko-fi:
 
 <a href="https://livepix.gg/zheo">
   <img alt="Apoiar via LivePix" src="https://img.shields.io/badge/LivePix-Apoiar%20o%20projeto-14539A?style=for-the-badge&logo=pix&logoColor=white" />
+</a>
+<a href="https://ko-fi.com/zheos">
+  <img alt="Apoiar via Ko-fi" src="https://img.shields.io/badge/Ko--fi-Apoiar%20o%20projeto-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" />
 </a>
 
 Contribuir com código, relatar um bug ou só contar como você usa o app vale o

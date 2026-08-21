@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { UpdateCheck } from "@/components/UpdateCheck";
 import {
   acceleratorFrom,
   hasGlobalModifier,
@@ -17,7 +19,13 @@ import {
 } from "@/lib/todos";
 
 /**
- * O painel que troca o atalho global (Adendo 9).
+ * O painel da engrenagem: o atalho global (Adendo 9) e a versão (Adendo 10).
+ *
+ * **Os dois assuntos são o mesmo assunto — o app, e não a lista.** Foi por isso que
+ * a verificação de versão entrou aqui em vez de ganhar lugar próprio: este já era o
+ * único lugar do app onde se olha quando a pergunta não é sobre as tarefas, e uma
+ * segunda vista custaria altura permanente no cabeçalho para um número que ninguém
+ * precisa ver enquanto trabalha. Uma linha separa os dois; o rodapé é do painel.
  *
  * **Ocupa o lugar da lista, e não uma camada por cima dela.** O DESIGN.md não tem
  * modal, popover nem sombra interna: profundidade neste app é tom e linha, e uma
@@ -326,12 +334,13 @@ export function ShortcutSettings({
         </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        {/* "Restaurar padrão" só existe quando há o que restaurar: um botão que não
-            faz nada é mobília, e esta janela não tem espaço para mobília. */}
-        {isDefault ? (
-          <span />
-        ) : (
+      {/* "Restaurar padrão" só existe quando há o que restaurar: um botão que não
+          faz nada é mobília, e esta janela não tem espaço para mobília. Ele fica
+          nesta seção e não no rodapé do painel porque é um gesto SOBRE O ATALHO —
+          desde o Adendo 10 o rodapé é do painel inteiro, e "restaurar padrão"
+          embaixo do bloco de versão pareceria oferecer desinstalar a atualização. */}
+      {!isDefault && (
+        <div className="mt-3">
           <Button
             type="button"
             variant="ghost"
@@ -342,7 +351,18 @@ export function ShortcutSettings({
           >
             {t("shortcut.reset")}
           </Button>
-        )}
+        </div>
+      )}
+
+      {/* A linha é o que separa os dois assuntos do painel — e é linha, e não sombra
+          nem cartão: profundidade neste app é tom e traço (Regra da Sombra Externa). */}
+      <Separator className="my-4" />
+
+      <UpdateCheck />
+
+      {/* "Concluir" fecha o painel INTEIRO, então é o último e está sozinho: com um
+          segundo botão do lado, ele pareceria concluir só o bloco de cima. */}
+      <div className="mt-4 flex justify-end">
         <Button
           type="button"
           variant="ghost"

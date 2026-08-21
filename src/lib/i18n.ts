@@ -142,8 +142,14 @@ const pt = {
   // A combinação é escolha do usuário, e este é o único lugar do app onde existe
   // configuração. As frases falam de TECLAS e de o que acontece com elas — nunca de
   // "preferências" nem de "opções", que é vocabulário de painel de controle e não
-  // do único gesto que este painel oferece.
-  "shortcut.open": "Trocar o atalho",
+  // dos dois gestos concretos que este painel oferece.
+  // **O rótulo da engrenagem nomeia as duas coisas que estão atrás dela.** Era
+  // "Trocar o atalho" quando o painel só trocava o atalho; desde o Adendo 10 ele
+  // também verifica a versão, e um botão que promete uma coisa e abre duas é, para
+  // quem usa leitor de tela, a única descrição que existe do painel. Continua sem
+  // "preferências" e sem "opções" — vocabulário de painel de controle para dois
+  // gestos concretos seria a troca contrária.
+  "shortcut.open": "Atalho e versão",
   "shortcut.title": "Atalho para mostrar e esconder",
   "shortcut.explain": "Vale de qualquer aplicativo, com o To-Do em segundo plano.",
   // O rótulo do capturador em repouso e o da captura em curso. "Aperte as teclas" é
@@ -185,6 +191,29 @@ const pt = {
     "Combinações com a tecla Windows podem ser reservadas pelo sistema.",
   "shortcut.reset": "Restaurar padrão",
   "shortcut.done": "Concluir",
+
+  // --- versão e atualização (Adendo 10) ---
+  //
+  // A verificação é a ÚNICA requisição de rede do app, e ela sai de um clique —
+  // não há checagem na abertura nem temporizador. `update.explain` diz isso na
+  // tela de propósito: o produto promete que nada sai desta máquina, e a promessa
+  // vale mais dita no lugar onde ela poderia ser quebrada do que só no README.
+  "update.title": "Versão",
+  "update.current": "Você está na {version}.",
+  "update.explain":
+    "Verificar é a única vez que o app acessa a rede — e só quando você pede.",
+  "update.check": "Verificar se há versão nova",
+  "update.checking": "Verificando…",
+  "update.upToDate": "Esta é a versão mais recente.",
+  // Nomeia a versão que o botão vai instalar. O painel não pode dizer "0.3.0
+  // disponível" e instalar outra coisa, e é por isso que o backend guarda o
+  // resultado da verificação em vez de consultar de novo na instalação.
+  "update.available": "A {version} já está disponível.",
+  // "e reiniciar" está no rótulo porque é o que acontece, e acontece sem pedir
+  // licença: a janela vai sumir. Prometer só "atualizar" faria a reinicialização
+  // parecer um susto em vez de o passo final do gesto.
+  "update.install": "Atualizar e reiniciar",
+  "update.installing": "Baixando… o app reinicia sozinho quando terminar.",
 
   "tabs.label": "Abas",
   "tabs.new": "Nova aba",
@@ -228,6 +257,15 @@ const pt = {
   "error.shortcutRead":
     "Não foi possível ler o atalho. O painel não pode abrir agora.",
   "error.focus": "O cursor pode não ir para o campo ao abrir a janela.",
+  // As duas metades de sempre: o que falhou e o que aconteceu com o app. Sem rede,
+  // endpoint fora, ou `latest.json` sem entrada para esta plataforma (o caso do
+  // `.deb` e do `.rpm`) chegam todos aqui, e em nenhum deles algo foi tocado.
+  "error.updateCheck": "Não foi possível verificar. Nada mudou no app.",
+  // A instalação valida a assinatura antes de escrever, então falhar aqui é falhar
+  // ANTES de mexer no app — e é isso que a frase precisa dizer, porque "não foi
+  // possível atualizar" sozinho deixa a pessoa sem saber se o app quebrou.
+  "error.updateInstall":
+    "Não foi possível atualizar. O app continua na {version}, intacto.",
 } satisfies Dict;
 
 export type MessageKey = keyof typeof pt;
@@ -279,7 +317,7 @@ const en: Record<MessageKey, Entry> = {
     other: 'Tab "{name}" closed. {n} tasks come back with it.',
   },
 
-  "shortcut.open": "Change the shortcut",
+  "shortcut.open": "Shortcut and version",
   "shortcut.title": "Shortcut to show and hide",
   "shortcut.explain": "Works from any app, with the To-Do in the background.",
   "shortcut.current": "Shortcut",
@@ -300,6 +338,17 @@ const en: Record<MessageKey, Entry> = {
     "Combinations with the Windows key may be reserved by the system.",
   "shortcut.reset": "Restore default",
   "shortcut.done": "Done",
+
+  "update.title": "Version",
+  "update.current": "You're on {version}.",
+  "update.explain":
+    "Checking is the only time the app touches the network — and only when you ask.",
+  "update.check": "Check for a new version",
+  "update.checking": "Checking…",
+  "update.upToDate": "This is the latest version.",
+  "update.available": "{version} is available.",
+  "update.install": "Update and restart",
+  "update.installing": "Downloading… the app restarts on its own when it's done.",
 
   "tabs.label": "Tabs",
   "tabs.new": "New tab",
@@ -326,6 +375,9 @@ const en: Record<MessageKey, Entry> = {
   "error.drag": "Couldn't move the window.",
   "error.shortcutRead": "Couldn't read the shortcut. The panel can't open right now.",
   "error.focus": "The cursor may not land in the field when the window opens.",
+  "error.updateCheck": "Couldn't check for updates. Nothing changed in the app.",
+  "error.updateInstall":
+    "Couldn't update. The app is still on {version}, intact.",
 };
 
 const DICTS: Record<Locale, Record<MessageKey, Entry>> = { "pt-BR": pt, en };

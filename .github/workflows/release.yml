@@ -15,6 +15,13 @@ jobs:
   build:
     strategy:
       fail-fast: false
+      # **Um job por vez, e é o updater que cobra isso.** Cada job faz merge da
+      # própria plataforma no MESMO `latest.json` da release: em paralelo, dois
+      # que leem a versão antiga do arquivo e escrevem em seguida apagam a
+      # entrada um do outro, e o sintoma é uma plataforma que nunca acha
+      # atualização. O preço é a release levar a soma dos quatro builds em vez do
+      # mais longo — algumas vezes por mês, com o cache do Rust quente.
+      max-parallel: 1
       matrix:
         include:
           - platform: macos-latest
@@ -73,6 +80,17 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A chave que assina os pacotes de atualização (Adendo 10). O app só
+          # instala o que foi assinado com ela — é a assinatura, e não o HTTPS,
+          # que decide o que vira `/Applications/NoCom.app`.
+          #
+          # Sem estas duas o build FALHA, porque `createUpdaterArtifacts` está
+          # ligado no `tauri.conf.json`. É de propósito: publicar uma release sem
+          # os `.sig` deixaria quem já instalou sem caminho de atualização, e um
+          # build vermelho é um jeito melhor de descobrir isso do que um usuário
+          # reportando meses depois.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           args: --target ${{ matrix.target }}
           tagName: v__VERSION__
@@ -82,3 +100,16 @@ jobs:
           # baixa de /releases/download/v<versão>/.
           releaseDraft: false
           prerelease: false
+          # O `latest.json` que o app consulta. Sobe como asset da release, e é o
+          # que o endpoint do `tauri.conf.json` aponta via
+          # `/releases/latest/download/`. Já é o padrão; explícito porque é a peça
+          # sem a qual o botão de atualizar não acha nada.
+          uploadUpdaterJson: true
+          # **O Windows atualiza pelo `-setup.exe`, e não pelo `.msi`.** O padrão da
+          # action é o contrário (`false`, por legado), e com `targets: "all"` os dois
+          # são gerados — então sem esta linha o `latest.json` aponta para o MSI, que
+          # instala via `msiexec` com elevação: um UAC a cada atualização, e nenhuma
+          # atualização possível para quem não é administrador da máquina. O NSIS
+          # deste projeto instala em modo `currentUser` (o padrão do bundler), que não
+          # pede elevação nenhuma.
+          updaterJsonPreferNsis: true

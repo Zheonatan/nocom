@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import { t } from "@/lib/i18n";
 
 /**
@@ -144,6 +145,15 @@ export type GlobalShortcut = {
   remembered: boolean;
 };
 
+/**
+ * Espelha o struct `Disponivel` de `atualizacao.rs` — a versão que está lá fora,
+ * quando existe uma mais nova que a instalada (Adendo 10).
+ */
+export type Update = {
+  /** A versão publicada (`0.3.0`). É ela que o painel nomeia antes de instalar. */
+  version: string;
+};
+
 /** O que `close_tab` devolve: exatamente o que apagou, para o desfazer repor. */
 export type ClosedTab = {
   tab: Tab;
@@ -284,6 +294,48 @@ export function setShortcut(accelerator: string): Promise<GlobalShortcut> {
  */
 export function pauseShortcut(paused: boolean): Promise<GlobalShortcut> {
   return invoke<GlobalShortcut>("pause_shortcut", { paused });
+}
+
+/**
+ * A versão instalada, como ela está no `tauri.conf.json` e embutida no binário.
+ *
+ * Vem do `@tauri-apps/api/app` e não de um comando nosso: é o único dado desta
+ * fronteira que o Tauri já expõe, e `core:default` (que a capability da janela já
+ * concede) cobre a leitura. Um comando próprio seria uma terceira cópia do mesmo
+ * número — a quarta contando o `Cargo.toml`.
+ */
+export function currentVersion(): Promise<string> {
+  return getVersion();
+}
+
+/**
+ * Pergunta ao GitHub se existe versão mais nova. `null` é a resposta boa: o app já
+ * está na última.
+ *
+ * **É a única requisição de rede do app, e ela só sai de um clique** — não há
+ * checagem na abertura nem temporizador (Adendo 10). O resultado fica guardado no
+ * backend para que `installUpdate` instale exatamente a versão nomeada aqui.
+ *
+ * Rejeita quando a pergunta não pôde ser feita: sem rede, endpoint fora, ou
+ * `latest.json` sem entrada para esta plataforma — que é o caso do `.deb` e do
+ * `.rpm`, onde o updater não atua. Em todos eles nada mudou no disco.
+ */
+export function checkUpdate(): Promise<Update | null> {
+  return invoke<Update | null>("check_update");
+}
+
+/**
+ * Baixa a versão verificada, valida a assinatura, substitui o app e reinicia.
+ *
+ * **Não resolve no caminho de sucesso**: o processo é trocado dentro da chamada, e
+ * o que o usuário vê é a janela sumir e voltar já na versão nova. Por isso quem
+ * chama não tem estado de "pronto" para desenhar — só o de espera, e o de falha.
+ *
+ * Uma rejeição aqui não deixa meio app instalado: o pacote é baixado inteiro e a
+ * assinatura conferida antes de qualquer escrita no lugar do app.
+ */
+export function installUpdate(): Promise<void> {
+  return invoke<void>("install_update");
 }
 
 export function hideWindow(): Promise<void> {

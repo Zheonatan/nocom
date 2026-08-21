@@ -82,6 +82,32 @@ Depois disso ele abre normalmente, inclusive nas próximas atualizações.
 Clique em **Mais informações** e depois em **Executar assim mesmo**.
 </details>
 
+## Atualizar
+
+Abra a engrenagem dentro do app e clique em **Verificar se há versão nova**. Se
+houver, o botão passa a oferecer **Atualizar e reiniciar**: o app baixa a versão
+nova, confere a assinatura, se substitui e volta sozinho. Você não precisa achar
+a release, escolher o arquivo da sua arquitetura, arrastar para `/Applications`
+nem repetir o `xattr`.
+
+Não há verificação automática, de propósito — ver
+[Suas tarefas ficam com você](#suas-tarefas-ficam-com-você).
+
+No Windows há um passo visível a mais: o app fecha, o instalador aparece com uma
+barra de progresso por alguns segundos e o app volta sozinho. É assim porque um
+programa em execução não pode se sobrescrever no Windows — não pede senha nem
+confirmação, e não passa pelo aviso do SmartScreen.
+
+Duas ressalvas honestas:
+
+- **No Linux só o AppImage se atualiza.** Quem instalou pelo `.deb` ou pelo
+  `.rpm` continua atualizando pelo gerenciador de pacotes: o botão vai dizer que
+  não conseguiu verificar, e nada no app é alterado.
+- **Pelo Homebrew, os dois caminhos funcionam.** Atualizar de dentro do app deixa
+  o `brew` achando que você está na versão anterior até o próximo
+  `brew upgrade --cask nocom`, que apenas reinstala a mesma versão. Nada quebra,
+  e suas tarefas não estão em `/Applications`.
+
 ## Usando
 
 Abra o app uma vez. A partir daí ele fica em segundo plano, no ícone da bandeja.
@@ -123,8 +149,12 @@ Tudo em um arquivo de texto simples no seu computador, que nunca sai dele:
 | Windows | `%APPDATA%\com.nocom.app\todos.json` |
 | Linux | `~/.local/share/com.nocom.app/todos.json` |
 
-Sem telemetria, sem conta, sem requisição de rede. Para levar suas tarefas para
-outra máquina, copie esse arquivo.
+Sem telemetria e sem conta. A **única** requisição de rede que o app faz é a
+verificação de atualização, e ela sai de um clique seu dentro da engrenagem —
+nunca na abertura, nunca por temporizador, nunca em segundo plano. Sem esse
+clique, nada sai desta máquina.
+
+Para levar suas tarefas para outra máquina, copie esse arquivo.
 
 O idioma (português ou inglês) e o tema claro/escuro seguem o seu sistema — não
 há seletor para nenhum dos dois.
@@ -150,8 +180,19 @@ Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê
 
 Publicar uma versão: `git tag v0.3.0 && git push origin v0.3.0`. O
 [workflow de build](.github/workflows) gera e publica os instaladores dos três
-sistemas. Depois disso, atualize a versão e os `sha256` do cask em
+sistemas, mais o `latest.json` que o botão de atualizar consulta. Depois disso,
+atualize a versão e os `sha256` do cask em
 [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap).
+
+**A chave de assinatura das atualizações** é o que faz o app aceitar um pacote.
+Gerada uma vez com `npm run tauri signer generate -- -w ~/.tauri/nocom.key`: a
+metade pública vai em `plugins.updater.pubkey` no `tauri.conf.json`, e a privada
+em dois secrets do repositório, `TAURI_SIGNING_PRIVATE_KEY` e
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+Guarde a privada fora da máquina. **Perdê-la significa que ninguém que já
+instalou volta a atualizar de dentro do app** — trocar o `pubkey` obriga todo
+mundo a reinstalar na mão uma última vez.
 
 ## Estado do projeto
 

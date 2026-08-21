@@ -96,12 +96,39 @@ Abra o app uma vez. A partir daí ele fica em segundo plano, no ícone da bandej
 | Trazer de volta sem o teclado | clique no ícone da bandeja |
 | Ver quantas faltam sem abrir | passe o mouse no ícone da bandeja |
 | Trocar o atalho | engrenagem, dentro do app |
+| Anotar uma data | escreva no título: `pagar boleto 20/08` |
 
 ### Abas são contextos
 
 Trabalho, casa, um projeto específico. Cada aba é uma lista separada, criada e
 nomeada no mesmo gesto — sem diálogo, sem tela nova. A aba em que você estava
 continua aberta na próxima vez.
+
+### A data que você escreveu
+
+Escreva a data no meio do texto, como faria num papel: **pagar boleto 20/08**. O app
+reconhece a data, destaca ela e — quando ela está no fim do título — leva para uma
+**coluna à direita**, deixando o texto à esquerda:
+
+```
+☐ pagar boleto              20/08
+☐ TESTE                     19/10
+☐ reuniao 19/10 com o time
+```
+
+Toda data fica com um destaque cinza. **No dia dela, o destaque fica vermelho pastel** —
+e volta ao cinza no dia seguinte, sozinho, mesmo com o app semanas aberto.
+
+A data só vai para a direita quando o título tem **uma** data e ela está no **fim**. Data
+no meio de uma frase, ou duas datas na mesma tarefa ("de 19/10 a 25/10"), ficam onde
+estão, com o texto intacto — o app nunca reescreve o que você digitou.
+
+Vale `20/08`, `20/08/26` e `20/08/2026`, com um ou dois dígitos (`6/9` funciona). A ordem
+de dia e mês é a do **formato regional do seu sistema**, não a do idioma: quem usa o
+sistema em inglês morando no Brasil continua escrevendo `20/08`.
+
+Duas coisas que ele **não** faz: não avisa quando a data passa, e uma data de ontem fica
+igual a uma de amanhã. Não é prazo — ver [O que ele não é](#o-que-ele-não-é).
 
 ### Nada se perde por acidente
 
@@ -113,6 +140,14 @@ desfeito na hora. Nunca há caixa de confirmação no caminho.
 Um não-objetivo é tão parte do produto quanto uma funcionalidade. O NoCom
 não tem prazos, prioridades, subtarefas, etiquetas, anexos, colaboração nem
 sincronização. Ele não vai virar um gerenciador de projetos.
+
+**"Sem prazos" continua valendo mesmo com a coluna de datas.** O app **lê** a data que
+você escreveu e diz "é hoje" no dia certo. Ele não **gerencia** vencimento: não ordena por
+data, não avisa quando passa, não conta os dias que faltam e não tem campo "para quando".
+
+O vermelho marca **coincidência, não urgência** — é o dia da data, não "atrasado". Uma
+data de ontem fica cinza, igual a uma de amanhã, porque o app não guarda data nenhuma
+para poder comparar depois.
 
 ## Suas tarefas ficam com você
 
@@ -138,9 +173,12 @@ Tauri v2 (Rust) + React 19 + TypeScript + Tailwind + shadcn/ui.
 npm install
 npm run tauri dev      # desenvolvimento
 npm run tauri build    # instaladores para a plataforma atual
+npm test               # testes do frontend (node --test, sem dependência extra)
+cd src-tauri && cargo test   # testes do backend
 ```
 
-**Pré-requisitos:** Node 22+, Rust estável e as
+**Pré-requisitos:** Node 22.18+ (o `npm test` usa o apagador de tipos nativo do
+Node, sem transpilador), Rust estável e as
 [dependências de sistema do Tauri](https://tauri.app/start/prerequisites/).
 No Linux: `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
 e `libxdo-dev`.

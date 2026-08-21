@@ -8,6 +8,7 @@
 //! lado do Rust sem nenhum `rename` no meio.
 
 mod atalho;
+mod formato;
 mod heranca;
 mod idioma;
 mod janela;
@@ -130,6 +131,25 @@ async fn get_startup_rescue(store: State<'_, Store>) -> Result<Option<String>, S
 #[tauri::command]
 async fn get_shortcut(atalho: State<'_, Atalho>) -> Result<atalho::Descricao, String> {
     Ok(atalho.descrever())
+}
+
+// --- formato de data ---
+
+/// O dia vem antes do mês no formato deste sistema?
+///
+/// A janela usa isto para achar no título de uma tarefa a data que é hoje
+/// (Adendo 11). **Não pode ser lido na webview:** `navigator.language` é o idioma
+/// da interface e não a região, e o `Intl` escolhe a ordem pela língua — um Mac
+/// com idioma inglês e região Brasil responde `en-US` e formata `dd/MM/yy`. Ver
+/// `formato.rs`, que registra as duas medições.
+///
+/// **Não falha.** Uma leitura que não dá certo cai em dia-primeiro, e não há erro
+/// a mostrar: nada aconteceu com os dados do usuário e não existe gesto dele para
+/// tentar de novo. O único efeito visível de um fallback é um destaque que não
+/// acende, que é o estado de qualquer tarefa sem data.
+#[tauri::command]
+async fn date_day_first() -> bool {
+    formato::dia_primeiro()
 }
 
 /// Troca a combinação. Recebe o acelerador (`control+alt+KeyT`), que é o formato
@@ -702,6 +722,7 @@ pub fn run() {
             get_startup_rescue,
             get_shortcut,
             set_shortcut,
+            date_day_first,
             pause_shortcut,
             list_todos,
             add_todo,

@@ -266,6 +266,8 @@ textarea {
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-today: var(--today);
+  --color-today-foreground: var(--today-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -310,6 +312,18 @@ textarea {
      e o fundo escurece junto com o texto — ficava em 3.99:1. É a única cor do
      app e a mensagem mais importante dele. */
   --destructive: oklch(0.529 0.245 27.325);
+  /* A data de hoje. É o SEGUNDO valor cromático do app, e o único que não
+     reporta falha — a Regra do Pigmento Único deixa de ser absoluta aqui, de
+     propósito, e o DESIGN.md registra a troca.
+
+     Mesma matiz da família do erro, com croma 5,4x menor no fundo (0.045 contra
+     0.245): a intensidade é o que separa os dois significados, e é o que faz uma
+     pílula de 40px não competir com a faixa de erro. Medido: texto sobre a
+     pílula em 6.64:1, e a pílula em 1.27:1 contra o cartão e 1.20:1 contra a
+     linha sob o cursor — os dois acima da pílula cinza (1.10 e 1.05), porque
+     hoje precisa ser MAIS presente que uma data qualquer, nunca menos. */
+  --today: oklch(0.93 0.045 25);
+  --today-foreground: oklch(0.44 0.15 25);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --control-border: oklch(0.643 0 0);
@@ -357,6 +371,12 @@ textarea {
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  /* No escuro a pílula sobe de lightness em vez de descer: a cinza é
+     `foreground/10`, ou seja branco sobre quase-preto, e uma pílula vermelha mais
+     escura que ela leria como menos importante que uma data qualquer. Medido:
+     texto em 7.09:1, pílula em 1.90:1 contra o cartão e 1.71:1 contra o hover. */
+  --today: oklch(0.4 0.05 25);
+  --today-foreground: oklch(0.92 0.06 25);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --control-border: oklch(0.545 0 0);

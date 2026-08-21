@@ -3,11 +3,26 @@ import { X } from "lucide-react";
 import { InlineEdit } from "@/components/InlineEdit";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { splitTitle } from "@/lib/dates";
 import { t } from "@/lib/i18n";
 import { TITLE_MAX_LENGTH, type Todo } from "@/lib/todos";
 
 type TodoRowProps = {
   todo: Todo;
+  /**
+   * O dia de hoje (`2026-08-19`), para achar no título a data que é hoje. Vem de
+   * cima, do `useToday`, e não de um `new Date()` aqui: um relógio por linha
+   * daria leituras diferentes na mesma lista se a virada da meia-noite caísse no
+   * meio de um render, e nenhum deles viraria de dia sozinho.
+   */
+  today: string;
+  /**
+   * O dia vem antes do mês no formato deste sistema? Vem do backend, uma vez na
+   * abertura — a webview não sabe responder isso (ver `lib/dates.ts` e o Adendo
+   * 11). Booleano e não etiqueta de locale: a decisão já chega tomada, e um
+   * primitivo atravessa o `memo` sem custo.
+   */
+  dayFirst: boolean;
   /** Linha ainda sem id real do backend: não dá para renomear o que não existe. */
   pending: boolean;
   editing: boolean;
@@ -25,8 +40,69 @@ type TodoRowProps = {
  * esta comparação rasa de props funcionar — um wrapper inline lá anula o memo
  * daqui.
  */
+/**
+ * A pílula de uma data.
+ *
+ * **`mark` e não `span`:** é exatamente o que o elemento quer dizer — trecho
+ * realçado por ser relevante no contexto de agora. Os dois valores padrão do
+ * navegador (fundo amarelo de sistema, texto preto) são substituídos, porque sem
+ * isso `mark` traria uma terceira cor para um app que tem duas.
+ *
+ * **Duas intensidades, e a diferença entre elas é a informação.** Uma data
+ * qualquer fica em cinza (`foreground/10`, croma 0 — a Bruma Densa); a data de
+ * hoje fica no vermelho pastel do token `today`. O que o olho compara não é a
+ * pílula contra o fundo, é uma pílula contra as outras da mesma lista — e matiz
+ * contra ausência de matiz é a diferença mais fácil que existe de ver, o que
+ * permite ao vermelho ser fraco o bastante para não competir com a faixa de erro.
+ * Os dois pares foram medidos, e os números estão no `index.css`.
+ *
+ * `rounded-sm` (6px) contra os 8px da linha, pela Regra do Raio Decrescente.
+ * `font-medium` é a segunda metade do destaque e a mais importante: hierarquia
+ * aqui se faz com peso e com cinza, e o peso é o que ainda se lê se o tom se
+ * perder na tela de alguém — inclusive para quem não distingue vermelho de cinza,
+ * que é a razão de o vermelho **nunca** ser o único sinal (a pílula já está lá).
+ *
+ * `box-decoration-clone`: inline, a data pode cair na quebra entre as duas linhas
+ * do título, e sem isto a pílula ficaria com padding só nas pontas de fora.
+ */
+function DatePill({
+  text,
+  today,
+  id,
+  className = "",
+}: {
+  text: string;
+  today: boolean;
+  /** Só a data extraída tem id: é ele que entra no nome acessível do checkbox. */
+  id?: string;
+  className?: string;
+}) {
+  return (
+    <mark
+      id={id}
+      className={[
+        "box-decoration-clone rounded-sm px-1 font-medium",
+        today
+          ? "bg-today text-today-foreground"
+          : "bg-foreground/10 text-foreground",
+        className,
+      ].join(" ")}
+    >
+      {text}
+      {/* O destaque é tinta, e tinta não é lida por leitor de tela. A palavra vai
+          junto do trecho, e não da linha inteira, para cair no lugar certo da
+          frase: "pagar boleto 20/08 (hoje)". Só a data de HOJE ganha a palavra —
+          uma data qualquer já se lê como data, e anunciar "data" em cada uma
+          seria ruído em cima do texto que a pessoa escreveu. */}
+      {today && <span className="sr-only"> ({t("task.today")})</span>}
+    </mark>
+  );
+}
+
 export const TodoRow = memo(function TodoRow({
   todo,
+  today,
+  dayFirst,
   pending,
   editing,
   onToggle,
@@ -35,6 +111,20 @@ export const TodoRow = memo(function TodoRow({
   onCancelEdit,
   onRename,
 }: TodoRowProps) {
+  // As datas escritas no título: as que ficam inline e a que vai para a direita
+  // — ver `splitTitle`. `segments` vazio é o caso normal, e é o sinal para o
+  // título sair como sempre saiu: um nó de texto, sem elemento nenhum em volta.
+  //
+  // **Concluída não destaca, e nem extrai.** Pela Regra do Desbotamento,
+  // resolvido é estado com menos contraste; uma pílula acesa dentro de uma linha
+  // riscada diria as duas coisas opostas na mesma linha. E mover a data para a
+  // direita numa linha concluída faria o texto mudar de forma no instante do
+  // clique — o título andaria debaixo do olho de quem acabou de marcar, o que a
+  // Regra da Batida em Três Tempos já cuida de não fazer.
+  const partes = todo.done
+    ? { segments: [], rest: todo.title, trailing: null }
+    : splitTitle(todo.title, today, dayFirst);
+
   return (
     // `data-todo-id` é a âncora do FLIP em `useFlipRows`: é por ele que a
     // animação sabe de onde para onde esta linha andou.
@@ -65,7 +155,15 @@ export const TodoRow = memo(function TodoRow({
         onCheckedChange={() => onToggle(todo.id)}
         // O nome acessível vem do título ao lado. Antes vinha de um `htmlFor`,
         // que também fazia o clique no título alternar a tarefa — ver abaixo.
-        aria-labelledby={`todo-title-${todo.id}`}
+        //
+        // **Dois ids, e o segundo não é opcional.** Quando a data é extraída para a
+        // direita, ela sai do elemento do título — e um `aria-labelledby` só nele
+        // faria o checkbox se chamar "pagar boleto", sem a data que a pessoa
+        // digitou. `aria-labelledby` concatena os ids na ordem em que aparecem,
+        // então a leitura volta a ser o título inteiro: "pagar boleto 20/08
+        // (hoje)". Um id que não existe no DOM é ignorado, o que cobre de graça o
+        // caso comum de tarefa sem data.
+        aria-labelledby={`todo-title-${todo.id} todo-date-${todo.id}`}
         // O quadrado continua com 16px, mas a área de clique não: concluir é a
         // ação mais frequente do app e virou o único alvo depois que o título
         // parou de alternar.
@@ -133,8 +231,35 @@ export const TodoRow = memo(function TodoRow({
           ].join(" ")}
           title={todo.title}
         >
-          {todo.title}
+          {partes.segments.length === 0
+            ? partes.rest
+            : partes.segments.map((segment, i) =>
+                segment.date ? (
+                  <DatePill key={i} text={segment.text} today={segment.today} />
+                ) : (
+                  segment.text
+                ),
+              )}
         </span>
+      )}
+      {/* A data que saiu do fim do título, alinhada à direita.
+
+          **Entre o título e o `×`, e não no lugar dele.** O botão de remover já
+          ocupa largura fixa em repouso (ele só troca de opacidade, nunca de
+          layout), então a data entra ao lado sem que nada ande quando o mouse
+          chega — o que a Regra do Movimento que se Paga exige de tudo que não se
+          mexe sozinho.
+
+          `shrink-0` com o título em `min-w-0 flex-1`: quem cede largura é o
+          texto, que já sabe se truncar em duas linhas. A data nunca quebra nem
+          encolhe, porque uma data pela metade não é uma data. */}
+      {partes.trailing !== null && !editing && (
+        <DatePill
+          id={`todo-date-${todo.id}`}
+          text={partes.trailing.text}
+          today={partes.trailing.today}
+          className="shrink-0 whitespace-nowrap tabular-nums"
+        />
       )}
       {/* Some por padrão; aparece no hover da linha e sempre que recebe foco
           por teclado — senão o botão fica inalcançável sem mouse. */}

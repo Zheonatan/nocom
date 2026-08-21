@@ -9,9 +9,12 @@
 
 mod atalho;
 mod atualizacao;
+mod formato;
 mod heranca;
 mod idioma;
 mod janela;
+#[cfg(target_os = "macos")]
+mod marca;
 mod persistencia;
 mod store;
 
@@ -132,6 +135,25 @@ async fn get_startup_rescue(store: State<'_, Store>) -> Result<Option<String>, S
 #[tauri::command]
 async fn get_shortcut(atalho: State<'_, Atalho>) -> Result<atalho::Descricao, String> {
     Ok(atalho.descrever())
+}
+
+// --- formato de data ---
+
+/// O dia vem antes do mês no formato deste sistema?
+///
+/// A janela usa isto para achar no título de uma tarefa a data que é hoje
+/// (Adendo 11). **Não pode ser lido na webview:** `navigator.language` é o idioma
+/// da interface e não a região, e o `Intl` escolhe a ordem pela língua — um Mac
+/// com idioma inglês e região Brasil responde `en-US` e formata `dd/MM/yy`. Ver
+/// `formato.rs`, que registra as duas medições.
+///
+/// **Não falha.** Uma leitura que não dá certo cai em dia-primeiro, e não há erro
+/// a mostrar: nada aconteceu com os dados do usuário e não existe gesto dele para
+/// tentar de novo. O único efeito visível de um fallback é um destaque que não
+/// acende, que é o estado de qualquer tarefa sem data.
+#[tauri::command]
+async fn date_day_first() -> bool {
+    formato::dia_primeiro()
 }
 
 /// Troca a combinação. Recebe o acelerador (`control+alt+KeyT`), que é o formato
@@ -660,22 +682,31 @@ fn montar_tray(app: &AppHandle) -> tauri::Result<()> {
                 alternar_janela(tray.app_handle());
             }
         });
-    // O ícone do app já está em `icons/`; sem ele o tray subiria como um espaço
-    // vazio e clicável, que é pior que não ter tray.
+    // Windows e Linux desenham o ícone da bandeja **com as cores do arquivo**, e
+    // por isso recebem o ícone do app: o campo preto é o que dá contraste próprio
+    // ao anel branco, numa barra de tarefas que pode ser clara ou escura. O
+    // `default_window_icon` é o `.ico` no Windows (que traz um raster calibrado
+    // para cada tamanho pequeno) e o `32x32.png` no Linux — em nenhum dos dois a
+    // bandeja está reduzindo o desenho de 1024.
+    //
+    // Sem ícone nenhum o tray subiria como um espaço vazio e clicável, que é pior
+    // que não ter tray.
+    #[cfg(not(target_os = "macos"))]
     if let Some(icone) = app.default_window_icon().cloned() {
         builder = builder.icon(icone);
     }
-    // **Na barra de menus do macOS, ícone é silhueta.** Sem isto, o ícone entra
-    // com as cores dele no meio de um cromo monocromático — e no tema escuro um
-    // desenho de tinta escura sobre barra escura simplesmente desaparece, levando
-    // com ele a via de volta GARANTIDA da janela. `icon_as_template` deixa o
-    // sistema pintar a forma na cor certa dos dois temas.
+    // **Na barra de menus do macOS, ícone é silhueta.** Sem `icon_as_template` o
+    // desenho entra com as cores dele no meio de um cromo monocromático — e no
+    // tema escuro tinta escura sobre barra escura simplesmente desaparece, levando
+    // com ela a via de volta GARANTIDA da janela.
     //
-    // Só no macOS: Windows e Linux desenham o ícone da bandeja com as cores dele,
-    // e uma silhueta ali seria um borrão.
+    // E ser silhueta é o que impede o ícone do app de servir aqui: template usa só
+    // o canal alfa, e o alfa daquele arquivo é o quadrado inteiro — a barra
+    // mostraria um retângulo cheio, com o anel sumido dentro dele. Por isso o
+    // macOS recebe o anel desenhado sozinho, no alfa. Ver `marca.rs`.
     #[cfg(target_os = "macos")]
     {
-        builder = builder.icon_as_template(true);
+        builder = builder.icon(marca::bandeja()).icon_as_template(true);
     }
     // Os dois handles ficam no estado porque o ícone é reescrito depois de nascer: o
     // tooltip a cada mutação (a contagem muda) e o rótulo do item a cada troca de
@@ -744,6 +775,7 @@ pub fn run() {
             get_startup_rescue,
             get_shortcut,
             set_shortcut,
+            date_day_first,
             pause_shortcut,
             check_update,
             install_update,

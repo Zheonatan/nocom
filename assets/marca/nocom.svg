@@ -1,0 +1,20 @@
+<!-- Marca do NoCom: um anel branco de fio fino num campo preto.
+
+     Este arquivo e a GEOMETRIA CANONICA, e os numeros dele aparecem em outros
+     tres lugares que precisam concordar com ele:
+       - `scripts/marca.mjs`   gera todo raster empacotado a partir das mesmas fracoes
+       - `src-tauri/src/marca.rs` desenha o anel da barra de menus do macOS
+       - `DESIGN.md`           registra a razao de cada fracao
+
+     As fracoes, em relacao ao lado do CAMPO (o retangulo preto visivel, que no
+     macOS e menor que o canvas):
+       diametro externo do anel = 0.62 x campo
+       espessura do traco       = campo / 64        (razao diametro/traco ~= 40:1)
+
+     O campo aqui sangra ate a borda: e a forma que Windows e Linux usam, e a que
+     serve como logo solto. O .icns recebe a squircle do macOS, que o gerador
+     calcula analiticamente. Ver DESIGN.md, "A Marca". -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="NoCom">
+  <rect width="1024" height="1024" fill="#000000"/>
+  <circle cx="512" cy="512" r="309.44" fill="none" stroke="#ffffff" stroke-width="16"/>
+</svg>

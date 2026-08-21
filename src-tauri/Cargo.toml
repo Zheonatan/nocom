@@ -34,6 +34,15 @@ uuid = { version = "1", features = ["v4"] }
 # plugin inteiro entraria aqui para expor uma funcao so.
 sys-locale = "0.3"
 
+# `nl_langinfo(D_FMT)`, para ler a ordem de dia e mes do formato de data do
+# sistema (ver formato.rs). So no Linux: no macOS e no Windows a leitura e uma
+# chamada de framework declarada a mao, e nao precisa de crate. A libc ja esta na
+# arvore por baixo de meia duzia de dependencias do Tauri -- declara-la aqui nao
+# acrescenta pacote nenhum, e o que ela da em troca e o valor certo de `D_FMT`,
+# que glibc e musl nao definem igual.
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
 # Atalho global (Control+Option+T). Fica sob um alvo de desktop porque atalho de
 # sistema nao existe em Android nem iOS: como dependencia comum, o plugin entraria
 # na compilacao mobile so para nao poder ser usado.

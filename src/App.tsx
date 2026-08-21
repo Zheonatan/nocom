@@ -18,6 +18,7 @@ import { ShortcutSettings } from "@/components/ShortcutSettings";
 import { TabStrip } from "@/components/TabStrip";
 import { TodoRow } from "@/components/TodoRow";
 import { useFlipRows } from "@/hooks/use-flip-rows";
+import { useToday } from "@/hooks/use-today";
 import { t, type MessageKey } from "@/lib/i18n";
 import { hasAddedTask, markTaskAdded } from "@/lib/onboarding";
 import { DEFAULT_SHORTCUT_LABEL } from "@/lib/shortcut";
@@ -28,6 +29,7 @@ import {
   clearCompleted,
   closeTab,
   createTab,
+  dateDayFirst,
   deleteTodo,
   errorDetail,
   getActiveTab,
@@ -186,6 +188,21 @@ function App() {
    * antes de saber qual é a tecla.
    */
   const [shortcut, setShortcut] = useState<GlobalShortcut | null>(null);
+
+  /**
+   * O dia vem antes do mês no formato deste sistema? Decide como o título de uma
+   * tarefa é lido em busca da data de hoje (Adendo 11).
+   *
+   * **O valor inicial é o fallback de falha, e não um estado passageiro.** A
+   * leitura sai no mesmo `Promise.all` das abas e é aplicada **antes** de as
+   * tarefas carregarem, então o primeiro render que tem tarefa na tela já tem a
+   * ordem certa: não existe quadro em que a lista apareça com o palpite. Quem
+   * depende deste `true` é só o caminho em que o IPC falhou — e ali ele é o mesmo
+   * dia-primeiro que o backend usa, pela mesma razão assimétrica (Adendo 11): sob
+   * dia-primeiro um `08/20` procura o mês 20 e não casa com nada, então o erro
+   * cala em vez de afirmar.
+   */
+  const [dayFirst, setDayFirst] = useState(true);
   /**
    * Se o painel do atalho está ocupando a área da lista.
    *
@@ -283,6 +300,11 @@ function App() {
   // O estado fica sempre na ordem canônica do contrato; a ordem de exibição é
   // aplicada só aqui, na borda da renderização.
   const visible = useMemo(() => [...todos].sort(byDisplayOrder), [todos]);
+
+  // O dia de hoje, para a linha achar no título a data que é hoje. Um só para a
+  // lista inteira, e ele vira sozinho na meia-noite — o app fica semanas aberto
+  // na bandeja (ver `useToday`).
+  const today = useToday();
 
   // A linha em edição pode sumir sem passar por `onCancelEdit`: remover a tarefa
   // ou limpar as concluídas desmonta o editor por baixo. `editingId` ficava
@@ -420,7 +442,7 @@ function App() {
     let alive = true;
     (async () => {
       try {
-        const [list, saved, rescue, combinacao] = await Promise.all([
+        const [list, saved, rescue, combinacao, diaPrimeiro] = await Promise.all([
           listTabs(),
           getActiveTab(),
           getStartupRescue(),
@@ -434,9 +456,15 @@ function App() {
           // "não foi possível carregar suas tarefas" com as tarefas intactas no
           // disco. O painel tem a segunda chance dele em `handleToggleSettings`.
           getShortcut().catch(() => null),
+          // Junto das outras pelo mesmo motivo, e com o mesmo `catch` local: a
+          // ordem de dia e mês é a menos importante das cinco leituras — errá-la
+          // custa um destaque que não acende, e não uma tarefa que não aparece.
+          // `null` aqui significa "fica com o palpite inicial".
+          dateDayFirst().catch(() => null),
         ]);
         if (!alive) return;
         if (combinacao !== null) setShortcut(combinacao);
+        if (diaPrimeiro !== null) setDayFirst(diaPrimeiro);
         // **Antes de qualquer outra coisa na faixa.** Se o backend não entendeu o
         // arquivo, o app está abrindo com uma lista vazia que não é a do usuário —
         // e uma lista vazia calada é indistinguível de tudo perdido, que é
@@ -1432,6 +1460,14 @@ function App() {
                 <TodoRow
                   key={todo.id}
                   todo={todo}
+                  // O mesmo dia para todas as linhas, e ele vira sozinho à
+                  // meia-noite — ver `useToday`. String, então o `memo` da linha
+                  // continua valendo: muda uma vez por dia.
+                  today={today}
+                  // A ordem de dia e mês do sistema, lida uma vez na abertura.
+                  // Booleano, e some do caminho do `memo` pelo mesmo motivo que o
+                  // dia: muda no máximo uma vez por execução.
+                  dayFirst={dayFirst}
                   pending={todo.id.startsWith(OPTIMISTIC_PREFIX)}
                   editing={editing === todo.id}
                   // Sem wrappers inline: uma arrow nova por render mudaria as

@@ -1,5 +1,5 @@
 ---
-name: Mini To-Do
+name: NoCom
 description: Uma vidraça acromática de 360x480 que flutua sobre o trabalho real e só ganha cor quando algo falha.
 colors:
   background: "oklch(1 0 0)"
@@ -148,7 +148,7 @@ components:
     typography: "{typography.label}"
 ---
 
-# Design System: Mini To-Do
+# Design System: NoCom
 
 ## Overview
 

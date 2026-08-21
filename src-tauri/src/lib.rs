@@ -8,6 +8,7 @@
 //! lado do Rust sem nenhum `rename` no meio.
 
 mod atalho;
+mod heranca;
 mod idioma;
 mod janela;
 mod persistencia;
@@ -607,7 +608,7 @@ fn montar_tray(app: &AppHandle) -> tauri::Result<()> {
     let mut builder = TrayIconBuilder::new()
         // Nome próprio, igual nas duas línguas — e substituído pelo texto com a
         // contagem no `atualizar_tooltip` que roda logo depois do `montar_tray`.
-        .tooltip("Mini To-Do")
+        .tooltip("NoCom")
         .menu(&menu)
         // O clique esquerdo alterna a janela, então o menu fica no direito; com o
         // padrão, o clique esquerdo abriria o menu e o gesto principal sumiria.
@@ -662,6 +663,10 @@ pub fn run() {
         // e não em `default()`.
         .setup(|app| {
             let diretorio = app.path().app_data_dir()?;
+            // Antes de qualquer `abrir`: é a leitura de um arquivo ausente que
+            // define o app como instalação nova, e quem vem do nome antigo tem os
+            // arquivos na pasta ao lado. Ver `heranca`.
+            heranca::adotar(&diretorio);
             app.manage(Store::abrir(diretorio.join("todos.json")));
             // Arquivo próprio, ao lado das tarefas e não dentro delas: um JSON de
             // tarefas corrompido não pode levar junto a posição, nem o contrário.
@@ -729,7 +734,7 @@ mod tests_tooltip {
     #[test]
     fn o_tooltip_conta_as_pendentes_de_todas_as_abas_somadas() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-tray-abas-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-tray-abas-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&diretorio);
         let store = Store::abrir(diretorio.join("todos.json"));
 

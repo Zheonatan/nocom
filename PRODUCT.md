@@ -120,9 +120,18 @@ nenhum lado):
   argumento de eliminação que o justificou, mas deixou de ser a única possível — quem
   descobre que ela está ocupada no sistema dele troca pela engrenagem, sem esperar uma
   versão nova. A transparência e o tray continuam abertos.
-- **Identidade visual e nome.** Nem "Mini To-Do" nem o ícone estão fechados. O ícone
-  empacotado hoje é o **logo padrão do Tauri**, provisório, e não pode ser distribuído
+- **Identidade visual.** *O nome saiu desta lista; o ícone não.* **O nome é "NoCom"**,
+  fechado na 0.2.0 — "Mini To-Do" descrevia a categoria, não o produto, e um nome que
+  descreve categoria não sobrevive ao primeiro concorrente vizinho. O ícone empacotado
+  hoje continua sendo o **logo padrão do Tauri**, provisório, e não pode ser distribuído
   como identidade do produto.
+
+  A troca de nome levou junto o identificador do bundle (`com.minitodo.app` →
+  `com.nocom.app`), e é o identificador que nomeia a pasta de dados. Quem atualiza teria
+  aberto o app vazio, com a lista inteira num diretório ao lado — o caminho de perda que
+  a regra inaceitável proíbe. Fechado por `src-tauri/src/heranca.rs`, que copia os três
+  arquivos de estado da pasta antiga na primeira abertura, sem nunca mover nem
+  sobrescrever.
 - **Descobribilidade em produto distribuído.** *Endereçada, e ainda sem confirmação de
   campo.* A "dica discreta" do Adendo 2 era dimensionada para quem já sabia do atalho, e
   morria na primeira tarefa — um gesto antes do primeiro `Escape`. O primeiro uso agora
@@ -139,8 +148,9 @@ nenhum lado):
 
 ## Brand Commitments
 
-- **Nome atual:** "Mini To-Do" (`productName` e título da janela), sem confirmação de que
-  é definitivo.
+- **Nome:** "NoCom" (`productName`, título da janela e tooltip do tray), fechado na
+  0.2.0. Escreve-se com as duas maiúsculas — é o que deixa as duas sílabas visíveis e
+  separa o nome de um erro de digitação. Não é traduzido: é nome, não texto.
 - **Voz:** direta e concreta, na língua do usuário e sem jargão de produtividade. Os textos
   existentes dizem "3 pendentes" e "Limpar concluídas", não "Você tem 3 itens em aberto".
   Mensagens de erro são frases legíveis, não códigos.

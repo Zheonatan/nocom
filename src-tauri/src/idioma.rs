@@ -79,12 +79,12 @@ where
 /// mudar de nome quando muda de superfície.
 pub fn tooltip(pendentes: usize, idioma: Idioma) -> String {
     match (idioma, pendentes) {
-        (Idioma::Pt, 0) => "Mini To-Do — tudo em dia".to_owned(),
-        (Idioma::Pt, 1) => "Mini To-Do — 1 tarefa pendente".to_owned(),
-        (Idioma::Pt, muitas) => format!("Mini To-Do — {muitas} tarefas pendentes"),
-        (Idioma::En, 0) => "Mini To-Do — all clear".to_owned(),
-        (Idioma::En, 1) => "Mini To-Do — 1 task pending".to_owned(),
-        (Idioma::En, muitas) => format!("Mini To-Do — {muitas} tasks pending"),
+        (Idioma::Pt, 0) => "NoCom — tudo em dia".to_owned(),
+        (Idioma::Pt, 1) => "NoCom — 1 tarefa pendente".to_owned(),
+        (Idioma::Pt, muitas) => format!("NoCom — {muitas} tarefas pendentes"),
+        (Idioma::En, 0) => "NoCom — all clear".to_owned(),
+        (Idioma::En, 1) => "NoCom — 1 task pending".to_owned(),
+        (Idioma::En, muitas) => format!("NoCom — {muitas} tasks pending"),
     }
 }
 
@@ -194,7 +194,7 @@ mod tests_textos {
         for idioma in [Idioma::Pt, Idioma::En] {
             for pendentes in [0, 1, 2, 99] {
                 assert!(
-                    tooltip(pendentes, idioma).starts_with("Mini To-Do"),
+                    tooltip(pendentes, idioma).starts_with("NoCom"),
                     "contagem {pendentes} perdeu o nome do app em {idioma:?}"
                 );
             }

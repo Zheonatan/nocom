@@ -76,7 +76,7 @@ jobs:
         with:
           args: --target ${{ matrix.target }}
           tagName: v__VERSION__
-          releaseName: Mini To-Do v__VERSION__
+          releaseName: NoCom v__VERSION__
           releaseBody: "Instaladores para Windows, macOS e Linux gerados automaticamente."
           # Publica direto: um draft não tem URL estável, e o cask do Homebrew
           # baixa de /releases/download/v<versão>/.

@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn posicao_ausente_no_disco_nao_inventa_nada() {
         let arquivo = std::env::temp_dir()
-            .join(format!("minitodo-janela-{}", std::process::id()))
+            .join(format!("nocom-janela-{}", std::process::id()))
             .join("janela.json");
         let _ = std::fs::remove_dir_all(arquivo.parent().expect("pai"));
         assert_eq!(Janela::abrir(arquivo).desejada(), None);
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn posicao_registrada_sobrevive_a_reabertura() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-janela-ok-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-janela-ok-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("janela.json");
 
@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn movimento_segurado_pelo_intervalo_e_descarregado_na_saida() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-janela-fl-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-janela-fl-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("janela.json");
 
@@ -342,7 +342,7 @@ mod tests {
     /// posição segue valendo em memória.
     #[test]
     fn falha_de_gravacao_e_silenciosa_e_nao_perde_a_memoria() {
-        let pai = std::env::temp_dir().join(format!("minitodo-janela-ro-{}", std::process::id()));
+        let pai = std::env::temp_dir().join(format!("nocom-janela-ro-{}", std::process::id()));
         std::fs::write(&pai, b"nao sou diretorio").expect("criar o falso pai");
 
         let janela = Janela::abrir(pai.join("janela.json"));

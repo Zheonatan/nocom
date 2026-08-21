@@ -1164,7 +1164,7 @@ function App() {
           data-tauri-drag-region
           className="text-body font-semibold tracking-tight"
         >
-          Mini To-Do
+          NoCom
         </span>
         {/* `aria-hidden`, e não um `aria-label` num `span`: a ARIA não permite nome
             acessível em elemento genérico, e o que várias tecnologias assistivas

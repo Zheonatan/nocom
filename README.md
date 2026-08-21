@@ -1,6 +1,6 @@
 <div align="center">
 
-# Mini To-Do
+# NoCom
 
 **Uma lista de tarefas que vive por cima do seu trabalho.**
 
@@ -19,7 +19,7 @@ Você está no meio de outra coisa — código, planilha, reunião — e lembra 
 tarefa. Anotar não deveria custar trocar de aplicativo, esperar carregamento e
 perder o fio da meada.
 
-O Mini To-Do existe para esse instante. O ciclo completo é:
+O NoCom existe para esse instante. O ciclo completo é:
 
 ```
 ⌃⌥T  →  digitar  →  Enter  →  ⌃⌥T
@@ -33,21 +33,21 @@ Dois segundos, a mão nunca sai do teclado.
 
 ```sh
 brew tap Zheonatan/tap
-brew install --cask mini-todo
+brew install --cask nocom
 ```
 
-Atualizar depois é só `brew upgrade --cask mini-todo`.
+Atualizar depois é só `brew upgrade --cask nocom`.
 
 ### Download direto
 
 | Sistema | Arquivo |
 | --- | --- |
-| **macOS** (Apple Silicon) | [Mini.To-Do_0.1.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do_0.1.0_aarch64.dmg) |
-| **macOS** (Intel) | [Mini.To-Do_0.1.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do_0.1.0_x64.dmg) |
-| **Windows** | [Mini.To-Do_0.1.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do_0.1.0_x64-setup.exe) |
-| **Linux** (.deb) | [Mini.To-Do_0.1.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do_0.1.0_amd64.deb) |
-| **Linux** (.rpm) | [Mini.To-Do-0.1.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do-0.1.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [Mini.To-Do_0.1.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.1.0/Mini.To-Do_0.1.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.2.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.2.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_x64.dmg) |
+| **Windows** | [NoCom_0.2.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.2.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.2.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom-0.2.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.2.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_amd64.AppImage) |
 
 Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
 
@@ -62,7 +62,7 @@ não conhece o programa. É esperado, e acontece uma única vez.
 Rode uma vez no Terminal:
 
 ```sh
-xattr -dr com.apple.quarantine "/Applications/Mini To-Do.app"
+xattr -dr com.apple.quarantine "/Applications/NoCom.app"
 ```
 
 Depois disso ele abre normalmente, inclusive nas próximas atualizações.
@@ -101,7 +101,7 @@ desfeito na hora. Nunca há caixa de confirmação no caminho.
 
 ## O que ele não é
 
-Um não-objetivo é tão parte do produto quanto uma funcionalidade. O Mini To-Do
+Um não-objetivo é tão parte do produto quanto uma funcionalidade. O NoCom
 não tem prazos, prioridades, subtarefas, etiquetas, anexos, colaboração nem
 sincronização. Ele não vai virar um gerenciador de projetos.
 
@@ -111,9 +111,9 @@ Tudo em um arquivo de texto simples no seu computador, que nunca sai dele:
 
 | Sistema | Onde |
 | --- | --- |
-| macOS | `~/Library/Application Support/com.minitodo.app/todos.json` |
-| Windows | `%APPDATA%\com.minitodo.app\todos.json` |
-| Linux | `~/.local/share/com.minitodo.app/todos.json` |
+| macOS | `~/Library/Application Support/com.nocom.app/todos.json` |
+| Windows | `%APPDATA%\com.nocom.app\todos.json` |
+| Linux | `~/.local/share/com.nocom.app/todos.json` |
 
 Sem telemetria, sem conta, sem requisição de rede. Para levar suas tarefas para
 outra máquina, copie esse arquivo.
@@ -140,13 +140,30 @@ Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê
 [`CONTRACT.md`](CONTRACT.md) (comportamento normativo e fronteira IPC) e
 [`DESIGN.md`](DESIGN.md) (decisões de interface).
 
-Publicar uma versão: `git tag v0.2.0 && git push origin v0.2.0`. O
+Publicar uma versão: `git tag v0.3.0 && git push origin v0.3.0`. O
 [workflow de build](.github/workflows) gera e publica os instaladores dos três
 sistemas. Depois disso, atualize a versão e os `sha256` do cask em
 [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap).
 
+## Vindo da versão 0.1.0?
+
+O app se chamava **Mini To-Do** até a 0.1.0. O nome mudou para NoCom na 0.2.0, e
+com ele a pasta onde as tarefas ficam guardadas.
+
+**Suas tarefas, abas, atalho e posição de janela vêm junto** — a primeira
+abertura da versão nova copia tudo da pasta antiga, sem apagar nada de lá. Se
+algo parecer faltando, os arquivos originais continuam intactos em
+`~/Library/Application Support/com.minitodo.app` (no Windows, `%APPDATA%`; no
+Linux, `~/.local/share`).
+
+Quem instalou pelo Homebrew como `mini-todo` só precisa de:
+
+```sh
+brew upgrade
+```
+
 ## Estado do projeto
 
-Versão 0.1.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
+Versão 0.2.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).

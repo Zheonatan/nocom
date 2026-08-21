@@ -153,26 +153,6 @@ Publicar uma versão: `git tag v0.3.0 && git push origin v0.3.0`. O
 sistemas. Depois disso, atualize a versão e os `sha256` do cask em
 [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap).
 
-## Vindo da versão 0.1.0?
-
-O app se chamava **Mini To-Do** até a 0.1.0. O nome mudou para NoCom na 0.2.0, e
-com ele a pasta onde as tarefas ficam guardadas.
-
-**Suas tarefas, abas, atalho e posição de janela vêm junto** — a primeira
-abertura da versão nova copia tudo da pasta antiga, sem apagar nada de lá. Se
-algo parecer faltando, os arquivos originais continuam intactos em
-`~/Library/Application Support/com.minitodo.app` (no Windows, `%APPDATA%`; no
-Linux, `~/.local/share`).
-
-Quem instalou pelo Homebrew como `mini-todo` troca em dois passos, nesta ordem:
-
-```sh
-brew uninstall --cask mini-todo
-brew install --cask nocom
-```
-
-O `uninstall` só tira o app de `/Applications` — as tarefas não estão lá.
-
 ## Estado do projeto
 
 Versão 0.2.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela

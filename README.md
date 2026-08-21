@@ -33,10 +33,18 @@ Dois segundos, a mão nunca sai do teclado.
 
 ```sh
 brew tap Zheonatan/tap
+brew trust --cask Zheonatan/tap/nocom
 brew install --cask nocom
 ```
 
 Atualizar depois é só `brew upgrade --cask nocom`.
+
+**Por que o `brew trust`?** Sem ele o `brew` recusa a instalação com
+*"Refusing to load cask from untrusted tap"*. Não é sinal de problema com o
+NoCom: desde o Homebrew 6 qualquer repositório que não seja oficial exige que
+você diga explicitamente que confia nele, uma vez, antes do primeiro uso. O
+comando acima confia **apenas neste cask** — nada mais que eu publicar no tap
+entra de carona.
 
 ### Download direto
 

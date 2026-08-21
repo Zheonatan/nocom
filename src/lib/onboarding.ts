@@ -14,7 +14,16 @@
  * guarda "já acrescentou" em vez de "já vi o onboarding": o mesmo fato decide
  * qual estado vazio mostrar e se a faixa de boas-vindas ainda deve aparecer.
  */
-const CHAVE = "minitodo.hasAddedTask";
+/**
+ * A chave carrega o nome do app, e por isso mudou junto com ele na 0.2.0. Não há
+ * migração da chave antiga porque não haveria o que migrar: o `localStorage` da
+ * webview mora sob o identificador do bundle, e ele mudou também — o
+ * armazenamento que a 0.1.0 escreveu não é alcançável daqui.
+ *
+ * O efeito em quem atualiza é uma dica de atalho a mais, uma vez, na próxima
+ * tarefa que ele acrescentar. Barato, e depois de um renomeio não é nem errado.
+ */
+const CHAVE = "nocom.hasAddedTask";
 
 /**
  * **Falha para o lado de não ensinar.** Uma webview com armazenamento bloqueado

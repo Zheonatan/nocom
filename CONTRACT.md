@@ -1,4 +1,4 @@
-# Mini To-Do Flutuante — Contrato de Integração
+# NoCom — Contrato de Integração
 
 App: Tauri v2 + React + TypeScript + Vite + Tailwind + shadcn/ui.
 Objetivo: janela flutuante pequena, sempre no topo, sem decoração de OS, com uma lista de tarefas simples e rápida.
@@ -60,7 +60,7 @@ Nomes exatos, snake_case, argumentos em camelCase no lado JS quando houver mais 
 - `width: 360`, `height: 480`, `resizable: false`
 - `decorations: false`, `transparent: true`
 - `alwaysOnTop: true`, `skipTaskbar: true`, `center: true`
-- `title: "Mini To-Do"`
+- `title: "NoCom"`
 - O frontend desenha a própria barra de título com `data-tauri-drag-region` e um botão de fechar que chama `invoke("hide_window")`.
 - `devUrl: "http://localhost:1420"`, `beforeDevCommand: "npm run dev"`, `beforeBuildCommand: "npm run build"`, `frontendDist: "../dist"`.
 
@@ -197,7 +197,7 @@ apenas os itens dentro de inputs devem ter texto selecionável".
   normal — sem isso não há como corrigir o meio de uma palavra ao editar.
 - Não é preferência estética: a janela é arrastada pela própria interface, e num
   app assim o gesto de arrastar e o de selecionar disputam o mesmo movimento do
-  mouse. Selecionar "Mini To-Do" ao tentar mover a janela é a falha típica.
+  mouse. Selecionar "NoCom" ao tentar mover a janela é a falha típica.
 - O cursor segue a regra: `I-beam` só onde há seleção. Um cursor de texto sobre
   algo que não seleciona promete o que a interface não cumpre.
 
@@ -524,7 +524,7 @@ Exceção deliberada: o CLDR classifica `0` como `one` em português (`i = 0..1`
 daria "0 pendente". A categoria `zero` existe no dicionário para sobrepor a biblioteca
 quando o resultado dela não é o que um falante escreveria.
 
-**"Mini To-Do" não é traduzido** — é nome, não texto.
+**"NoCom" não é traduzido** — é nome, não texto.
 
 ## Mensagens de erro passam a ser do frontend
 

@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn a_escolha_sobrevive_a_reabertura_e_um_arquivo_torto_cai_no_padrao() {
         let diretorio = std::env::temp_dir().join(format!(
-            "minitodo-atalho-{}-{:?}",
+            "nocom-atalho-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));
@@ -458,7 +458,7 @@ mod tests {
     #[test]
     fn suspender_solta_o_registro_sem_dizer_que_o_atalho_nao_vale() {
         let diretorio = std::env::temp_dir().join(format!(
-            "minitodo-atalho-pausa-{}-{:?}",
+            "nocom-atalho-pausa-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));
@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn a_descricao_carrega_o_padrao_para_o_frontend_poder_restaurar() {
         let diretorio = std::env::temp_dir().join(format!(
-            "minitodo-atalho-descricao-{}-{:?}",
+            "nocom-atalho-descricao-{}-{:?}",
             std::process::id(),
             std::thread::current().id()
         ));

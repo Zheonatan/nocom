@@ -59,7 +59,7 @@ body {
 /* Adendo 3: nada é selecionável por padrão. Não é gosto — a janela é arrastada
    pela própria interface, e arrastar disputa o mesmo movimento do mouse que
    selecionar; tentar mover a janela pela barra de título selecionava o texto
-   "Mini To-Do". No `body`, uma vez, em vez de espalhar `select-none` por dezenas
+   "NoCom". No `body`, uma vez, em vez de espalhar `select-none` por dezenas
    de elementos. O cursor vai junto: seta onde não há seleção, para a interface
    não prometer o que não cumpre. (`cursor` é herdado, então quem declara o
    próprio — a label com `cursor-pointer`, os botões desabilitados — continua

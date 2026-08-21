@@ -771,7 +771,7 @@ mod auxiliares {
     /// Uma store limpa num diretório só dela, para os testes não se atropelarem.
     pub fn store_limpa(nome: &str) -> (Store, PathBuf) {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-{nome}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-{nome}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let _ = fs::remove_file(&diretorio);
         (Store::abrir(diretorio.join("todos.json")), diretorio)
@@ -793,7 +793,7 @@ mod tests {
     /// Um caminho cujo diretório-pai é um **arquivo**: `create_dir_all` falha, e
     /// com ele toda gravação. É o disco cheio do relato, de forma determinística.
     fn store_que_nao_grava(nome: &str) -> Store {
-        let pai = std::env::temp_dir().join(format!("minitodo-{}-{nome}", std::process::id()));
+        let pai = std::env::temp_dir().join(format!("nocom-{}-{nome}", std::process::id()));
         let _ = fs::remove_dir_all(&pai);
         fs::write(&pai, b"nao sou diretorio").expect("criar o falso pai");
         Store::abrir(pai.join("todos.json"))
@@ -821,7 +821,7 @@ mod tests {
     /// `done` invertido em memória, senão a tela e o estado divergem em silêncio.
     #[test]
     fn alternar_rejeitado_nao_inverte_o_estado_em_memoria() {
-        let diretorio = std::env::temp_dir().join(format!("minitodo-ok-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-ok-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let store = Store::abrir(diretorio.join("todos.json"));
         let aba = aba_de(&store);
@@ -847,7 +847,7 @@ mod tests {
     /// disco e não deve depender dele para ser recusado.
     #[test]
     fn id_inexistente_falha_sem_tocar_no_disco() {
-        let diretorio = std::env::temp_dir().join(format!("minitodo-id-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-id-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let store = Store::abrir(diretorio.join("todos.json"));
         assert!(store.alternar("nao-existe").is_err());
@@ -976,7 +976,7 @@ mod tests {
     /// contrato do `Err` que vale para o `alternar`.
     #[test]
     fn renomear_rejeitado_pela_gravacao_nao_altera_a_memoria() {
-        let diretorio = std::env::temp_dir().join(format!("minitodo-ren-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-ren-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let store = Store::abrir(diretorio.join("todos.json"));
         let aba = aba_de(&store);
@@ -1502,7 +1502,7 @@ mod tests_restaurar {
     #[test]
     fn a_restauracao_e_gravada_no_disco() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-rest-disco-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-rest-disco-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
 
@@ -2007,7 +2007,7 @@ mod tests_abas {
     #[test]
     fn a_aba_restaurada_e_gravada_no_disco() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-aba-disco-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-aba-disco-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
 
@@ -2040,7 +2040,7 @@ mod tests_abas {
     #[test]
     fn a_aba_ativa_persiste_entre_execucoes() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-ativa-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-ativa-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
 
@@ -2247,7 +2247,7 @@ mod tests_abas {
     #[test]
     fn aba_ativa_gravada_que_nao_existe_mais_cai_na_primeira() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-ativa-fantasma-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-ativa-fantasma-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         fs::create_dir_all(&diretorio).expect("criar o diretório");
         let arquivo = diretorio.join("todos.json");
@@ -2366,7 +2366,7 @@ mod tests_migracao {
 
     fn diretorio_limpo(nome: &str) -> PathBuf {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-mig-{nome}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-mig-{nome}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let _ = fs::remove_file(&diretorio);
         fs::create_dir_all(&diretorio).expect("criar o diretório");
@@ -2704,7 +2704,7 @@ mod tests_resgate {
 
     fn diretorio_limpo(nome: &str) -> PathBuf {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-resgate-{nome}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-resgate-{nome}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let _ = fs::remove_file(&diretorio);
         fs::create_dir_all(&diretorio).expect("criar o diretório");
@@ -2865,7 +2865,7 @@ mod tests_gravacao {
     #[test]
     fn a_gravacao_nao_deixa_temporario_para_tras() {
         let diretorio =
-            std::env::temp_dir().join(format!("minitodo-tmp-{}", std::process::id()));
+            std::env::temp_dir().join(format!("nocom-tmp-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
         let store = Store::abrir(arquivo.clone());

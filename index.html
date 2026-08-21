@@ -7,7 +7,14 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/tauri.svg" />
+    <!-- Dois PNGs, e não o SVG da marca, porque o navegador rasteriza SVG sem
+         calibrar espessura: em 16px o fio de 0,25px do anel desapareceria. Estes
+         dois vêm de `scripts/marca.mjs`, desenhados no tamanho de cada um. Só
+         aparece no `npm run dev` — o app empacotado não tem aba de navegador —,
+         mas o logo do Tauri num app que já tem marca própria é a inconsistência
+         que o `PRODUCT.md` chama de identidade provisória. -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NoCom</title>
   </head>

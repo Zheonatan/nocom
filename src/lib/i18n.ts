@@ -67,6 +67,11 @@ const pt = {
   "task.new": "Nova tarefa",
   "task.edit": "Editar tarefa",
   "task.remove": 'Remover "{title}"',
+  // Só para leitor de tela, e SÓ ela: o destaque da data escrita no título é
+  // tinta (uma pílula em cinza), e tinta não é lida. A palavra entra entre
+  // parênteses ao lado do trecho — "pagar boleto 20/08 (hoje)" —, que é como
+  // alguém diria a mesma coisa em voz alta.
+  "task.today": "hoje",
 
   "list.loading": "Carregando…",
   // Estado vazio de quem JÁ usou o app: limpou a lista, ou acabou de criar uma
@@ -285,6 +290,7 @@ const en: Record<MessageKey, Entry> = {
   "task.new": "New task",
   "task.edit": "Edit task",
   "task.remove": 'Remove "{title}"',
+  "task.today": "today",
 
   "list.loading": "Loading…",
   "empty.title": "Nothing here yet.",

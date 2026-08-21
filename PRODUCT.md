@@ -43,6 +43,24 @@ precisar pensar no aplicativo — só na tarefa.
 Não-objetivos explícitos, herdados de todo o `CONTRACT.md`: não é gerenciador de projetos,
 não tem prazos, prioridades, subtarefas, etiquetas, colaboração nem sincronização.
 
+**Onde fica a linha do "sem prazos"** (Adendo 11, e o teste de qualquer trabalho futuro
+nesta área): o app **lê** a data que você escreveu no título, mostra ela numa coluna à
+direita da linha e a marca em vermelho pastel **no dia**. E **não gerencia vencimento**:
+não ordena por data, não avisa quando passa, não conta quantos dias faltam, e não tem
+campo "para quando".
+
+A garantia é estrutural e não uma promessa: a data **não existe no modelo de dados** — é
+lida do título na renderização e descartada no mesmo quadro. A única operação sobre ela é
+comparar com hoje.
+
+**Esta linha ficou mais fina, e o registro é honesto:** uma coluna de datas à direita com
+o dia de hoje em vermelho é visualmente vizinha de uma coluna de prazos, e vermelho é a
+cor de *atrasado* em quase todo app de tarefas. O que sustenta o não-objetivo são duas
+coisas concretas — **a cor marca coincidência, não urgência** (ontem é cinza, igual a
+amanhã), e **nada é derivado além da igualdade com hoje**. O teste para trabalho futuro:
+se uma data passada começar a parecer diferente de uma futura, o app virou gerenciador de
+prazo, e isso volta a este documento antes de voltar ao código.
+
 ## Positioning
 
 Contra Lembretes, Notas ou um post-it na tela, a aposta é a soma de quatro coisas — nenhuma
@@ -80,7 +98,8 @@ outro produto:
 duplicata): tarefas com criar/concluir/renomear/remover, "Limpar concluídas", desfazer curto
 para todo gesto destrutivo (sem caixa de confirmação), abas com criar/renomear/fechar/restaurar,
 aba ativa persistida, **atalho global com a combinação escolhida pelo usuário**, tray com
-contagem, posição de janela persistida, migração do formato antigo de `todos.json`.
+contagem, posição de janela persistida, migração do formato antigo de `todos.json`,
+**destaque da data de hoje escrita no título**.
 
 **Vocabulário do produto:** *tarefa* (não "item"), *aba* (não "lista" nem "projeto"),
 *pendentes* (não "abertas"), *concluídas* (não "feitas"). O nome padrão de aba nova é
@@ -119,12 +138,32 @@ nenhum lado):
   combinação saiu da lista com o Adendo 9:** `⌃⌥T` continua sendo o padrão, com o
   argumento de eliminação que o justificou, mas deixou de ser a única possível — quem
   descobre que ela está ocupada no sistema dele troca pela engrenagem, sem esperar uma
-  versão nova. A transparência e o tray continuam abertos.
-- **Identidade visual.** *O nome saiu desta lista; o ícone não.* **O nome é "NoCom"**,
-  fechado na 0.2.0 — "Mini To-Do" descrevia a categoria, não o produto, e um nome que
-  descreve categoria não sobrevive ao primeiro concorrente vizinho. O ícone empacotado
-  hoje continua sendo o **logo padrão do Tauri**, provisório, e não pode ser distribuído
-  como identidade do produto.
+  versão nova. A transparência e o tray continuam abertos. **O Adendo 11 acrescenta um
+  item concreto a esta lista:** a ordem de dia e mês é lida do sistema por uma API
+  diferente em cada plataforma, e só a do macOS foi medida numa máquina real. As de
+  Windows e Linux foram escritas a partir da documentação e não são nem compiladas fora
+  do seu alvo — não existe job de CI que rode `cargo check` e `npm test` nos três
+  sistemas, e sem ele um erro de valor nas outras duas só aparece quando alguém digitar
+  uma data.
+- ~~**Identidade visual.**~~ **Resolvida.** O nome é **"NoCom"**, fechado na 0.2.0 —
+  "Mini To-Do" descrevia a categoria, não o produto, e um nome que descreve categoria não
+  sobrevive ao primeiro concorrente vizinho. E a marca é **um anel branco de fio fino num
+  campo preto**, que substituiu o logo padrão do Tauri em todo lugar onde ele aparecia:
+  Dock, Finder, barra de tarefas, bandeja, aba do navegador em desenvolvimento e topo do
+  README. Geometria em `assets/marca/nocom.svg`, rasters em `scripts/marca.mjs`, o anel
+  da barra de menus do macOS em `src-tauri/src/marca.rs`, e a razão de cada fração na
+  seção "A Marca" do `DESIGN.md`.
+
+  **O que fica registrado como não sendo escolha de gosto:** o campo tem forma diferente
+  por plataforma (a squircle medida do macOS no `.icns`, quadrado sangrado no resto),
+  cada tamanho é desenhado no tamanho dele em vez de reduzido do maior, e a bandeja do
+  Mac recebe o anel sozinho no canal alfa — sem isso, `icon_as_template` mostraria um
+  retângulo cheio na barra de menus.
+
+  **O que continua em aberto é a marca em contexto comercial**, e não a marca: não há
+  site, página de loja, captura de tela de divulgação nem ícone de instalador
+  personalizado, porque não há canal de distribuição decidido. Nada disso é inventável
+  aqui.
 
   A troca de nome levou junto o identificador do bundle (`com.minitodo.app` →
   `com.nocom.app`), e é o identificador que nomeia a pasta de dados. Quem atualiza teria
@@ -163,9 +202,17 @@ nenhum lado):
   sistema, por `src-tauri/src/idioma.rs`: a leitura é própria porque o ícone é desenhado
   no `setup`, antes de a webview existir, e ali não há `navigator.languages` a quem
   perguntar. As duas metades usam a mesma regra de escolha e as mesmas frases.
-- **Sem identidade visual definida.** Nenhum logotipo, paleta ou tipografia foi declarado
-  vinculante pelo usuário. A tipografia atual (Geist Variable) e o tema shadcn são estado
-  do código, não compromisso de marca.
+- **Marca:** um anel branco de fio fino num campo preto — pedido do usuário nessas
+  palavras ("um fundo preto com um círculo branco bem fino e minimalista"), e por isso
+  **vinculante**, ao contrário do resto da aparência. Sem logotipo escrito, sem
+  monograma, sem símbolo derivado de tarefa. As duas frações que a definem (diâmetro a
+  62% do campo, traço a 1/64 do campo) e as duas formas de campo estão em "A Marca", no
+  `DESIGN.md`.
+- **Tipografia e tema não são compromisso de marca.** Nenhuma paleta ou família foi
+  declarada vinculante pelo usuário. A tipografia atual (Geist Variable) e o tema shadcn
+  são estado do código. O preto e o branco da marca também não abrem a paleta da janela:
+  o ícone é visto sobre papel de parede arbitrário e precisa de preto puro, e a interface
+  continua no quase-preto do `background`.
 
 ## Evidence on Hand
 

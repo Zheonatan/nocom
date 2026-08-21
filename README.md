@@ -156,11 +156,14 @@ algo parecer faltando, os arquivos originais continuam intactos em
 `~/Library/Application Support/com.minitodo.app` (no Windows, `%APPDATA%`; no
 Linux, `~/.local/share`).
 
-Quem instalou pelo Homebrew como `mini-todo` só precisa de:
+Quem instalou pelo Homebrew como `mini-todo` troca em dois passos, nesta ordem:
 
 ```sh
-brew upgrade
+brew uninstall --cask mini-todo
+brew install --cask nocom
 ```
+
+O `uninstall` só tira o app de `/Applications` — as tarefas não estão lá.
 
 ## Estado do projeto
 

@@ -249,6 +249,25 @@ export function getStartupRescue(): Promise<string | null> {
 }
 
 /**
+ * O dia vem antes do mês no formato de data deste sistema?
+ *
+ * A janela precisa disto para achar no título de uma tarefa a data que é hoje
+ * (Adendo 11). **A resposta vem do backend porque a webview não a tem:**
+ * `navigator.language` é o idioma da interface e não a região, e o `Intl` escolhe
+ * a ordem pela língua — as duas medições estão em `formato.rs` e no adendo. O que
+ * o backend lê é o padrão de data curta do próprio sistema operacional.
+ *
+ * **Não rejeita.** Uma leitura que não dá certo cai em dia-primeiro no Rust, e
+ * não há erro a mostrar: nada aconteceu com os dados e não há gesto do usuário
+ * para repetir. Ainda assim a chamada é tratada com `catch` local em `App`, pelo
+ * mesmo motivo que o atalho é — uma falha de IPC na abertura não pode derrubar as
+ * leituras que trazem a lista para a tela.
+ */
+export function dateDayFirst(): Promise<boolean> {
+  return invoke<boolean>("date_day_first");
+}
+
+/**
  * O atalho global como ele está agora. Chamado uma vez, na carga inicial, junto das
  * abas e das tarefas: as frases que ensinam a via de volta não podem aparecer na
  * tela antes de saber qual é a tecla.

@@ -43,6 +43,24 @@ precisar pensar no aplicativo — só na tarefa.
 Não-objetivos explícitos, herdados de todo o `CONTRACT.md`: não é gerenciador de projetos,
 não tem prazos, prioridades, subtarefas, etiquetas, colaboração nem sincronização.
 
+**Onde fica a linha do "sem prazos"** (Adendo 11, e o teste de qualquer trabalho futuro
+nesta área): o app **lê** a data que você escreveu no título, mostra ela numa coluna à
+direita da linha e a marca em vermelho pastel **no dia**. E **não gerencia vencimento**:
+não ordena por data, não avisa quando passa, não conta quantos dias faltam, e não tem
+campo "para quando".
+
+A garantia é estrutural e não uma promessa: a data **não existe no modelo de dados** — é
+lida do título na renderização e descartada no mesmo quadro. A única operação sobre ela é
+comparar com hoje.
+
+**Esta linha ficou mais fina, e o registro é honesto:** uma coluna de datas à direita com
+o dia de hoje em vermelho é visualmente vizinha de uma coluna de prazos, e vermelho é a
+cor de *atrasado* em quase todo app de tarefas. O que sustenta o não-objetivo são duas
+coisas concretas — **a cor marca coincidência, não urgência** (ontem é cinza, igual a
+amanhã), e **nada é derivado além da igualdade com hoje**. O teste para trabalho futuro:
+se uma data passada começar a parecer diferente de uma futura, o app virou gerenciador de
+prazo, e isso volta a este documento antes de voltar ao código.
+
 ## Positioning
 
 Contra Lembretes, Notas ou um post-it na tela, a aposta é a soma de quatro coisas — nenhuma
@@ -80,7 +98,8 @@ outro produto:
 duplicata): tarefas com criar/concluir/renomear/remover, "Limpar concluídas", desfazer curto
 para todo gesto destrutivo (sem caixa de confirmação), abas com criar/renomear/fechar/restaurar,
 aba ativa persistida, **atalho global com a combinação escolhida pelo usuário**, tray com
-contagem, posição de janela persistida, migração do formato antigo de `todos.json`.
+contagem, posição de janela persistida, migração do formato antigo de `todos.json`,
+**destaque da data de hoje escrita no título**.
 
 **Vocabulário do produto:** *tarefa* (não "item"), *aba* (não "lista" nem "projeto"),
 *pendentes* (não "abertas"), *concluídas* (não "feitas"). O nome padrão de aba nova é
@@ -119,7 +138,13 @@ nenhum lado):
   combinação saiu da lista com o Adendo 9:** `⌃⌥T` continua sendo o padrão, com o
   argumento de eliminação que o justificou, mas deixou de ser a única possível — quem
   descobre que ela está ocupada no sistema dele troca pela engrenagem, sem esperar uma
-  versão nova. A transparência e o tray continuam abertos.
+  versão nova. A transparência e o tray continuam abertos. **O Adendo 11 acrescenta um
+  item concreto a esta lista:** a ordem de dia e mês é lida do sistema por uma API
+  diferente em cada plataforma, e só a do macOS foi medida numa máquina real. As de
+  Windows e Linux foram escritas a partir da documentação e não são nem compiladas fora
+  do seu alvo — não existe job de CI que rode `cargo check` e `npm test` nos três
+  sistemas, e sem ele um erro de valor nas outras duas só aparece quando alguém digitar
+  uma data.
 - **Identidade visual.** *O nome saiu desta lista; o ícone não.* **O nome é "NoCom"**,
   fechado na 0.2.0 — "Mini To-Do" descrevia a categoria, não o produto, e um nome que
   descreve categoria não sobrevive ao primeiro concorrente vizinho. O ícone empacotado

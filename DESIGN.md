@@ -157,10 +157,11 @@ components:
 Uma lâmina de vidro pousada sobre o trabalho real. A janela flutua permanentemente
 acima de tudo — editor, planilha, navegador — e por isso ela não pode ter cor
 própria: qualquer pigmento seu competiria, o dia inteiro, com o conteúdo que
-realmente importa. O sistema inteiro é **acromático de propósito**. Toda a paleta é
-OKLCH com croma exatamente `0`: cinzas puros, sem uma gota de matiz. A única exceção
-em todo o app é o vermelho de erro, e é essa escassez que o torna impossível de
-ignorar.
+realmente importa. O sistema é **acromático de propósito**: quase toda a paleta é
+OKLCH com croma exatamente `0`, cinzas puros, sem uma gota de matiz. **Existe uma
+matiz e só uma** — o vermelho —, e ela aparece em duas intensidades: saturada no
+erro, pastel na data de hoje. Nenhuma outra cor entra, e é essa escassez que faz as
+duas serem impossíveis de ignorar.
 
 A vidraça é pequena e não redimensiona: **360x480 px, fixos**. Isso não é um detalhe
 de configuração, é a restrição que governa cada decisão aqui. Não há hierarquia
@@ -180,7 +181,7 @@ nunca vaza pela borda. Uma linha que desliza 180ms até o novo lugar em vez de s
 
 **Key Characteristics:**
 
-- Acromático absoluto — croma `0` em toda a paleta, exceto o vermelho de erro
+- Croma `0` em toda a paleta, exceto uma matiz de vermelho em duas intensidades (erro e hoje)
 - Superfície única: um cartão de 14px de raio é o app inteiro, com borda e sombra próprias
 - Densidade extrema — faixas de altura fixa de 40px, 28px e 24px em 480px de janela
 - Três tamanhos de texto (13px / 12px / 11px), uma família só (Geist Variable)
@@ -194,8 +195,8 @@ nunca vaza pela borda. Uma linha que desliza 180ms até o novo lugar em vez de s
 
 ## Colors
 
-Uma paleta de cinzas neutros em OKLCH — croma `0` em todos os tokens — com um único
-pigmento reservado para o erro. Os valores normativos do frontmatter são os do tema
+Uma paleta de cinzas neutros em OKLCH — croma `0` em quase todos os tokens — com um
+único pigmento, o vermelho, em duas intensidades. Os valores normativos do frontmatter são os do tema
 claro; o tema escuro troca a mesma lista via `prefers-color-scheme`, sem classe e sem
 JavaScript.
 
@@ -214,9 +215,15 @@ JavaScript.
 - **Névoa** (`muted-foreground`): cinza médio. Carrega tudo que é secundário e tudo
   que já foi resolvido — o rodapé, o contador, as abas inativas, o estado vazio e o
   **título riscado de uma tarefa concluída**. Concluir não apaga: desbota.
-- **Bruma** (`muted`): o cinza quase-branco de fundo. É o único recurso de destaque do
+- **Bruma** (`muted`): o cinza quase-branco de fundo. É o recurso de destaque do
   sistema — marca a aba ativa, o hover de uma linha (a 60% de opacidade) e a pílula do
   contador. Faz sozinho o trabalho que outros sistemas dividem entre cor, sombra e peso.
+- **Bruma Densa** (`foreground/10`): a **única** exceção à Bruma, e ela existe por
+  medida e não por gosto. É o fundo da data de hoje destacada no título de uma tarefa —
+  um destaque que vive **dentro** de uma linha que já usa `muted/60` no hover. Em
+  `muted`, a pílula desaparecia exatamente quando o mouse chegava nela, que é quando a
+  pessoa está olhando. Continua croma `0`, então o Pigmento Único vale; o que muda é a
+  densidade, não a matiz. Ver a Regra do Destaque que Sobrevive ao Fundo.
 - **Fio** (`border` / `input`): a borda da vidraça e o traço dos separadores. Linha
   **decorativa**: divide e delimita, não informa. No escuro deixa de ser um cinza sólido
   e vira branco a 10%, para não cintilar sobre a superfície escura.
@@ -229,18 +236,40 @@ JavaScript.
   contrapartida obrigatória da Regra da Revelação com Teclado.
 
 ### Destructive
-- **Alarme** (`destructive`): vermelho-alaranjado, o **único** valor cromático do
-  sistema (croma `0.245`). Aparece em exatamente um lugar: a faixa de aviso de erro,
-  como texto sobre o próprio fundo a 10%. Não colore o botão de remover, não colore o
-  fechar da aba, não colore o "Limpar concluídas" — nenhum gesto destrutivo é vermelho,
-  porque nenhum deles é irreversível: todos oferecem desfazer.
+- **Alarme** (`destructive`): vermelho-alaranjado saturado (croma `0.245`), a
+  intensidade **cheia** da única matiz do sistema. Aparece em exatamente um lugar: a
+  faixa de aviso de erro, como texto sobre o próprio fundo a 10%. Não colore o botão de
+  remover, não colore o fechar da aba, não colore o "Limpar concluídas" — nenhum gesto
+  destrutivo é vermelho, porque nenhum deles é irreversível: todos oferecem desfazer.
+
+### Hoje
+- **Hoje** (`today` / `today-foreground`): a mesma matiz do Alarme na intensidade
+  **pastel** — croma `0.045` no fundo contra os `0.245` do erro, 5,4x menos. É o fundo
+  da pílula de uma data que é hoje, e o **segundo e último** valor cromático do app.
+  Existe porque "hoje" é a única informação da lista que muda sozinha e cuja janela de
+  utilidade fecha à meia-noite; cinza diria "aqui tem uma data", e é justamente o que as
+  outras datas dizem. A distância de croma é o que impede uma pílula de 40px de competir
+  com a mensagem de que algo falhou. Medido: texto em 6.64:1 no claro e 7.09:1 no
+  escuro; a pílula em 1.27:1 e 1.90:1 contra o cartão. Ver a Regra do Pigmento Único.
 
 ### Named Rules
 
-**A Regra do Pigmento Único.** Cor não decora, não categoriza e não hierarquiza —
-**cor reporta falha, e nada mais**. Todo o resto do sistema é croma `0`. Um segundo
-acento colorido, mesmo discreto, gastaria a raridade que faz o erro saltar aos olhos
-numa janela cinza. Teste: se um pixel colorido apareceu na tela e nada deu errado, é bug.
+**A Regra do Pigmento Único.** **Uma matiz no app inteiro, e ela é o vermelho.** Cor
+não decora, não categoriza e não hierarquiza; ela marca as duas coisas que pedem o olho
+agora — *algo falhou* e *é hoje* —, e o que separa as duas é **intensidade**, não tom.
+Todo o resto é croma `0`.
+
+A regra já foi mais estreita ("cor reporta falha, e nada mais"), e a data de hoje a
+abriu de propósito. O que ela **não** virou é um orçamento de cores: continua sendo uma
+matiz, e o segundo uso teve de provar que era a mesma classe de informação — passageira,
+não-decorativa, e sem um segundo jeito de ser dita (cinza já significa "aqui tem uma
+data"). Duas intensidades da mesma matiz também não se confundem em uso: o erro é texto
+saturado numa faixa de largura inteira, hoje é um fundo pastel de 40px dentro de uma
+linha.
+
+Testes, agora dois: **matiz que não seja a do vermelho é bug**; e **vermelho saturado
+sem nada ter falhado é bug**. Um terceiro uso precisa de um argumento tão forte quanto o
+segundo, e a resposta padrão é não.
 
 **A Regra da Linha que Informa.** Uma linha que só divide pode ser discreta; uma linha
 que **identifica um controle** carrega informação e precisa de 3:1 (WCAG 1.4.11). Por
@@ -523,6 +552,71 @@ aparência.
   ela chega, com os mesmos 150ms de tudo que passa a ocupar a área da lista. Nunca as
   duas coisas na mesma linha no mesmo instante.
 
+### Data no título (pílula e coluna da direita)
+
+Uma tarefa escrita como "pagar boleto 20/08" mostra `20/08` **numa pílula, alinhada à
+direita da linha** — o texto fica à esquerda, a data numa coluna própria. É o único
+elemento do app que nasce do texto que a pessoa digitou. O comportamento normativo
+(formato aceito, as condições da extração, a ordem de dia e mês, a virada da meia-noite)
+está no Adendo 11 do `CONTRACT.md`; aqui está só a forma.
+
+**Toda data é destacada; só a de hoje muda de cor.**
+
+- **Cinza** (`foreground/10`, croma `0`) para qualquer data. Diz "aqui tem uma data" e
+  nada mais.
+- **Vermelho pastel** (`today`) no dia. É o segundo e último valor cromático do app —
+  ver a Regra do Pigmento Único, que foi reaberta para caber isto.
+
+**O que o olho compara não é a pílula contra o fundo, é uma pílula contra as outras da
+mesma lista.** É o que permite ao vermelho ser fraco: matiz contra ausência de matiz é a
+diferença mais fácil que existe de ver, e numa coluna de pílulas cinzas uma pastel salta
+sem precisar de saturação. Foi essa leitura que fixou o croma em `0.045` em vez de subir
+até brigar com a faixa de erro.
+
+**A cor nunca é o único sinal.** A pílula já está lá em cinza, e o peso 500 é o mesmo nas
+duas; quem não distingue vermelho de cinza continua vendo uma data destacada, e perde só
+o "é hoje" — que o leitor de tela recebe por escrito. Cor carregando informação sozinha
+seria falha de acessibilidade, não decisão de estilo.
+
+**A coluna da direita:**
+
+- **Entre o título e o `×`, nunca no lugar dele.** O botão de remover já ocupa largura
+  fixa em repouso (só troca de opacidade), então a data entra ao lado sem que nada ande
+  quando o mouse chega — a Regra do Movimento que se Paga proíbe layout que se mexe no
+  hover.
+- **`shrink-0` contra o título em `min-w-0 flex-1`.** Quem cede largura é o texto, que já
+  sabe se truncar em duas linhas. A data nunca quebra nem encolhe: uma data pela metade
+  não é uma data. Custo máximo de largura: `21/08/2026` em `tabular-nums` de 13px.
+- **`tabular-nums`.** Empilhadas numa coluna, datas com dígitos de larguras diferentes
+  ficam com as barras desalinhadas. É a Regra do Número Tabular aplicada ao único lugar
+  novo onde números se empilham.
+- **Custo de altura: zero.** A pílula mora dentro de uma linha que já existia, e a coluna
+  usa largura que o título cedeu — nada foi empurrado para fora da dobra.
+
+**A extração é conservadora, e o que não é extraído fica inline com a mesma pílula.** Três
+condições: uma única data no título, terminando no fim do texto, com texto antes dela.
+"de 19/10 a 25/10" mantém as duas datas no lugar, porque levar a última para a direita
+deixaria "de 19/10 a" pendurado; "reunião 19/10 com o time" também, porque a data
+qualifica o que está ao lado dela. **Mover nunca pode virar apagar** — é o que mantém o
+texto da linha igual ao texto que o editor inline abre no duplo clique.
+
+**Detalhes que se pagam:**
+
+- **`<mark>`, e não `<span>`.** É o elemento que quer dizer "trecho realçado por ser
+  relevante agora". Os dois padrões do navegador (fundo amarelo, texto preto) são
+  substituídos — sem isso `mark` traria uma terceira cor para um app que tem uma.
+- **`rounded-sm` (6px)** contra os 8px da linha, pela Regra do Raio Decrescente. Padding
+  lateral de 4px e nenhum vertical: a pílula não pode engordar a linha, ou uma tarefa com
+  data mediria diferente de uma sem e a lista ganharia um degrau.
+- **`box-decoration-clone`** para a pílula inline, que pode cair na quebra entre as duas
+  linhas do título; sem isso ela ficaria com padding só nas pontas de fora.
+- **Concluída não destaca e não extrai.** Pela Regra do Desbotamento, resolvido é estado
+  com menos contraste. E extrair no instante do clique faria o título mudar de forma
+  debaixo do olho de quem acabou de marcar — a Regra da Batida em Três Tempos já cuida de
+  não empilhar consequências nesse gesto.
+- **Não se anima.** Aparece com a linha e troca de cor à meia-noite, quando ninguém está
+  olhando.
+
 ### Edição inline
 - Um campo de 24px de altura substitui o texto **no lugar dele** — mesma linha, mesma
   posição, sem diálogo. `Enter` confirma, `Escape` cancela, blur confirma, e o texto
@@ -623,6 +717,18 @@ de fora do teclado: o `Escape` é dela, e os atalhos da vista que ela cobriu fic
 desligados (`⌘T` não pode criar uma aba enquanto a pessoa está dizendo que quer usar
 `⌘T`).
 
+**A Regra do Destaque que Sobrevive ao Fundo.** Um destaque desenhado **dentro** de um
+elemento que também se destaca precisa ser medido contra o estado mais forte do
+hospedeiro, e não contra a superfície em repouso. `muted` é o recurso de destaque do
+sistema, e por isso mesmo ele não pode destacar nada que viva numa linha que já vira
+`muted/60` sob o cursor — o destaque desapareceria no exato instante em que a pessoa
+levou o olho até lá. A saída é subir a **densidade** (`foreground/10`), e não alcançar a
+matiz: cinza mais denso resolve o destaque, e matiz é um recurso que a Regra do Pigmento
+Único racionou para outra coisa. A pílula de hoje é vermelha por **significar** hoje, e
+não por precisar aparecer — os dois problemas são separados, e confundi-los é como uma
+paleta cresce sem ninguém decidir que ela ia crescer. Teste: passe o mouse por cima. Se o
+destaque sumiu, ele estava desenhado contra o fundo errado — e a correção é densidade.
+
 **A Regra da Revelação com Teclado.** Todo controle que se esconde em repouso **deve**
 reaparecer tanto no `hover` quanto no `focus-visible`. Esconder é permitido; tornar
 exclusivo de mouse, nunca. Vale para o × de remover tarefa e para o × de fechar aba, e
@@ -714,11 +820,15 @@ proíbe.
 ## Do's and Don'ts
 
 ### Do:
-- **Do** manter croma `0` em toda cor nova. Se um token novo tem matiz, ele precisa de
-  uma justificativa tão forte quanto a do vermelho de erro — e provavelmente não tem.
+- **Do** manter croma `0` em toda cor nova. As duas exceções que existem (erro e hoje)
+  são a mesma matiz em intensidades distantes; um token com matiz **nova** precisa de uma
+  justificativa que nenhum dos dois teve de dar, e provavelmente não tem.
 - **Do** declarar altura fixa e `shrink-0` em toda faixa nova, ou colocá-la dentro da lista.
 - **Do** usar `muted` como fundo para destacar. É o recurso de destaque do sistema,
-  no lugar de cor, sombra ou borda.
+  no lugar de cor, sombra ou borda. **A exceção é o destaque dentro de algo que já
+  usa `muted`:** ali ele desaparece no hover, e a saída é subir a densidade
+  (`foreground/10`) — não a matiz, que só entra quando carrega significado próprio. Ver a
+  Regra do Destaque que Sobrevive ao Fundo.
 - **Do** dar `min-w-0` a todo contêiner que pode encolher e truncamento declarado
   (`truncate` ou `wrap-anywhere` + `line-clamp`) a todo texto vindo do usuário, sempre
   com o texto inteiro no `title`.
@@ -739,8 +849,9 @@ proíbe.
 
 ### Don't:
 - **Don't** introduzir cor decorativa, etiquetas coloridas, prioridade por cor, emoji,
-  gradiente ou barra de progresso. Isto não é um app de produtividade colorido, e a cor
-  gasta seria o sinal de erro.
+  gradiente ou barra de progresso. Isto não é um app de produtividade colorido. As duas
+  intensidades de vermelho que existem são o teto, não o começo de uma paleta — e a
+  próxima cor gasta sai da conta do erro.
 - **Don't** usar blur, `backdrop-filter`, brilho ou borda iluminada. A janela é
   transparente por necessidade técnica do Tauri, **não** por estilo — glassmorphism seria
   ler a restrição como estética.

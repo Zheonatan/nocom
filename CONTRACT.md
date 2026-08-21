@@ -1009,3 +1009,376 @@ tem duas frases — `shortcut.needsModifierMac` e `...Other` — pela mesma deci
   janela se esconda no meio do gesto.
 - Nenhuma frase da interface anuncia uma combinação diferente da que está registrada
   — inclusive o menu do tray, inclusive depois de trocar.
+
+---
+
+# Adendo 11 — a data escrita no título (2026-08-21)
+
+Ninguém pediu um campo de data, e ele não vai existir: a janela tem 360x480, e um
+segundo campo permanente ao lado do de nova tarefa custaria altura que pertence à
+lista (Regra do Custo de Altura). O que existe é o hábito de quem escreve tarefa
+em papel — "pagar boleto 20/08" — e este adendo lê o que já estava escrito.
+
+**Duas perguntas, e só elas: onde estão as datas deste título, e alguma delas é
+hoje?** Toda data encontrada ganha uma pílula cinza; a de hoje ganha uma pílula
+vermelha pastel. Uma data no fim do título é levada para a **direita da linha**,
+numa coluna.
+
+Não há campo de data, não há ordenação por data, não há prazo, não há vencido nem
+atrasado. O escopo é estreito de propósito, e o estreitamento é o que paga a
+feature: sem a noção de prazo não há vencimento a calcular, sem vencimento não há
+estado a persistir, e sem estado persistido nada aqui pode corromper um
+`todos.json`.
+
+**A primeira versão só marcava hoje** e deixava toda outra data passar em branco.
+Isso foi trocado por pedido direto do usuário: a data devia ser sempre
+identificada, sempre destacada em cinza, sempre à direita, e vermelha no dia. As
+seções abaixo dizem o que cada metade da troca custou.
+
+## Isto não é prazo, e a linha é esta
+
+O PRODUCT.md e o README dizem que o app **não tem prazos**, e continuam certos. A
+distinção não é retórica, e ela é o teste de qualquer trabalho futuro nesta área:
+
+- **O app lê** uma data que você escreveu, no meio do texto que você escreveu, e
+  diz "é hoje" no dia em que for.
+- **O app não gerencia** vencimento: não ordena por data, não avisa quando passa,
+  não pinta de vermelho no dia seguinte, não tem campo "para quando", e não sabe a
+  diferença entre uma tarefa com data e uma sem.
+
+A prova de que a segunda metade é verdade é estrutural, e não uma promessa: a data
+**não existe no modelo de dados**. Não há campo novo em `Todo`, não há comando
+novo que a receba, não há nada em disco. O que existe é uma leitura do `title`
+feita na renderização e descartada no mesmo quadro. Um "atrasado" exigiria guardar
+a data ou reinterpretá-la todo dia contra um calendário — os dois entram no
+contrato antes do código, e nenhum dos dois é este adendo.
+
+Consequência que confirma a linha: uma tarefa escrita hoje com `21/08` simplesmente
+**volta ao cinza amanhã**, e nada mais acontece. Não vira pendência, não sobe na
+lista, não ganha aviso.
+
+**A linha ficou mais fina com esta versão, e vale dizer em voz alta.** Uma coluna
+de datas alinhada à direita, com o dia de hoje em vermelho, é visualmente muito
+próxima de uma coluna de prazos — e vermelho é, em quase todo app de tarefas, a cor
+de *atrasado*. As duas diferenças que sustentam o não-objetivo são exatamente estas,
+e nenhuma delas é cosmética:
+
+1. **A cor marca coincidência, não urgência.** Vermelho quer dizer "a data que você
+   escreveu é a de hoje", e ontem não é vermelho — é cinza, igual a amanhã e igual a
+   outubro. Um app de prazo pinta o passado, não o presente.
+2. **Nada é derivado além da igualdade.** Não há "faltam 3 dias", não há ordenação,
+   não há contagem. A única operação sobre a data é comparar com hoje.
+
+O teste para trabalho futuro é o mesmo, e agora é mais fácil de errar: **se uma data
+passada começar a parecer diferente de uma futura, o app virou gerenciador de prazo**
+— e isso volta ao PRODUCT.md antes de voltar ao código.
+
+## O formato aceito
+
+`dia/mês`, com o ano opcional: `20/08`, `20/08/26`, `20/08/2026`.
+
+- **Um ou dois dígitos em cada campo.** `6/9` vale o mesmo que `06/09`, e as
+  formas misturadas (`6/09`, `06/9`) também. Exigir dois dígitos faria o destaque
+  funcionar para umas pessoas e não para outras, sem nada na tela explicando por
+  quê.
+- **Ano de dois ou de quatro dígitos.** `26` é 2026: o século é assumido, não
+  adivinhado, porque uma lista de tarefas fala de dias por vir e de dias que
+  acabaram de passar, nunca de 1926. Sem ano, a data é deste ano — é o que `20/08`
+  quer dizer em qualquer lista.
+- **Só a barra.** `20-08` também é data para muita gente, mas `20-08` também é
+  intervalo, placar e código de peça; a barra é a única forma que quase não tem
+  segundo significado. `20.08` fica de fora pela mesma razão, agravada por ser
+  também o fim de uma frase.
+- **Ordem ISO não é reconhecida.** `2026/08/20` não casa, e é decisão: a forma que
+  este módulo lê é a que se escreve à mão numa lista, e ninguém anota "pagar
+  boleto 2026/08/20".
+
+Duas guardas cercam a data para que ela não seja pedaço de outra coisa. Em
+`1/2/3/4` **não há data nenhuma** (a guarda da direita recusa o que sobraria), e
+em `20/08/2026` a captura é a data inteira, com ano, e **não** `20/08` seguido de
+resto. `1220/08` também não é data: o número maior à esquerda desqualifica.
+
+**O preço aceito subiu, e é o principal custo desta versão.** Aceitar um dígito faz
+`3/4` em "beber 3/4 de litro" ser lido como data. Antes o preço era cobrado **num
+dia por ano** — o destaque só acendia em 3 de abril. Agora que toda data é marcada,
+a pílula é **permanente**, e junto dela vêm "capítulo 5/7", "1/2 litro" e placar
+"3/1".
+
+Foi decisão explícita, com as alternativas na mesa: exigir dois dígitos mataria as
+frações e também o `6/9`, que é forma legítima e diária; validar calendário não
+ajuda, porque `3/4` é um 3 de abril perfeitamente válido. O que limita o dano é a
+extração conservadora — uma fração no meio de uma frase fica **inline**, com o texto
+intacto, e não é promovida à coluna da direita. "beber 3/4 de litro" continua legível
+palavra por palavra; só "beber 3/4" ganha badge.
+
+## A ordem de dia e mês **não pode ser lida na webview**
+
+`20/08` é 20 de agosto ou 20 do mês 20? A primeira versão perguntou ao `Intl` com
+o `navigator.language`, e estava errada. Duas medições nesta máquina, forçando
+idioma e região por argumento de processo, explicam por quê — e as duas são a razão
+de existir `src-tauri/src/formato.rs`:
+
+**1. `navigator.language` é o idioma da interface, não a região.**
+
+| macOS: idioma / região | `navigator.language` | ordem lida | o que a pessoa digita |
+|---|---|---|---|
+| pt-BR / Brasil | `pt-BR` | dia-primeiro | `20/08` — certo |
+| **en / Brasil** | `en-US` | mês-primeiro | `20/08` — **errado** |
+| **pt-BR / EUA** | `pt-BR` | dia-primeiro | `08/20` — **errado** |
+
+A webview responde a preferência de **idioma** (`AppleLanguages`), resolvida para
+uma região padrão, e nunca a configuração de **formato regional** (`AppleLocale`).
+Não é um caso de borda exótico: é todo mundo que roda o sistema numa língua e mora
+em outro lugar.
+
+**2. Nem entregando a etiqueta certa o `Intl` resolveria.** Ele escolhe a ordem
+pela **língua** e ignora a região — `Intl.DateTimeFormat("en-BR")` devolve
+mês-primeiro. A extensão `-u-rg-brzzzz`, que existe no BCP-47 justamente para
+dizer "inglês com os formatos do Brasil", é ignorada pelo motor. Medido nos dois:
+`en-u-rg-gbzzzz` devolve mês-primeiro, quando o Reino Unido escreve o dia na
+frente.
+
+O que sobra é perguntar ao sistema operacional o **padrão de data curta que ele
+mesmo usa** e ler a ordem dali. É código nativo em toda plataforma:
+
+| Sistema | O que é lido | Exemplo |
+|---|---|---|
+| macOS | `CFDateFormatter` de estilo curto sobre `CFLocaleCopyCurrent` | `dd/MM/y`, `M/d/yy` |
+| Windows | `LOCALE_SSHORTDATE` do locale do **usuário** (o "Formato regional", separado do idioma de exibição) | `dd/MM/yyyy` |
+| Linux | `nl_langinfo(D_FMT)` depois de `setlocale(LC_TIME, "")` | `%d/%m/%Y` |
+
+**É o mesmo argumento do Adendo 6, aplicado a outra pergunta.** Ali `idioma.rs`
+passou a ler o sistema porque o tray é desenhado antes de a webview existir; aqui
+`formato.rs` lê porque a webview **nunca** teve a informação. Nos dois casos a
+leitura é do Rust e o que atravessa a fronteira é a decisão, já tomada.
+
+**Duas gramáticas, e trocá-las é o erro a não cometer.** macOS e Windows devolvem
+padrão do ICU/CLDR, onde a letra é o campo e o que está entre apóstrofos é
+literal. O Linux devolve padrão do `strftime`, onde o campo é o `%` mais a letra e
+as letras soltas são texto. Ler `%d de %m` com a gramática do ICU acharia o `d` de
+"de" antes do mês. Só a ordem relativa de dia e mês importa: o japonês escreve
+`y/MM/dd`, e entre os dois campos que lemos o mês vem primeiro — que é a resposta
+certa para quem digita `08/20`.
+
+**O fallback de toda falha de leitura é dia-primeiro**, e a escolha é assimétrica
+de propósito. Sob dia-primeiro, um `08/20` procura o mês 20 e nunca casa: a pessoa
+fica sem destaque, que é o estado de qualquer tarefa sem data. Sob mês-primeiro,
+um `12/05` casaria no dia errado. **Errar para o lado que cala é melhor que errar
+para o lado que afirma** — é o Princípio 5 na escala desta feature.
+
+## Comando IPC novo
+
+| Comando | Args (JS) | Retorno | Erro |
+|---|---|---|---|
+| `date_day_first` | — | `boolean` | — |
+
+**Não falha, e é decisão.** Uma leitura que não dá certo cai em dia-primeiro no
+próprio backend. Não há erro a mostrar porque não há nada a contar: nenhum dado do
+usuário foi tocado, e não existe gesto dele para tentar de novo. A regra de que
+mensagem de erro diz o que falhou **e** o que aconteceu com os dados não tem o que
+dizer aqui, e uma faixa vermelha sobre um destaque que não acendeu seria pior que
+o silêncio.
+
+Chamado **uma vez, na abertura**, junto das abas, da aba ativa, do resgate e do
+atalho, com o mesmo `catch` local: a ordem de dia e mês é a menos importante das
+cinco leituras, e uma falha nela não pode derrubar as três que trazem a lista do
+usuário para a tela. O frontend começa com dia-primeiro e corrige quando a
+resposta chega — nunca espera por ela para desenhar a lista, porque o ciclo do
+produto é `⌃⌥T → digitar → Enter → ⌃⌥T` e um quadro de espera no caminho de abrir
+a janela é latência com outro nome.
+
+Resolvido uma vez por execução nos dois lados (`OnceLock` no Rust, estado na
+janela): ninguém troca a região do sistema com o app aberto, e isso é a mesma
+aposta que `idioma::atual()` já faz.
+
+## Nenhuma data é validada — e o argumento que dava isso de graça morreu
+
+Enquanto a pergunta era só "é hoje?", não validar saía de graça: **`31/02` nunca é
+igual a hoje**, em nenhum dia do ano, então o calendário podia não existir e nada
+aparecia na tela. O mês de 30 dias e o ano bissexto ficavam de fora sem custar um
+caso de uso.
+
+**Com toda data destacada, esse argumento acabou.** `31/02` e `00/00` passam a ganhar
+pílula cinza — o app agora afirma, na tela, que aquilo é uma data. Não validar deixou
+de ser consequência e passou a ser **escolha**, e ela foi feita: o custo de carregar
+um calendário para desmentir quem digitou é maior que o de mostrar uma pílula em cima
+de uma data impossível. Quem escreve `31/02` numa lista de tarefas provavelmente
+errou o dedo, e o app não é o lugar de corrigir isso — ele não corrige ortografia
+tampouco.
+
+O que a decisão **não** faz é afetar a cor: `31/02` nunca fica vermelho, porque
+nunca é igual a hoje. O erro possível é sempre o mais barato dos dois.
+
+Se um dia isto for reaberto, o teste é o de sempre: validar precisa tirar mais atrito
+do que acrescenta. Um `29/02/2027` marcado como data incomoda menos que um `29/02`
+legítimo recusado num ano bissexto por um cálculo errado.
+
+## A data vai para a direita, e a extração é conservadora
+
+Uma data no fim do título sai do texto e é desenhada numa **coluna à direita da
+linha**, entre o título e o `×`. O texto fica à esquerda, a data alinhada com as
+datas das outras linhas.
+
+**Três condições, todas necessárias:** o título tem *exatamente uma* data, ela
+termina no *fim* do texto, e *sobra texto* antes dela. Cada uma paga por si:
+
+- **Exatamente uma.** "de 19/10 a 25/10" tem duas, e levar a última para a direita
+  deixaria "de 19/10 a" pendurado — o app teria reescrito a frase da pessoa para
+  dizer menos do que ela dizia. Qualquer regra mais esperta precisaria entender
+  português, e este módulo lê caracteres.
+- **No fim.** "reunião 19/10 com o time" viraria "reunião com o time" com um 19/10
+  do outro lado: a data sai de onde qualificava algo e o texto fica com um buraco
+  que ninguém escreveu.
+- **Sobra texto.** Um título que é só "21/08" ficaria com a esquerda vazia e um badge
+  solto na direita — uma linha que parece não ter conteúdo.
+
+**O que não é extraído não é perdido:** continua inline, no lugar exato onde estava,
+com a mesma pílula. A diferença entre **mover** e **apagar** é o que garante que o
+texto da linha é sempre o mesmo texto que o editor inline abre no duplo clique — se
+os dois divergissem, renomear mostraria uma tarefa que a lista não mostra.
+
+Requisitos de layout que não são estéticos:
+
+- A data **não empurra nada no hover**. O `×` já ocupa largura fixa em repouso e só
+  troca de opacidade, então a coluna da data é estável — a Regra do Movimento que se
+  Paga proíbe layout que se mexe quando o mouse chega.
+- Quem cede largura é o **título** (`min-w-0 flex-1`, que já trunca em duas linhas), e
+  nunca a data (`shrink-0`, `whitespace-nowrap`): uma data pela metade não é uma data.
+- `tabular-nums`, porque agora números se empilham numa coluna e dígitos de larguras
+  diferentes desalinham as barras.
+
+## As duas cores da pílula
+
+**Toda data ganha pílula; só a de hoje muda de cor.**
+
+| Estado | Fundo | Significado |
+|---|---|---|
+| Qualquer data | `foreground/10` (croma `0`) | "aqui tem uma data" |
+| Data de hoje | `today` (vermelho pastel, croma `0.045`) | "e ela é hoje" |
+
+Isto **reabre a Regra do Pigmento Único**, que dizia "cor reporta falha, e nada mais".
+O app passa a ter dois valores cromáticos, e eles são a **mesma matiz em intensidades
+distantes**: o erro em croma `0.245`, hoje em `0.045` — 5,4x menos. A troca está
+registrada no DESIGN.md com o argumento inteiro; o resumo é que "é hoje" passou o
+mesmo teste que o erro passou (informação passageira, não-decorativa, sem um segundo
+jeito de ser dita — cinza já significa "aqui tem uma data"), e que uma pílula pastel
+de 40px dentro de uma linha não se confunde com texto saturado numa faixa de largura
+inteira.
+
+Dois requisitos que vêm com a cor, e nenhum é opcional:
+
+- **A cor nunca é o único sinal.** A pílula está lá em cinza de todo modo, com o mesmo
+  peso 500. Quem não distingue vermelho de cinza continua vendo a data destacada e
+  perde apenas o "é hoje", que o leitor de tela recebe por escrito (`task.today`).
+  Informação que só existe em cor é falha de acessibilidade, e o Adendo 7 é o piso.
+- **Contraste medido, não estimado** (Adendo 7). Texto sobre a pílula: 6.64:1 no claro,
+  7.09:1 no escuro. A pílula contra o cartão: 1.27:1 e 1.90:1 — nos dois casos acima
+  da pílula cinza (1.10 e 1.05), porque hoje precisa ser **mais** presente que uma data
+  qualquer, nunca menos. Os números e as razões estão em `index.css`, junto dos tokens.
+
+## Tarefa concluída não destaca
+
+Pela Regra do Desbotamento, concluída é estado com menos contraste. Uma pílula acesa
+dentro de uma linha riscada diria as duas coisas opostas na mesma linha, e a data de
+algo que já foi feito não é mais informação — é história. A linha concluída não chega
+nem a ser varrida.
+
+**E não extrai.** Marcar uma tarefa devolveria a data ao texto no mesmo instante em
+que o título desbota e a linha viaja para o fim da lista — o texto mudaria de forma
+debaixo do olho de quem acabou de clicar. A Regra da Batida em Três Tempos existe para
+não empilhar consequências nesse gesto, e uma quarta não entra.
+
+## A meia-noite vira sozinha
+
+Este app **não é uma página que alguém abre e fecha**: ele mora na bandeja e fica
+semanas com o mesmo processo de pé. Sem virada, a data destacada seria a de quando
+a janela abriu, e depois da meia-noite o destaque passaria a **afirmar que ontem é
+hoje**. Um destaque errado é pior que nenhum: nenhum não diz nada, errado diz uma
+mentira.
+
+Dois despertadores, pela mesma razão pela qual o app tem duas vias de volta:
+
+1. **Um timer até a meia-noite**, reagendado a cada virada — nunca um intervalo
+   fixo, que acumularia deriva. Com um segundo de folga, porque um `setTimeout`
+   pode ser servido alguns milissegundos **antes** do instante pedido, recalcular
+   o mesmo dia e reagendar para zero.
+2. **O foco da janela.** A máquina que dorme com o app aberto suspende o timer
+   junto, e ele é servido atrasado no retorno. O gesto de trazer a janela de volta
+   é a chance de o dia já estar certo quando a lista aparece.
+
+O dia é uma **string** (`2026-08-21`), e não um `Date`: a comparação com o que foi
+digitado vira igualdade de texto — sem fuso, sem hora — e o valor atravessa o
+`memo` da linha como primitivo. Dois `Date` do mesmo dia são props diferentes e
+re-renderizariam a lista inteira. Um só `useToday` serve a lista toda, e não um
+relógio por linha: relógios independentes dariam leituras diferentes na mesma tela
+se a virada caísse no meio de um render.
+
+## Os testes do frontend começam aqui
+
+O backend tinha 124 testes e o frontend não tinha runner nenhum. Este adendo abre
+um, e escolhe o que **não** acrescenta dependência: `node --test`, com o Node
+apagando os tipos sozinho. O par natural do Vite seria o vitest, e ele não entrou
+porque não precisou — `lib/dates.ts` não importa nada, nem alias, nem React, nem
+DOM. O dia em que um teste precisar de DOM é o dia de reabrir a conversa.
+
+    npm test        # node --test "src/**/*.test.ts"
+
+A divisão de quem testa o quê segue a fronteira do IPC, e não a conveniência:
+
+- **`formato.rs`** testa o que se faz com o padrão depois de recebê-lo — as duas
+  gramáticas, o literal entre apóstrofos, o `%%`, os modificadores do POSIX, o ano
+  na frente, o `D` que é dia do ano e não do mês. A leitura do sistema em si não
+  tem teste de valor, porque o valor depende da máquina; o que ela tem é um teste
+  de que não entra em pânico e devolve algo que o parser entende.
+- **`dates.test.ts`** testa as três condições da extração, o fatiamento inline, as
+  guardas da regex, o ano, as duas ordens, e as invariantes que fecham todas de uma
+  vez: **os segmentos remontam exatamente o texto da esquerda**, **`rest` mais a data
+  extraída cobrem o título** (só espaço em branco pode desaparecer), **nenhum segmento
+  é vazio**, e **`rest` nunca é vazio quando houve extração**. A ordem entra por
+  parâmetro, e há um teste que arranca o `navigator` do global e confirma que o módulo
+  continua respondendo o mesmo — é o que impede a volta do defeito que abriu esta
+  seção.
+
+  A invariante de reconstrução é a mais importante desta versão: mover a data é a
+  única operação do módulo que **muda o texto que a pessoa vê**, e um erro de índice
+  ali apagaria um pedaço do título sem quebrar nada.
+
+## Definição de pronto (adicional)
+
+- `npm run build`, `npm test`, `cargo check` e `cargo test` passam limpos.
+- **Toda** data escrita num título aparece com pílula cinza, em qualquer dia.
+- A data de hoje aparece com pílula vermelha pastel, e volta ao cinza amanhã sozinha.
+- Uma data passada é visualmente **idêntica** a uma futura. Se as duas se distinguirem,
+  o não-objetivo "sem prazos" foi rompido.
+- Data única no fim do título vai para a coluna da direita; data no meio da frase, ou
+  duas datas no mesmo título, ficam inline com o texto intacto.
+- **Nenhum caractere do título desaparece.** O texto da linha mais a data extraída
+  remontam o que foi digitado, e o editor inline abre exatamente o mesmo texto.
+- A coluna da data não empurra nem desloca nada quando o mouse entra na linha.
+- A cor não é o único sinal de "hoje": a pílula existe nos dois estados, e a palavra
+  chega a leitor de tela.
+- Contraste da pílula medido nos dois temas, e registrado junto dos tokens.
+- **A ordem segue a região do sistema, e não o idioma da interface.** Um sistema
+  com interface em português e formato regional dos Estados Unidos destaca `08/21`
+  e não `21/08` — e o inverso também vale.
+- Uma falha de leitura da ordem não mostra erro nenhum e não impede a lista de
+  carregar; o app fica em dia-primeiro.
+- `31/02` não é destacado em nenhum dia, e nenhum caminho valida calendário.
+- Tarefa concluída não destaca data.
+- Com o app aberto atravessando a meia-noite, o destaque muda de dia sozinho — por
+  timer e ao devolver o foco à janela.
+- Título sem data destacada renderiza exatamente o DOM que já renderizava, sem
+  elemento a mais em volta do texto.
+- Nada é gravado em disco por causa desta feature, e `Todo` continua com os quatro
+  campos que sempre teve.
+- A palavra "hoje" chega a leitor de tela junto do trecho, e não da linha inteira.
+
+**O que não foi verificado, e como saberemos.** As leituras de Windows e de Linux
+foram escritas a partir da documentação de cada plataforma e **não são compiladas
+nesta máquina** — o `cfg` do macOS é o único que o `cargo check` daqui alcança. A
+do macOS foi medida com o código que vai para produção, em cinco combinações de
+idioma e região. O workflow de release compila os quatro alvos, então um erro de
+compilação aparece lá; um erro de *valor* nas outras duas plataformas não aparece
+em lugar nenhum até alguém digitar uma data. Um job de CI que rode `cargo check` e
+`npm test` nos três sistemas a cada push fecharia a primeira metade, e ele não
+existe.

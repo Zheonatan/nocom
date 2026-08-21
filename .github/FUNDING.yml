@@ -1,1 +1,4 @@
+# É isto que liga o botão "Sponsor this project" na barra lateral do repositório.
+# Ko-fi é uma das plataformas nativas do GitHub; LivePix não é, então entra como custom.
+ko_fi: zheos
 custom: ["https://livepix.gg/zheo"]

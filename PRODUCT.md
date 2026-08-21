@@ -145,11 +145,25 @@ nenhum lado):
   do seu alvo — não existe job de CI que rode `cargo check` e `npm test` nos três
   sistemas, e sem ele um erro de valor nas outras duas só aparece quando alguém digitar
   uma data.
-- **Identidade visual.** *O nome saiu desta lista; o ícone não.* **O nome é "NoCom"**,
-  fechado na 0.2.0 — "Mini To-Do" descrevia a categoria, não o produto, e um nome que
-  descreve categoria não sobrevive ao primeiro concorrente vizinho. O ícone empacotado
-  hoje continua sendo o **logo padrão do Tauri**, provisório, e não pode ser distribuído
-  como identidade do produto.
+- ~~**Identidade visual.**~~ **Resolvida.** O nome é **"NoCom"**, fechado na 0.2.0 —
+  "Mini To-Do" descrevia a categoria, não o produto, e um nome que descreve categoria não
+  sobrevive ao primeiro concorrente vizinho. E a marca é **um anel branco de fio fino num
+  campo preto**, que substituiu o logo padrão do Tauri em todo lugar onde ele aparecia:
+  Dock, Finder, barra de tarefas, bandeja, aba do navegador em desenvolvimento e topo do
+  README. Geometria em `assets/marca/nocom.svg`, rasters em `scripts/marca.mjs`, o anel
+  da barra de menus do macOS em `src-tauri/src/marca.rs`, e a razão de cada fração na
+  seção "A Marca" do `DESIGN.md`.
+
+  **O que fica registrado como não sendo escolha de gosto:** o campo tem forma diferente
+  por plataforma (a squircle medida do macOS no `.icns`, quadrado sangrado no resto),
+  cada tamanho é desenhado no tamanho dele em vez de reduzido do maior, e a bandeja do
+  Mac recebe o anel sozinho no canal alfa — sem isso, `icon_as_template` mostraria um
+  retângulo cheio na barra de menus.
+
+  **O que continua em aberto é a marca em contexto comercial**, e não a marca: não há
+  site, página de loja, captura de tela de divulgação nem ícone de instalador
+  personalizado, porque não há canal de distribuição decidido. Nada disso é inventável
+  aqui.
 
   A troca de nome levou junto o identificador do bundle (`com.minitodo.app` →
   `com.nocom.app`), e é o identificador que nomeia a pasta de dados. Quem atualiza teria
@@ -188,9 +202,17 @@ nenhum lado):
   sistema, por `src-tauri/src/idioma.rs`: a leitura é própria porque o ícone é desenhado
   no `setup`, antes de a webview existir, e ali não há `navigator.languages` a quem
   perguntar. As duas metades usam a mesma regra de escolha e as mesmas frases.
-- **Sem identidade visual definida.** Nenhum logotipo, paleta ou tipografia foi declarado
-  vinculante pelo usuário. A tipografia atual (Geist Variable) e o tema shadcn são estado
-  do código, não compromisso de marca.
+- **Marca:** um anel branco de fio fino num campo preto — pedido do usuário nessas
+  palavras ("um fundo preto com um círculo branco bem fino e minimalista"), e por isso
+  **vinculante**, ao contrário do resto da aparência. Sem logotipo escrito, sem
+  monograma, sem símbolo derivado de tarefa. As duas frações que a definem (diâmetro a
+  62% do campo, traço a 1/64 do campo) e as duas formas de campo estão em "A Marca", no
+  `DESIGN.md`.
+- **Tipografia e tema não são compromisso de marca.** Nenhuma paleta ou família foi
+  declarada vinculante pelo usuário. A tipografia atual (Geist Variable) e o tema shadcn
+  são estado do código. O preto e o branco da marca também não abrem a paleta da janela:
+  o ícone é visto sobre papel de parede arbitrário e precisa de preto puro, e a interface
+  continua no quase-preto do `background`.
 
 ## Evidence on Hand
 

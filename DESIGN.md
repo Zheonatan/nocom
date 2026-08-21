@@ -416,9 +416,12 @@ para se destacar, ele precisa é de `muted` atrás dele.
 
 ## Shapes
 
-Retângulos de cantos arredondados, e nada além disso. Não há círculos (exceto a pílula
-do contador), não há formas orgânicas, não há recortes, ilustração ou ornamento. A
-única geometria decorativa do app é a ausência dela.
+Retângulos de cantos arredondados, e nada além disso. **Dentro da janela** não há
+círculos (exceto a pílula do contador), não há formas orgânicas, não há recortes,
+ilustração ou ornamento. A única geometria decorativa do app é a ausência dela.
+
+A marca é o único círculo do produto, e ela vive **fora** da janela — no Dock, na
+bandeja, na aba do navegador durante o desenvolvimento. Ver "A Marca".
 
 O raio base é `0.625rem` (10px), e a escala inteira deriva dele por multiplicação —
 `sm` a 0.6×, `md` a 0.8×, `lg` a 1×, `xl` a 1.4×.
@@ -440,6 +443,88 @@ Bordas são sempre de 1px — não existe borda mais grossa em lugar nenhum. O a
 10px nos controles, 8px nas linhas e chips, 4px no checkbox. Um raio constante em
 elementos de 480px e de 16px faria o pequeno parecer uma pastilha e o grande parecer
 uma caixa.
+
+## A Marca
+
+**Um anel branco de fio fino num campo preto.** É a única forma da identidade — não
+há logotipo escrito, monograma, nem símbolo derivado de tarefa (nenhum check, nenhuma
+lista, nenhuma prancheta). O nome já está escrito na barra de título, no tooltip da
+bandeja e no README; a marca não precisa repeti-lo.
+
+A geometria canônica mora em `assets/marca/nocom.svg`, e todo raster empacotado sai de
+`scripts/marca.mjs`. **A folha de especificação é `assets/marca/especificacao.html`** —
+abra no navegador para ver a marca em todos os tamanhos reais, ampliada na grade de
+pixel, e a silhueta da barra de menus. Ela é **gerada** (`npm run marca:folha`) do mesmo
+desenho que produz os ícones, e por isso não pode divergir deles: uma folha escrita à mão
+empata na primeira mudança de fração e depois mente com confiança, que é pior que não
+existir — alguém vai medir por ela.
+
+Duas frações, ambas relativas ao lado do **campo** (o retângulo preto visível, que no
+macOS é menor que o canvas):
+
+- **Diâmetro externo do anel: `0.62 × campo`.** Um anel de fio fino precisa de
+  circunferência para ter peso visual; um círculo pequeno com traço fino é timidez
+  duas vezes. 62% é grande o bastante para o anel ser a forma do ícone, e pequeno o
+  bastante para o preto ao redor continuar sendo a maior parte do desenho.
+- **Traço: `campo / 64`.** Dá ~40:1 de diâmetro por traço, que é o que "bem fino"
+  significa em número.
+
+### O campo tem duas formas, uma por plataforma
+
+- **macOS:** a squircle do sistema, **medida** em ícones do próprio macOS (Automator,
+  Calculator, App Store — todos idênticos): arte de 824×824 num canvas de 1024
+  (80,47%) e superelipse de expoente **5,07**. Não é um `rx` de retângulo
+  arredondado: um arco simples de raio constante se lê como forma errada ao lado dos
+  vizinhos no Dock, que é onde o ícone é sempre visto em companhia.
+- **Windows e Linux:** o preto sangra até a borda do quadrado, sem respiro e sem
+  arredondamento, que é a convenção desses sistemas.
+
+### Preto puro, e não a superfície escura do app
+
+O campo é `#000000` e o anel é `#ffffff` — os dois com croma `0`, então a Regra do
+Pigmento Único continua valendo sem exceção nova. Mas repare que **não** é o
+`background` escuro da janela (`oklch(0.145 0 0)`, um quase-preto): um ícone não é uma
+superfície de interface. Ele é visto sobre papel de parede arbitrário, em miniatura, no
+meio de dezenas de vizinhos coloridos, e ali o quase-preto se lê como cinza-escuro
+indeciso. A janela tem o luxo de ser discreta porque ela já está na frente de tudo; a
+marca precisa se afirmar em 32px contra uma fotografia.
+
+### Named Rules
+
+**A Regra do Traço Calibrado por Tamanho.** Uma fração é uma intenção, não um pixel.
+`campo / 64` dá 16px em 1024 e **0,25px em 16** — e 0,25px não é um fio fino, é um fio
+cinza: o antialias reparte a tinta entre dois pixels e nenhum dos dois fica branco.
+Por isso cada tamanho é **desenhado no seu próprio tamanho**, nunca reduzido do maior,
+com traço de pelo menos 1px inteiro e raio travado na grade de pixel até 64px. A
+consequência é deliberada: **em tamanho pequeno o anel é proporcionalmente mais grosso**.
+Ícone pequeno pede traço mais pesado, e a alternativa não é um anel mais fino — é
+nenhum anel.
+
+**A Regra da Cobertura em Luz Linear.** A mistura de branco com preto acontece em luz
+linear, e só depois é codificada para sRGB (`sRGB()` em `scripts/marca.mjs`). Num anel
+de fio fino quase todo pixel da curva é um pixel parcialmente coberto, então o erro de
+compor em sRGB não fica nas beiradas: ele **encolhe o traço inteiro**. Meia cobertura
+gravada como 128 é 21% de luz onde deveriam estar 50%, e o resultado é um anel mais
+fino e mais apagado do que a fração pediu.
+
+**A Regra da Silhueta na Barra de Menus.** Na barra de menus do macOS o ícone é
+silhueta: `icon_as_template(true)` descarta a cor e usa **só o canal alfa** para o
+sistema pintar a forma na tinta certa de cada tema. O alfa do ícone do app é o campo
+inteiro, opaco de ponta a ponta — usá-lo ali mostraria um **retângulo cheio**, com o
+anel sumido dentro dele. Então a bandeja do Mac recebe o anel **sozinho**, desenhado em
+`src-tauri/src/marca.rs`: 36×36 (que é @2x dos 18pt que o `tray-icon` impõe), traço de
+1,5pt — a espessura dos ícones que a Apple põe nessa barra, que é a vizinhança contra a
+qual este desenho é julgado, e não os 40:1 do ícone do app. Windows e Linux continuam
+com o ícone do app, porque lá a bandeja desenha com as cores do arquivo e o campo preto
+é justamente o que dá contraste próprio ao anel.
+
+**A Regra do Desenho que se Confere a Olho.** As duas metades da marca têm saída de
+inspeção, e é obrigação de quem mexer nas frações usá-la: `node scripts/marca.mjs
+--contato f.png` amplia cada tamanho pequeno nas duas formas de campo, e o teste
+`grava_a_silhueta_para_conferencia` em `marca.rs` grava a silhueta da bandeja. Os
+defeitos desta classe de desenho — anel pontilhado, traço cinza, squircle bojuda —
+passam por qualquer asserção pontual, são invisíveis em tamanho real e óbvios
+ampliados.
 
 ## Components
 
@@ -880,6 +965,12 @@ proíbe.
   acessível ali, e o que várias tecnologias assistivas faziam com a pílula do contador era
   ler "3", sem unidade. O número é a leitura rápida para o olho (`aria-hidden`); a leitura
   anunciada é a frase por extenso do rodapé, que é a região viva. **Um estado, uma voz.**
+- **Don't** gerar um tamanho de ícone reduzindo outro. Todo raster da marca é desenhado
+  no tamanho dele, com o traço recalculado — ver a Regra do Traço Calibrado por Tamanho.
+  Corolário: **não acrescente um tamanho novo à mão**; acrescente-o a `scripts/marca.mjs`.
+- **Don't** dar à marca um segundo elemento — check, lista, cursor, letra, monograma. O
+  anel sozinho é a identidade, e o nome já está escrito ao lado dele em todo lugar onde
+  o ícone aparece.
 - **Don't** nomear um controle pelo que ele parece fazer em vez do que ele faz. O botão do
   cabeçalho esconde a janela, e chamava-se "Fechar janela" para quem usa leitor de tela —
   numa janela sem decoração e fora da barra de tarefas, "fechei e não sei voltar" é o pior

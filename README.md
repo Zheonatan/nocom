@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/marca/nocom.svg" alt="" width="96" height="96">
+
 # NoCom
 
 **Uma lista de tarefas que vive por cima do seu trabalho.**

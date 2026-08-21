@@ -40,3 +40,10 @@ sys-locale = "0.3"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2.3.2"
 
+# Atualizacao pelo proprio app (Adendo 10). Fica no mesmo alvo de desktop que o
+# atalho global, e pelo mesmo motivo: em Android e iOS quem atualiza o app e a
+# loja, entao o plugin inteiro entraria na compilacao mobile para nao poder ser
+# usado. `AppHandle::restart()` e do proprio Tauri -- `tauri-plugin-process`
+# existiria aqui para expor a mesma funcao uma segunda vez.
+tauri-plugin-updater = "2"
+

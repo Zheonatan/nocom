@@ -178,3 +178,12 @@ O `uninstall` só tira o app de `/Applications` — as tarefas não estão lá.
 Versão 0.2.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).
+
+## Apoiar
+
+O NoCom é gratuito, sem conta, sem nuvem e sem telemetria — e vai continuar
+assim. Se ele te economiza alguns segundos por dia e você quiser retribuir,
+tem um [LivePix](https://livepix.gg/zheo).
+
+Contribuir com código, relatar um bug ou só contar como você usa o app vale o
+mesmo. Nada aqui é atrás de paywall.

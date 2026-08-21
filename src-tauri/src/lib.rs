@@ -8,6 +8,7 @@
 //! lado do Rust sem nenhum `rename` no meio.
 
 mod atalho;
+mod atualizacao;
 mod heranca;
 mod idioma;
 mod janela;
@@ -20,6 +21,7 @@ use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewWindow, WindowEv
 use tauri_plugin_global_shortcut::Shortcut;
 
 use atalho::Atalho;
+use atualizacao::{Disponivel, Pendente};
 use idioma::Idioma;
 use janela::{Janela, Posicao, Retangulo};
 use store::{AbaFechada, Store, Tab, Todo};
@@ -211,6 +213,34 @@ async fn pause_shortcut(
         }
     }
     Ok(atalho.descrever())
+}
+
+// --- atualização (Adendo 10) ---
+
+/// Existe versão mais nova? `None` é a resposta boa: o app já está na última.
+///
+/// **A única requisição de rede do app, e ela sai de um clique.** Não há checagem
+/// na abertura nem temporizador: o produto promete que nada sai desta máquina, e a
+/// promessa é mantida por construção — sem gesto, não há pacote saindo daqui.
+///
+/// O resultado fica guardado no estado para que `install_update` instale exatamente
+/// a versão que o painel acabou de nomear. Ver `atualizacao`.
+#[tauri::command]
+async fn check_update(
+    app: AppHandle,
+    pendente: State<'_, Pendente>,
+) -> Result<Option<Disponivel>, String> {
+    atualizacao::verificar(&app, &pendente).await
+}
+
+/// Baixa a versão verificada, valida a assinatura, substitui o app e reinicia.
+///
+/// **Só responde quando falha**: no caminho de sucesso o processo é trocado dentro
+/// da chamada e esta Promise nunca resolve. O painel não tem estado de "pronto" por
+/// isso — ele não estaria vivo para desenhá-lo.
+#[tauri::command]
+async fn install_update(app: AppHandle, pendente: State<'_, Pendente>) -> Result<(), String> {
+    atualizacao::instalar(&app, &pendente).await
 }
 
 // --- tarefas ---
@@ -689,6 +719,18 @@ pub fn run() {
             // ainda sobe com o tray inteiro no lugar.
             #[cfg(desktop)]
             montar_atalho_global(app.handle());
+            // Atualização (Adendo 10). Por último porque não participa da abertura:
+            // o plugin não faz requisição nenhuma ao subir, só quando o painel pede.
+            // Sem `?` pela mesma razão do atalho — um plugin que não sobe custa o
+            // botão de verificar, e não o app inteiro.
+            #[cfg(desktop)]
+            {
+                app.manage(Pendente::nova());
+                if let Err(erro) = app.handle().plugin(tauri_plugin_updater::Builder::new().build())
+                {
+                    eprintln!("[atualização] o plugin de atualização não subiu: {erro}");
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -703,6 +745,8 @@ pub fn run() {
             get_shortcut,
             set_shortcut,
             pause_shortcut,
+            check_update,
+            install_update,
             list_todos,
             add_todo,
             rename_todo,

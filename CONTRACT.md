@@ -1009,3 +1009,154 @@ tem duas frases — `shortcut.needsModifierMac` e `...Other` — pela mesma deci
   janela se esconda no meio do gesto.
 - Nenhuma frase da interface anuncia uma combinação diferente da que está registrada
   — inclusive o menu do tray, inclusive depois de trocar.
+
+---
+
+# Adendo 10 — atualização pelo próprio app (2026-08-21)
+
+Pedido do usuário: "como posso fazer um sistema de atualização interno no meu app,
+não quero que o usuário precise baixar tudo do zero e instalar."
+
+Até aqui atualizar era um processo manual de seis passos: abrir o navegador, achar a
+release, escolher o arquivo da arquitetura certa, baixar, arrastar para
+`/Applications`, repetir o `xattr`. Seis passos por versão, num app cuja tese é que
+anotar uma tarefa não deve custar trocar de aplicativo.
+
+**O que este adendo NÃO faz é entregar patch diferencial.** O pacote baixado é o
+bundle inteiro da versão nova, e não a diferença entre ela e a instalada. O que
+desaparece do caminho do usuário não é o download — são os outros cinco passos.
+Delta de verdade exigiria servidor próprio e um formato de patch; para um bundle de
+poucos megabytes, o download completo termina antes de a decisão valer a pena.
+
+## Nenhuma verificação acontece sozinha
+
+A consulta é a **única requisição de rede do app**, e ela sai de um clique explícito
+no painel da engrenagem. Não há checagem na abertura, não há temporizador, não há
+segundo plano.
+
+Isto é requisito, e não preferência de implementação. O PRODUCT.md promete um app sem
+conta, sem nuvem e sem telemetria, e a diferença entre "não coletamos nada" e "nada
+sai desta máquina" é justamente a existência de uma requisição que o usuário não
+pediu. A promessa passa a ser **mantida por construção**: sem gesto, não há pacote
+saindo daqui nem chegando.
+
+É também por isso que `update.explain` diz isso na tela. Uma garantia que só existe no
+README é uma garantia que o usuário não pode conferir de onde ele está.
+
+## A assinatura é o que torna isto seguro
+
+O `plugins.updater.pubkey` do `tauri.conf.json` é a metade pública de um par minisign,
+e o plugin recusa qualquer pacote que não tenha sido assinado com a metade privada
+(dois secrets do repositório, usados pelo workflow de release).
+
+O endpoint é HTTPS, mas é a **assinatura** — e não o TLS — que decide o que vira
+`/Applications/NoCom.app`. Sem ela, um `latest.json` servido por um intermediário
+seria execução remota de código com privilégio de usuário.
+
+Consequência aceita: `bundle.createUpdaterArtifacts` fica ligado, então **um build sem
+as chaves falha**. É de propósito. Publicar uma release sem os `.sig` deixaria quem já
+instalou sem caminho de atualização, e um build vermelho é um jeito melhor de
+descobrir isso do que um usuário reportando meses depois.
+
+## Comandos IPC novos
+
+- `check_update() -> Result<Option<Disponivel>, String>` — pergunta ao endpoint.
+  `None` é a resposta boa e comum: o app já está na última. O `Disponivel` leva só
+  `version` — as notas da release ficaram de fora porque o corpo é escrito pelo
+  workflow e é o mesmo em toda versão.
+- `install_update() -> Result<(), String>` — baixa a versão **já verificada**, valida
+  a assinatura, substitui o app e reinicia.
+
+`Disponivel` é espelhado em `lib/todos.ts` como `Update`. A versão instalada não é
+comando: vem do `getVersion()` do `@tauri-apps/api/app`, coberto pelo `core:default`
+que a capability da janela já concede. Um comando próprio seria a terceira cópia do
+mesmo número.
+
+## `install_update` instala o que o painel anunciou
+
+O resultado da verificação fica guardado no backend (`atualizacao::Pendente`), e a
+instalação **consome** esse resultado em vez de consultar o endpoint de novo.
+
+A razão é o Princípio 5. O painel escreve "a 0.3.0 já está disponível" e oferece um
+botão; se a instalação refizesse a consulta, uma release publicada entre os dois
+cliques faria o app instalar algo que a tela não nomeou. Improvável, e ainda assim é
+exatamente a classe de divergência que este contrato não deixa passar em silêncio.
+
+Consequência: uma instalação que falha esvazia o guardado, e o gesto seguinte volta a
+ser **verificar**, não tentar de novo. O painel acompanha isso — o botão volta a
+dizer "Verificar se há versão nova", porque insistir em "Atualizar" receberia
+"nenhuma atualização verificada nesta sessão".
+
+## Não existe estado de sucesso na interface
+
+No caminho bom, `install_update` **não responde**: o processo é trocado dentro da
+chamada (`AppHandle::restart()`; no Windows quem encerra o app é o instalador), e a
+Promise do lado do JS nunca resolve. O que o usuário vê é a janela sumir e voltar já
+na versão nova.
+
+O painel só tem, portanto, três coisas a desenhar: a versão instalada, a espera, e a
+falha. Um estado de "atualizado com sucesso" seria código que nunca roda.
+
+Falha, quando vem, **não deixa meio app instalado**: o pacote é baixado inteiro e a
+assinatura conferida antes de qualquer escrita no lugar do app. É o que autoriza
+`error.updateInstall` a dizer "o app continua na {version}, intacto".
+
+## Onde isto vive na interface
+
+Dentro do painel da engrenagem, embaixo do atalho, separado por uma linha. Não ganha
+vista própria nem indicador permanente: a Regra do Custo de Altura vale aqui como em
+todo o resto, e uma janela de 360x480 não gasta altura de tarefa para mostrar um
+número de versão que ninguém precisa ver enquanto trabalha. O painel já era o único
+lugar do app onde se olha quando a pergunta é sobre o app em vez de sobre a lista.
+
+**O rótulo da engrenagem passa a nomear as duas coisas atrás dela** — de "Trocar o
+atalho" para "Atalho e versão". Para quem usa leitor de tela, aquele rótulo é a única
+descrição que existe do painel, e um botão que promete um assunto e abre dois é a
+mesma classe de defeito que o `window.hide` corrigiu no Adendo 7. Continua sem
+"preferências" e sem "opções": vocabulário de painel de controle para dois gestos
+concretos seria a troca contrária.
+
+O rodapé (`shortcut.done`) passa a ser do painel inteiro e fica sozinho na última
+linha; "Restaurar padrão" sobe para a seção do atalho, que é o que ele restaura.
+
+## Limites de plataforma, ditos e não escondidos
+
+- **Linux: só AppImage.** `.deb` e `.rpm` não têm caminho de atualização pelo app, e
+  a verificação neles falha na leitura do `latest.json`. Cai no mesmo
+  `error.updateCheck` de "sem rede", porque a consequência é a mesma — nada mudou.
+- **Windows: pelo `-setup.exe`, e nunca pelo `.msi`.** É o único sistema onde a
+  instalação não é uma troca de arquivos: o plugin dispara o instalador e chama
+  `exit(0)` na hora, porque um processo vivo não pode ser sobrescrito. Quem traz o app
+  de volta é o instalador. Duas consequências que são requisito, não detalhe:
+  - `updaterJsonPreferNsis: true` no workflow. O padrão da action é `false`, e com
+    `targets: "all"` os dois bundles existem — sem a linha, o `latest.json` aponta
+    para o MSI, que instala via `msiexec` com elevação. Seria um UAC por atualização,
+    e nenhuma atualização possível para quem não administra a máquina. O NSIS em modo
+    `currentUser` (o padrão do bundler) não pede elevação.
+  - O `install_mode` do updater fica no padrão `passive`: barra de progresso e
+    reinício automático (`/P /R`). `quiet` esconderia a janela do instalador, e um app
+    que desaparece sem nada na tela por alguns segundos é indistinguível de um app que
+    travou.
+- **Homebrew:** atualizar de dentro do app deixa o cask desatualizado até o próximo
+  `brew upgrade --cask nocom`, que reinstala a mesma versão. Nada quebra; as tarefas
+  não estão em `/Applications`.
+- **O workflow de release passa a ser serial** (`max-parallel: 1`). Os quatro jobs
+  fazem merge da própria plataforma no mesmo `latest.json`; em paralelo, dois que leem
+  a versão antiga do arquivo apagam a entrada um do outro, e o sintoma é uma
+  plataforma que nunca acha atualização.
+
+Chaves novas no dicionário: `update.*` (8) e `error.update*` (2), nas duas línguas.
+
+## Definição de pronto (adicional)
+
+- `npm run build` passa sem erros; `cargo check` e `cargo test` continuam limpos.
+- O app **não faz requisição nenhuma** até o botão de verificar ser clicado.
+- O painel nomeia a versão que o botão vai instalar, e instala essa.
+- Verificar com o app já na última versão diz isso, e não fica em silêncio.
+- Falha de verificação e falha de instalação são frases distintas, e as duas dizem o
+  que aconteceu com o app — nas duas, nada.
+- Uma instalação que falha devolve o painel ao gesto de verificar, e não a um botão
+  de instalar que o backend recusaria.
+- Fechar o painel no meio de uma verificação não escreve estado em componente
+  desmontado.
+- O rótulo da engrenagem descreve o painel inteiro, inclusive para leitor de tela.

@@ -104,7 +104,7 @@ jobs:
           # que o endpoint do `tauri.conf.json` aponta via
           # `/releases/latest/download/`. Já é o padrão; explícito porque é a peça
           # sem a qual o botão de atualizar não acha nada.
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
           # **O Windows atualiza pelo `-setup.exe`, e não pelo `.msi`.** O padrão da
           # action é o contrário (`false`, por legado), e com `targets: "all"` os dois
           # são gerados — então sem esta linha o `latest.json` aponta para o MSI, que

@@ -66,12 +66,12 @@ entra de carona.
 
 | Sistema | Arquivo |
 | --- | --- |
-| **macOS** (Apple Silicon) | [NoCom_0.2.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_aarch64.dmg) |
-| **macOS** (Intel) | [NoCom_0.2.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_x64.dmg) |
-| **Windows** | [NoCom_0.2.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_x64-setup.exe) |
-| **Linux** (.deb) | [NoCom_0.2.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_amd64.deb) |
-| **Linux** (.rpm) | [NoCom-0.2.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom-0.2.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [NoCom_0.2.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.2.0/NoCom_0.2.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.3.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.3.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64.dmg) |
+| **Windows** | [NoCom_0.3.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.3.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.3.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom-0.3.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.3.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.AppImage) |
 
 Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
 
@@ -259,7 +259,7 @@ mundo a reinstalar na mão uma última vez.
 
 ## Estado do projeto
 
-Versão 0.2.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
+Versão 0.3.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).
 

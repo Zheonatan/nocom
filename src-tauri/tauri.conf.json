@@ -34,7 +34,7 @@
       "endpoints": [
         "https://github.com/Zheonatan/nocom/releases/latest/download/latest.json"
       ],
-      "pubkey": "COLE-AQUI-O-CONTEUDO-DE-nocom.key.pub"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJCQ0E5Mjg3QzQ0MkYzMUMKUldRYzgwTEVoNUxLSzE5U1UyUUM5Y0dpdWJaRCtFbE1QTWw1VVhMSEZJZVRwdUZ4djBPd3NZUzYK"
     }
   },
   "bundle": {

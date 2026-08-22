@@ -25,3 +25,11 @@ dist-ssr
 
 # Local tool configs
 *.local.json
+
+# Configuração local de agentes de código. Fica no disco e continua valendo
+# localmente; fora do índice porque são ~300 arquivos de ferramenta, e no
+# repositório eles afogam a árvore e a barra de linguagens do projeto.
+.agents
+.claude
+.codex
+.impeccable

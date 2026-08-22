@@ -41,7 +41,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # WebKitGTK 4.1 é o webview do Tauri v2 no Linux; libayatana-appindicator
       # atende a feature `tray-icon`, e libxdo o atalho global.
@@ -60,7 +60,7 @@ jobs:
             patchelf \
             wget
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

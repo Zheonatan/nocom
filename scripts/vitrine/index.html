@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Entrada da vitrine: a interface real do NoCom, com o IPC de `stub.js` no
+     lugar do backend Rust, para as fotos de `assets/telas/`. Servida pelo
+     servidor de desenvolvimento do Vite; `captura.mjs` sobe o servidor, abre
+     esta página e grava os PNGs.
+
+     Ela vive AQUI, e não como uma segunda entrada do build, de propósito: uma
+     entrada de build viajaria dentro de cada instalador publicado, levando as
+     tarefas de exemplo e um IPC falso para dentro do app de quem instalou. -->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NoCom — vitrine</title>
+    <style>
+      /* `src/index.css` põe `#root` em `height: 100%` porque no app ele É a
+         janela. Aqui o `#root` precisa ter o TAMANHO da janela (360x480, como
+         declarado em `src-tauri/tauri.conf.json`) dentro de um viewport maior,
+         para a sombra e o canto arredondado do cartão não saírem cortados na
+         captura.
+
+         O seletor é `html body #root` e não `#root` para vencer por
+         especificidade: o CSS do app é injetado pelo módulo abaixo, portanto
+         DEPOIS deste bloco, e com especificidade igual quem vem depois ganha. */
+      html body #root {
+        width: 360px;
+        height: 480px;
+      }
+      html body {
+        display: grid;
+        place-items: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <!-- O stub PRIMEIRO. Os dois são módulos, e módulos executam na ordem do
+         documento: quando `main.tsx` roda, `window.__TAURI_INTERNALS__` já
+         existe. Um `<script>` clássico aqui também funcionaria, mas o Vite
+         transforma `.js` servido da raiz, e módulo é o contrato que ele garante. -->
+    <script type="module" src="./stub.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

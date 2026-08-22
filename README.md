@@ -10,7 +10,20 @@ Aparece com um atalho de teclado, some com `Escape`, e guarda tudo no seu
 computador. Sem conta, sem nuvem, sem sincronização.
 
 [![Download](https://img.shields.io/github/v/release/Zheonatan/nocom?label=download&style=for-the-badge)](https://github.com/Zheonatan/nocom/releases/latest)
+[![Licença MIT](https://img.shields.io/github/license/Zheonatan/nocom?style=for-the-badge&label=licen%C3%A7a)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoiar-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/zheos)
+
+<!-- Duas fotos da mesma janela, uma por tema, e o GitHub escolhe pela
+     `prefers-color-scheme` de quem está lendo -- o app segue o tema do sistema, e
+     uma foto clara num README escuro anunciaria um app que ele não é. O PNG tem
+     fundo transparente, então o canto arredondado da janela assenta nos dois. -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/telas/janela-escura.png">
+  <img src="assets/telas/janela-clara.png" width="420"
+       alt="A janela do NoCom: as abas Trabalho e Casa, um campo de nova tarefa e
+            sete tarefas. Duas têm a data numa coluna à direita, e a de hoje está
+            destacada em vermelho.">
+</picture>
 
 </div>
 
@@ -207,7 +220,16 @@ npm run tauri dev      # desenvolvimento
 npm run tauri build    # instaladores para a plataforma atual
 npm test               # testes do frontend (node --test, sem dependência extra)
 cd src-tauri && cargo test   # testes do backend
+
+npm run marca          # regera os ícones a partir de assets/marca/nocom.svg
+npm run vitrine        # regera as fotos da interface em assets/telas/
 ```
+
+Os dois últimos existem para que nenhuma imagem do projeto seja um arquivo órfão:
+mudou a interface, `npm run vitrine` refaz as fotos deste README nos dois temas,
+com dados de exemplo e a data de hoje calculada na hora. Ele precisa de um
+navegador baseado em Chromium — se o seu não estiver no lugar de sempre, aponte
+com `CHROME=/caminho/para/chrome npm run vitrine`.
 
 **Pré-requisitos:** Node 22.18+ (o `npm test` usa o apagador de tipos nativo do
 Node, sem transpilador), Rust estável e as

@@ -113,7 +113,10 @@ const COMANDOS = {
   // Sem versão nova: o painel da engrenagem não aparece na foto, e uma
   // verificação de rede numa vitrine offline só teria como resultado um erro.
   check_update: () => null,
-  "plugin:app|version": () => "0.2.0",
+  // A versao instalada. Aparece SO no painel da engrenagem, que a foto nao mostra
+  // -- vale manter em dia de todo modo, para a vitrine nao ser o unico lugar do
+  // repositorio que diz um numero de versao antigo.
+  "plugin:app|version": () => "0.3.0",
 };
 
 window.__TAURI_INTERNALS__ = {

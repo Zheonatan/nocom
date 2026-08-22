@@ -1,0 +1,110 @@
+name: Gerenciadores
+
+# Leva uma versão JÁ PUBLICADA para o Homebrew e para o winget. Não compila nada:
+# lê os instaladores da release da tag que recebe.
+#
+# Dois gatilhos, de propósito:
+#
+#   `workflow_call`     — o caminho normal. `release.yml` chama daqui depois que a
+#                         matriz de build terminou, com a tag recém-criada.
+#   `workflow_dispatch` — o caminho de conserto. Roda pela aba Actions em cima de
+#                         qualquer tag já publicada. Serve para quando um job
+#                         falhou (token expirado, revisão do winget recusada, rede),
+#                         para testar um token novo sem esperar a próxima release, e
+#                         para realinhar o cask se ele ficar para trás. É seguro
+#                         repetir: reescrever o cask com os mesmos valores não gera
+#                         commit, e `wingetcreate` não reabre PR de versão existente.
+#
+# Os dois gerenciadores rodam em paralelo e são independentes: se a revisão do
+# winget travar, o cask do Homebrew não fica esperando por ela.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag da release, com o v (ex.: v0.4.0)"
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag de uma release já publicada, com o v (ex.: v0.3.0)"
+        type: string
+        required: true
+
+jobs:
+  homebrew:
+    name: Homebrew (cask)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Calcular os sha256 dos DMGs
+        id: sha
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          versao="${TAG#v}"
+          base="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          for arco in aarch64 x64; do
+            curl -fsSL --retry 3 -o "$arco.dmg" "$base/NoCom_${versao}_${arco}.dmg"
+          done
+          {
+            echo "versao=$versao"
+            echo "arm=$(sha256sum aarch64.dmg | cut -d' ' -f1)"
+            echo "intel=$(sha256sum x64.dmg | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+
+      # O `GITHUB_TOKEN` só alcança ESTE repositório; o tap é outro. Daí o PAT.
+      # Escopo mínimo: fine-grained, `contents: write`, só em
+      # `Zheonatan/homebrew-tap`.
+      - name: Atualizar o cask no tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          VERSAO: ${{ steps.sha.outputs.versao }}
+          ARM: ${{ steps.sha.outputs.arm }}
+          INTEL: ${{ steps.sha.outputs.intel }}
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${TAP_TOKEN}@github.com/Zheonatan/homebrew-tap.git" tap
+          node scripts/cask.mjs \
+            --arquivo tap/Casks/nocom.rb --versao "$VERSAO" --arm "$ARM" --intel "$INTEL"
+          git -C tap config user.name "github-actions[bot]"
+          git -C tap config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Rodar de novo na mesma versão não muda nada, e `commit` sem mudança sai
+          # com erro. Nesse caso o job já fez o que tinha que fazer: sair verde.
+          if git -C tap diff --quiet; then
+            echo "O cask já está na $VERSAO com estes hashes — nada a comitar."
+            exit 0
+          fi
+          git -C tap commit -am "nocom $VERSAO"
+          git -C tap push
+
+  winget:
+    name: winget
+    # `wingetcreate` é um executável do Windows; não há porte para Linux.
+    runs-on: windows-latest
+
+    steps:
+      # `wingetcreate update` baixa o `.exe` da release, calcula o hash, reescreve
+      # o manifesto de `microsoft/winget-pkgs` e abre o PR pelo fork da conta dona
+      # do token. **A primeira versão não passa por aqui** — o `update` precisa que
+      # o pacote já exista, e isso é um `wingetcreate new` manual, uma vez só. Está
+      # no README, em "Publicar uma versão".
+      - name: Abrir o PR no winget-pkgs
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          $versao = $env:TAG.TrimStart("v")
+          $url = "https://github.com/${{ github.repository }}/releases/download/$env:TAG/NoCom_${versao}_x64-setup.exe"
+          Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update Zheonatan.NoCom `
+            --version $versao `
+            --urls "$url|x64|user" `
+            --submit --token $env:WINGET_TOKEN

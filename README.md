@@ -62,6 +62,21 @@ você diga explicitamente que confia nele, uma vez, antes do primeiro uso. O
 comando acima confia **apenas neste cask** — nada mais que eu publicar no tap
 entra de carona.
 
+### Windows — pelo winget (recomendado)
+
+```sh
+winget install Zheonatan.NoCom
+```
+
+Atualizar depois é só `winget upgrade Zheonatan.NoCom`.
+
+**Por aqui o SmartScreen não aparece.** O aviso *"o Windows protegeu seu PC"* vem
+de uma marca que o **navegador** carimba em todo arquivo baixado; o winget baixa
+e executa o instalador por fora do navegador, conferindo o `sha256` publicado no
+manifesto. Baixando o `.exe` na mão o aviso continua — e a causa é a mesma de
+sempre: o instalador ainda não é assinado. Veja
+[Primeira execução](#primeira-execução-o-aviso-do-sistema).
+
 ### Download direto
 
 | Sistema | Arquivo |
@@ -96,6 +111,14 @@ Depois disso ele abre normalmente, inclusive nas próximas atualizações.
 <summary><b>Windows</b> — "o Windows protegeu seu PC"</summary>
 
 Clique em **Mais informações** e depois em **Executar assim mesmo**.
+
+Quem avisa é o SmartScreen, e ele avisa porque o instalador não é assinado com
+um certificado Authenticode — uma assinatura que custa por ano e que o projeto
+ainda não tem. Não é um defeito do arquivo nem sinal de que algo foi detectado:
+é o Windows dizendo que não conhece quem assinou, e ninguém assinou.
+
+Para pular o aviso de vez, instale
+[pelo winget](#windows--pelo-winget-recomendado).
 </details>
 
 ## Atualizar
@@ -123,6 +146,9 @@ Duas ressalvas honestas:
   o `brew` achando que você está na versão anterior até o próximo
   `brew upgrade --cask nocom`, que apenas reinstala a mesma versão. Nada quebra,
   e suas tarefas não estão em `/Applications`.
+- **Pelo winget vale o mesmo.** Atualizar de dentro do app deixa o
+  `winget upgrade` achando que há uma versão nova por instalar até você rodá-lo
+  uma vez. Ele reinstala a mesma versão, e nada se perde.
 
 ## Usando
 
@@ -241,11 +267,56 @@ Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê
 [`CONTRACT.md`](CONTRACT.md) (comportamento normativo e fronteira IPC) e
 [`DESIGN.md`](DESIGN.md) (decisões de interface).
 
-Publicar uma versão: `git tag v0.3.0 && git push origin v0.3.0`. O
-[workflow de build](.github/workflows) gera e publica os instaladores dos três
-sistemas, mais o `latest.json` que o botão de atualizar consulta. Depois disso,
-atualize a versão e os `sha256` do cask em
-[Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap).
+**Publicar uma versão é um comando:**
+
+```sh
+npm run publicar -- 0.4.0
+```
+
+Ele sobe o número nos seis arquivos que o citam (`package.json`, `Cargo.toml`,
+`Cargo.lock`, `tauri.conf.json`, os links de download aqui do README e o IPC
+falso da vitrine), comita, cria a tag `v0.4.0` e empurra. Se qualquer arquivo
+tiver mudado de forma, ele para antes de comitar em vez de subir uma versão pela
+metade. `--sem-push` para antes de empurrar, para conferir o commit.
+
+Da tag em diante o [workflow](.github/workflows/release.yml) faz o resto sozinho:
+
+| Workflow / job | O que faz |
+| --- | --- |
+| [`release.yml`](.github/workflows/release.yml) → `build` | Compila as quatro plataformas, cria a release e sobe os instaladores mais o `latest.json` que o botão de atualizar consulta |
+| [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `homebrew` | Calcula os `sha256` dos DMGs e comita a versão nova no cask de [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap) |
+| [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `winget` | Roda `wingetcreate update` e abre o PR do manifesto em [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) |
+
+O `gerenciadores.yml` roda **só em tag** — um `workflow_dispatch` de teste no
+`release.yml` não mexe no que os usuários instalam. E o PR do winget ainda passa
+pela validação automática e pela revisão da Microsoft, então a versão nova
+costuma aparecer no `winget install` algumas horas depois da release.
+
+**Quando um dos dois falha, não precisa refazer a release.** O
+`gerenciadores.yml` também aceita disparo manual pela aba Actions, pedindo só a
+tag de uma release já publicada — ele relê os instaladores de lá. Serve para
+token expirado, PR do winget recusado, rede caindo no meio, ou para conferir um
+secret novo sem esperar a próxima versão. Repetir é seguro: reescrever o cask
+com os mesmos valores não gera commit, e o `wingetcreate` não reabre PR de uma
+versão que já entrou.
+
+**Três secrets do repositório sustentam isso**, além dos dois de assinatura logo
+abaixo:
+
+| Secret | Para quê | Escopo |
+| --- | --- | --- |
+| `TAP_TOKEN` | Comitar no tap, que é outro repositório e o `GITHUB_TOKEN` não alcança | Fine-grained, `contents: write`, só em `Zheonatan/homebrew-tap` |
+| `WINGET_TOKEN` | Abrir o PR no winget-pkgs pelo fork da sua conta | Clássico, escopo `public_repo` |
+
+**A primeira versão no winget é manual**, uma vez só: `wingetcreate update`
+precisa que o pacote já exista. Com o `.exe` de uma release publicada:
+
+```powershell
+wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe
+```
+
+Responda `Zheonatan.NoCom` como identificador — é o que o job procura. Da
+segunda release em diante o CI cuida.
 
 **A chave de assinatura das atualizações** é o que faz o app aceitar um pacote.
 Gerada uma vez com `npm run tauri signer generate -- -w ~/.tauri/nocom.key`: a

@@ -55,6 +55,12 @@ brew install --cask nocom
 
 Atualizar depois é só `brew upgrade --cask nocom`.
 
+**Uma ressalva antes de instalar:** o `brew` carimba quarentena em tudo que
+instala, então na primeira abertura o macOS vai dizer que o NoCom *"está
+danificado"* e oferecer "Mover para o Lixo". Ele não está, e não clique nesse
+botão — a explicação e o comando de uma linha que resolve estão em
+[Primeira execução](#primeira-execução-o-aviso-do-sistema).
+
 **Por que o `brew trust`?** Sem ele o `brew` recusa a instalação com
 *"Refusing to load cask from untrusted tap"*. Não é sinal de problema com o
 NoCom: desde o Homebrew 6 qualquer repositório que não seja oficial exige que
@@ -93,18 +99,34 @@ Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom
 ### Primeira execução: o aviso do sistema
 
 O app ainda **não é assinado digitalmente**, então seu sistema vai avisar que
-não conhece o programa. É esperado, e acontece uma única vez.
+não conhece o programa. É esperado. No Windows acontece uma vez só; no macOS,
+uma vez por instalação pelo `brew` — o porquê está logo abaixo.
 
 <details>
-<summary><b>macOS</b> — "não foi possível verificar o app"</summary>
+<summary><b>macOS</b> — "o NoCom está danificado"</summary>
 
-Rode uma vez no Terminal:
+> **"NoCom" está danificado e não pode ser aberto. Você deve movê-lo para o
+> Lixo.**
+
+**Clique em Cancelar. Nunca em "Mover para o Lixo"** — que é o botão de cima, e
+apaga o app.
+
+O arquivo não está danificado. Essa é a frase que o macOS usa quando o app tem
+a marca de quarentena e **nenhuma assinatura da Apple** para conferir contra —
+o NoCom sai do build com assinatura *ad-hoc*, que basta para executar mas não
+para o Gatekeeper avaliar. Para tirar a marca:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/NoCom.app"
 ```
 
-Depois disso ele abre normalmente, inclusive nas próximas atualizações.
+Depois disso ele abre normalmente.
+
+**Instalando pelo Homebrew, repita esse comando a cada `brew upgrade`.** Quem
+carimba a quarentena é o próprio `brew`, em toda instalação, e desde o Homebrew
+6 não há como desligar: o `--no-quarantine` foi removido e não tem substituto.
+Atualizar de dentro do app não passa por isso — o app troca o próprio pacote
+sem carimbar nada, e é por isso que ele é o caminho mais liso no macOS.
 </details>
 
 <details>
@@ -142,10 +164,14 @@ Duas ressalvas honestas:
 - **No Linux só o AppImage se atualiza.** Quem instalou pelo `.deb` ou pelo
   `.rpm` continua atualizando pelo gerenciador de pacotes: o botão vai dizer que
   não conseguiu verificar, e nada no app é alterado.
-- **Pelo Homebrew, os dois caminhos funcionam.** Atualizar de dentro do app deixa
-  o `brew` achando que você está na versão anterior até o próximo
-  `brew upgrade --cask nocom`, que apenas reinstala a mesma versão. Nada quebra,
-  e suas tarefas não estão em `/Applications`.
+- **Pelo Homebrew, os dois caminhos funcionam, mas não custam o mesmo.**
+  Atualizar de dentro do app deixa o `brew` achando que você está na versão
+  anterior até o próximo `brew upgrade --cask nocom`, que apenas reinstala a
+  mesma versão. Nada quebra, e suas tarefas não estão em `/Applications`. Só
+  que **todo `brew upgrade` recarimba a quarentena**, e aí o macOS volta a
+  dizer que o app está danificado até você repetir o
+  `xattr -dr com.apple.quarantine`. Pelo botão de dentro do app isso não
+  acontece.
 - **Pelo winget vale o mesmo.** Atualizar de dentro do app deixa o
   `winget upgrade` achando que há uma versão nova por instalar até você rodá-lo
   uma vez. Ele reinstala a mesma versão, e nada se perde.

@@ -112,4 +112,21 @@ jobs:
           # atualização possível para quem não é administrador da máquina. O NSIS
           # deste projeto instala em modo `currentUser` (o padrão do bundler), que não
           # pede elevação nenhuma.
-          updaterJsonPreferNsis: true
+
+  # Publica nos gerenciadores de pacote. Só em tag: num `workflow_dispatch` a
+  # partir da main o `if` pula, porque um build de teste não deve mexer no que os
+  # usuários instalam.
+  #
+  # `needs: build` espera a matriz INTEIRA, e não só o job do Windows ou do
+  # macOS: os jobs de lá leem os instaladores da release, que só existem depois
+  # que o último job da matriz subiu os seus.
+  #
+  # Mora num workflow separado para poder ser disparado à mão em cima de uma tag
+  # já publicada — ver o cabeçalho de `gerenciadores.yml`.
+  gerenciadores:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/gerenciadores.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

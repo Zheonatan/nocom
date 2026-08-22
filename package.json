@@ -11,7 +11,9 @@
     "tauri": "tauri",
     "marca": "node scripts/marca.mjs",
     "marca:folha": "node scripts/folha.mjs",
-    "vitrine": "node scripts/vitrine/captura.mjs"
+    "vitrine": "node scripts/vitrine/captura.mjs",
+    "publicar": "node scripts/publicar.mjs",
+    "cask": "node scripts/cask.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

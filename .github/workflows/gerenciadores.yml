@@ -101,6 +101,16 @@ jobs:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
           TAG: ${{ inputs.tag }}
         run: |
+          # Enquanto o pacote não existir no winget-pkgs o secret não vai estar
+          # configurado, e sem ele o wingetcreate morre com uma exceção do
+          # Octokit -- "String cannot be empty (Parameter 'token')", que não diz
+          # nada a quem abre o log. Pior: pintaria de vermelho TODA release até
+          # o cadastro sair, e um X permanente é um X que ninguém mais lê. Aqui
+          # o job sai verde com um aviso que se explica.
+          if (-not $env:WINGET_TOKEN) {
+            Write-Output "::warning::WINGET_TOKEN não configurado — envio ao winget-pkgs pulado. Ver 'Publicar uma versão' no README."
+            exit 0
+          }
           $versao = $env:TAG.TrimStart("v")
           $url = "https://github.com/${{ github.repository }}/releases/download/$env:TAG/NoCom_${versao}_x64-setup.exe"
           Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe

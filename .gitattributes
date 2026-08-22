@@ -1,0 +1,20 @@
+# A barra de linguagens da sidebar do GitHub é montada pelo Linguist contando
+# bytes por extensão, e sem estas linhas ela descreve o projeto errado: um
+# arquivo GERADO de 78 kB põe "HTML" na frente do Rust e do TypeScript que são o
+# app. `linguist-generated` tira o arquivo da contagem e colapsa o diff dele nos
+# pull requests, que é o tratamento certo para algo que ninguém edita à mão.
+assets/marca/especificacao.html linguist-generated=true
+
+# Fim de linha normalizado no repositório. O Windows entra na matriz de build, e
+# sem isto um checkout lá reescreve arquivos inteiros em CRLF — diff de 300
+# linhas onde não houve mudança nenhuma.
+* text=auto eol=lf
+
+# Marcados à mão, e não deixados para a autodetecção do `text=auto` acima. O
+# risco é assimétrico: um `.icns` ou um `.ico` que o Git classifique como texto
+# sai do checkout com fins de linha reescritos, e um ícone corrompido só aparece
+# no bundle da release.
+*.png  binary
+*.ico  binary
+*.icns binary
+*.woff2 binary

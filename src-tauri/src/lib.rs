@@ -9,6 +9,7 @@
 
 mod atalho;
 mod atualizacao;
+mod cantos;
 mod formato;
 mod heranca;
 mod idioma;
@@ -741,6 +742,10 @@ pub fn run() {
                 // reposicionamento seja registrado como movimento do usuário.
                 restaurar_posicao(&janela);
                 acompanhar_janela(&janela);
+                // Depois das duas: é o handle nativo que o DWM recebe, e ele só
+                // vale a pena ser tocado com a janela já no lugar em que vai
+                // aparecer. No macOS e no Linux não faz nada. Ver `cantos`.
+                cantos::assentar(&janela);
             }
 
             montar_tray(app.handle())?;

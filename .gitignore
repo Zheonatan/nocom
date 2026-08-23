@@ -33,3 +33,13 @@ dist-ssr
 .claude
 .codex
 .impeccable
+
+# A landing page. O que é FONTE fica versionado (`site/index.html`, `en/index.html`,
+# `folha.css`, `folha.js`); o que `scripts/site.mjs` apenas COPIA para lá não entra
+# no repositório duas vezes -- as fontes vêm de `node_modules` e as imagens de
+# `assets/`, e a CI regenera antes de publicar.
+site/fontes/
+site/telas/
+site/marca/
+site/favicon-*.png
+site/.nojekyll

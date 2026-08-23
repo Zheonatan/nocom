@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en" class="sem-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoCom — a to-do list that lives on top of your work</title>
+<meta name="description" content="A 360 × 480 px to-do list that appears with a global shortcut, floats above whatever you are doing, and keeps everything in a local file. No account, no cloud, no telemetry. macOS, Windows and Linux, MIT.">
+<link rel="canonical" href="https://zheonatan.github.io/nocom/en/">
+<link rel="alternate" hreflang="pt-BR" href="https://zheonatan.github.io/nocom/">
+<link rel="alternate" hreflang="en" href="https://zheonatan.github.io/nocom/en/">
+<link rel="alternate" hreflang="x-default" href="https://zheonatan.github.io/nocom/">
+<link rel="icon" href="../favicon-32.png" sizes="32x32">
+<link rel="icon" href="../favicon-16.png" sizes="16x16">
+<meta property="og:type" content="website">
+<meta property="og:title" content="NoCom — a to-do list that lives on top of your work">
+<meta property="og:description" content="A 360 × 480 px to-do list that appears with a global shortcut, floats above whatever you are doing, and keeps everything in a local file. No account, no cloud, no telemetry. macOS, Windows and Linux, MIT.">
+<meta property="og:url" content="https://zheonatan.github.io/nocom/en/">
+<meta property="og:image" content="https://zheonatan.github.io/nocom/marca/card-social.png">
+<meta name="twitter:card" content="summary_large_image">
+<!-- As fontes sao pre-carregadas do proprio dominio: a pagina nao faz uma unica
+     requisicao de terceiro, e nao ha "preconnect" para lugar nenhum. -->
+<link rel="preload" href="../fontes/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fontes/azeret-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../folha.css">
+<script>document.documentElement.className = "js";</script>
+</head>
+<body>
+<!--
+IMPECCABLE DIRECTION CONTRACT · seed 0108210e
+THESIS: Nada e afirmado, tudo e medido. A folha recusa o heroi escuro com brilho
+difuso e a captura flutuando em moldura arredondada.
+OWN-WORLD: Pelicula cinza-fria, prancha um tom acima, fio de 1px, zero sombra e
+zero canto arredondado. Uma matiz so, o vermelho do proprio app, reservada as
+cotas. Archivo em versalete tracked, Spectral no corpo, Azeret Mono em toda
+medida. Sem manchete de secao: a folha tem rotulo de zona.
+STORY: A visitante escolhe o sistema no topo, ve a janela medida em 1:1, e instala
+com o comando do sistema dela -- sem ler uma linha que sirva a outro sistema.
+FIRST VIEWPORT: Bloco de titulo com a marca no seu campo preto e a linha de
+assunto a direita; o seletor de sistema logo abaixo; e uma prancha de duas zonas,
+especime de 360x480 cotado a esquerda e a instalacao (a acao primaria) a direita.
+FORM: Folha de cotas, candidato 4 da lista aterrada, registro safer, seed 0108210e.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<a class="pular" href="#instalar">Skip to install</a>
+<div id="aviso-vivo" class="aviso-vivo" role="status" aria-live="polite"></div>
+
+<div class="folha">
+
+  <header class="bloco-titulo">
+    <div class="bt-identidade">
+      <!-- A marca sangra no proprio campo preto: o compromisso e um anel branco
+           de fio fino num campo preto, com o diametro a 0,62 do campo e o traco a
+           campo/64. As fracoes sao as de assets/marca/nocom.svg. -->
+      <svg class="bt-marca" viewBox="0 0 1024 1024" role="img" aria-label="NoCom">
+        <rect width="1024" height="1024" fill="#000000"/>
+        <circle cx="512" cy="512" r="309.44" fill="none" stroke="#ffffff" stroke-width="16"/>
+      </svg>
+      <h1>NoCom</h1>
+    </div>
+    <div class="bt-assunto">
+      <p class="assunto">A to-do list that lives on top of your work.</p>
+      <p class="assunto-sub">Appears with a shortcut, disappears with <em>Escape</em>, and keeps everything on your own machine. No account, no cloud.</p>
+      <nav class="idioma"><a href="../" hreflang="pt-BR">Português</a></nav>
+    </div>
+    <dl class="bt-campos">
+      <div><dt>version</dt><dd>0.3.0</dd></div>
+      <div><dt>licence</dt><dd>MIT</dd></div>
+    </dl>
+  </header>
+
+  <!-- O seletor de sistema usa role=group com aria-pressed, e nao um tablist:
+       a pagina nao cumpre a navegacao por setas que um tablist promete, e anunciar
+       semantica que a interface nao cumpre e o que o DESIGN.md do app proibe. -->
+  <div class="seletor" role="group" aria-label="System">
+    <span class="seletor-rotulo">System</span>
+    <div class="seletor-botoes">
+      <button type="button" data-escolha="macos" aria-pressed="false">macOS</button>
+      <button type="button" data-escolha="windows" aria-pressed="false">Windows</button>
+      <button type="button" data-escolha="linux" aria-pressed="false">Linux</button>
+    </div>
+  </div>
+
+  <p class="aviso-movel" id="aviso-movel" hidden>NoCom is a desktop app. Open this page on macOS, Windows or Linux to install it.</p>
+
+  <div class="prancha especime-prancha">
+    <div class="especime-grade">
+
+      <section class="coluna-palco desenha-alvo" aria-labelledby="h-especime">
+        <h2 id="h-especime">The window</h2>
+        <div class="palco-caixa">
+          <div class="palco">
+            <picture>
+              <source media="(prefers-color-scheme: dark)" srcset="../telas/janela-escura.png">
+              <img class="tela" src="../telas/janela-clara.png" width="420" height="540"
+                   alt="The NoCom window: the tabs Trabalho and Casa, a new-task field and seven tasks. Two carry a date in a right-hand column, today's is highlighted in red, and the last one is done and struck through.">
+            </picture>
+          <svg class="cotas cotas-largas" viewBox="0 0 600 520" width="600" height="520" aria-hidden="true">
+            <g class="chamada" data-chamada="campo">
+              <rect class="balao" x="92" y="112" width="20" height="20" />
+              <text class="balao-num" x="102" y="126" text-anchor="middle">1</text>
+              <path class="linha traco" d="M116,122 H131" />
+              <polygon class="seta" points="140,122 131,118.5 131,125.5" />
+            </g>
+            <g class="chamada" data-chamada="abas">
+              <rect class="balao" x="92" y="74" width="20" height="20" />
+              <text class="balao-num" x="102" y="88" text-anchor="middle">2</text>
+              <path class="linha traco" d="M116,84 H131" />
+              <polygon class="seta" points="140,84 131,80.5 131,87.5" />
+            </g>
+            <g class="chamada" data-chamada="data">
+              <rect class="balao" x="512" y="206.5" width="20" height="20" />
+              <text class="balao-num" x="522" y="220.5" text-anchor="middle">3</text>
+              <path class="linha traco" d="M508,216.5 H459" />
+              <polygon class="seta" points="450,216.5 459,213 459,220" />
+            </g>
+            <g class="chamada" data-chamada="concluida">
+              <rect class="balao" x="92" y="411" width="20" height="20" />
+              <text class="balao-num" x="102" y="425" text-anchor="middle">4</text>
+              <path class="linha traco" d="M116,421 H131" />
+              <polygon class="seta" points="140,421 131,417.5 131,424.5" />
+            </g>
+            <g class="chamada" data-chamada="sair">
+              <rect class="balao" x="512" y="42.5" width="20" height="20" />
+              <text class="balao-num" x="522" y="56.5" text-anchor="middle">5</text>
+              <path class="linha traco" d="M508,52.5 H487" />
+              <polygon class="seta" points="478,52.5 487,49 487,56" />
+            </g>
+            <rect class="realce" data-realce="campo" x="142" y="106" width="336" height="32" />
+            <rect class="realce" data-realce="abas" x="142" y="71" width="336" height="26" />
+            <rect class="realce" data-realce="data" x="396" y="205" width="52" height="23" />
+            <rect class="realce" data-realce="concluida" x="142" y="407" width="216" height="28" />
+            <rect class="realce" data-realce="sair" x="451" y="40" width="25" height="25" />
+          </svg>
+          <svg class="cotas cotas-estreitas" viewBox="0 0 360 480" width="360" height="480" aria-hidden="true">
+            <rect class="realce" data-realce="campo" x="12" y="76" width="336" height="32" />
+            <rect class="realce" data-realce="abas" x="12" y="41" width="336" height="26" />
+            <rect class="realce" data-realce="data" x="266" y="175" width="52" height="23" />
+            <rect class="realce" data-realce="concluida" x="12" y="377" width="216" height="28" />
+            <rect class="realce" data-realce="sair" x="321" y="10" width="25" height="25" />
+          </svg>
+          </div>
+        </div>
+        <p class="legenda-palco">
+          <b>Scale 1:1</b> this is the room it takes on your screen, and it is only there when you call it.
+        </p>
+
+        <!-- As chamadas sao os controles: escolher uma realca a regiao na janela
+             acima e move o detalhe ampliado abaixo. Sem JavaScript elas continuam
+             legiveis como lista numerada, e o detalhe desaparece em vez de ficar
+             parado numa regiao que ninguem escolheu. -->
+        <ol class="chamadas">
+          <li>
+            <button type="button" data-chamada="campo"
+                    data-regiao="12,76,256,32"
+                    aria-pressed="true">
+              <span class="chamada-num">1</span>
+              <span class="chamada-nome">The field</span>
+              <span class="chamada-texto"><code>⌃⌥T</code> shows the window and puts the cursor here. Your hand never leaves the keyboard.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-chamada="abas"
+                    data-regiao="12,41,240,26"
+                    aria-pressed="false">
+              <span class="chamada-num">2</span>
+              <span class="chamada-nome">The tabs</span>
+              <span class="chamada-texto">Separate contexts (project, home, today), created and named in the same gesture.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-chamada="data"
+                    data-regiao="266,175,52,23"
+                    aria-pressed="false">
+              <span class="chamada-num">3</span>
+              <span class="chamada-nome">The date</span>
+              <span class="chamada-texto">Type a date in the title and it moves to the right-hand column, red on the day.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-chamada="concluida"
+                    data-regiao="12,377,216,28"
+                    aria-pressed="false">
+              <span class="chamada-num">4</span>
+              <span class="chamada-nome">The done one</span>
+              <span class="chamada-texto">Done strikes through, fades, and moves to the end of the list. It never deletes.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-chamada="sair"
+                    data-regiao="321,10,25,25"
+                    aria-pressed="false">
+              <span class="chamada-num">5</span>
+              <span class="chamada-nome">The way out</span>
+              <span class="chamada-texto"><code>Escape</code> hides the window. The shortcut brings it back, list untouched.</span>
+            </button>
+          </li>
+        </ol>
+
+        <!-- A frase da chamada escolhida. Marcada aria-hidden porque ela ja e
+             anunciada pelo proprio botao: um estado, uma voz. -->
+        <p class="chamada-explicacao" aria-hidden="true"></p>
+
+        <figure class="detalhe" aria-hidden="true">
+          <figcaption>Detail · 2:1</figcaption>
+          <div class="detalhe-vidro"></div>
+        </figure>
+
+        <div class="ciclo">
+        <div class="ciclo-diagrama" aria-hidden="true">
+          <span class="ciclo-numeral">2 s</span>
+          <svg viewBox="0 0 460 34" width="460" height="34">
+            <path class="extensao" d="M1,2 V32" />
+            <path class="extensao" d="M459,2 V32" />
+            <path class="varredura" d="M1,17 H459" />
+            <path class="linha traco" d="M1,17 H459" />
+            <polygon class="seta" points="1,17 10,13.5 10,20.5" />
+            <polygon class="seta" points="459,17 450,13.5 450,20.5" />
+          </svg>
+          <p class="ciclo-rotulos">
+            <span>remember</span>
+            <span>written</span>
+          </p>
+        </div>
+          <button type="button" class="botao-varredura">Run the 2 seconds</button>
+        </div>
+      </section>
+
+      <div class="coluna-instalar">
+        <section id="instalar" aria-labelledby="h-instalar">
+          <h2 id="h-instalar">Install</h2>
+          <ol class="instalacoes">
+        <li data-sistema="macos">
+          <div class="instalar-cabeca">
+            <span class="sistema-nome">macOS</span>
+            <span class="via">Homebrew (recommended)</span>
+          </div>
+          <div class="comando">
+            <code id="cmd-macos-0">brew tap Zheonatan/tap</code>
+            <button type="button" class="copiar" data-para="cmd-macos-0"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: brew tap Zheonatan/tap">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+          <div class="comando">
+            <code id="cmd-macos-1">brew trust --cask Zheonatan/tap/nocom</code>
+            <button type="button" class="copiar" data-para="cmd-macos-1"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: brew trust --cask Zheonatan/tap/nocom">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+          <div class="comando">
+            <code id="cmd-macos-2">brew install --cask nocom</code>
+            <button type="button" class="copiar" data-para="cmd-macos-2"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: brew install --cask nocom">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+          <p class="alternativa">Or download the <code>.dmg</code>: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_aarch64.dmg">Apple&nbsp;Silicon</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64.dmg">Intel</a>.</p>
+          <p class="ref-nota">Before you open it the first time: <a href="#nota-1">note 1</a>.</p>
+        </li>
+        <li data-sistema="windows">
+          <div class="instalar-cabeca">
+            <span class="sistema-nome">Windows</span>
+            <span class="via">winget (recommended)</span>
+          </div>
+          <div class="comando">
+            <code id="cmd-windows-0">winget install Zheonatan.NoCom</code>
+            <button type="button" class="copiar" data-para="cmd-windows-0"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: winget install Zheonatan.NoCom">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+          <p class="alternativa">Or download the <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe">.exe</a>. Through <code>winget</code> there is no warning at all.</p>
+          <p class="ref-nota">Before you open it the first time: <a href="#nota-1">note 1</a>.</p>
+        </li>
+        <li data-sistema="linux">
+          <div class="instalar-cabeca">
+            <span class="sistema-nome">Linux</span>
+            <span class="via">direct package</span>
+          </div>
+          <div class="comando">
+            <code id="cmd-linux-0">sudo dpkg -i NoCom_0.3.0_amd64.deb</code>
+            <button type="button" class="copiar" data-para="cmd-linux-0"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: sudo dpkg -i NoCom_0.3.0_amd64.deb">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+          <p class="alternativa">Download it first: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.deb">.deb</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom-0.3.0-1.x86_64.rpm">.rpm</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.AppImage">AppImage</a>.</p>
+        </li>
+          </ol>
+        </section>
+
+        <section class="zona-numeros" aria-labelledby="h-calibre">
+          <h2 id="h-calibre">In numbers</h2>
+          <div class="rolo">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">property</th>
+                  <th scope="col">value</th>
+                  <th scope="col">note</th>
+                </tr>
+              </thead>
+              <tbody>
+            <tr>
+              <th scope="row">Price</th>
+              <td class="valor">0</td>
+              <td class="obs">free, and staying that way</td>
+            </tr>
+            <tr>
+              <th scope="row">Accounts</th>
+              <td class="valor">0</td>
+              <td class="obs">there is no login</td>
+            </tr>
+            <tr>
+              <th scope="row">Cloud</th>
+              <td class="valor">0</td>
+              <td class="obs">nothing leaves your machine</td>
+            </tr>
+            <tr>
+              <th scope="row">Telemetry</th>
+              <td class="valor">0</td>
+              <td class="obs">the app never talks to the network</td>
+            </tr>
+            <tr>
+              <th scope="row">Data files</th>
+              <td class="valor">1</td>
+              <td class="obs"><code>todos.json</code>, on your machine</td>
+            </tr>
+            <tr>
+              <th scope="row">Window</th>
+              <td class="valor">360 × 480</td>
+              <td class="obs">px, always on top</td>
+            </tr>
+            <tr>
+              <th scope="row">Systems</th>
+              <td class="valor">3</td>
+              <td class="obs">macOS, Windows, Linux</td>
+            </tr>
+            <tr>
+              <th scope="row">Licence</th>
+              <td class="valor">MIT</td>
+              <td class="obs">open source</td>
+            </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="zona" aria-labelledby="h-notas">
+    <h2 id="h-notas">Notes</h2>
+    <ol class="lista-notas">
+      <li id="nota-1" class="nota-por-sistema">
+        <div class="nota-num">note 1</div>
+        <div class="nota-corpo">
+          <h3>First launch</h3>
+          <div data-sistema="macos">
+            <blockquote class="sistema">
+              “NoCom” is damaged and can't be opened. You should move it to the Trash.
+              <cite>what macOS shows</cite>
+            </blockquote>
+            <p>Click <strong>Cancel</strong> — never “Move to Trash”. The app is not damaged: it is not signed by Apple yet. To clear the flag:</p>
+          <div class="comando">
+            <code id="cmd-liberar-macos-0">xattr -dr com.apple.quarantine "/Applications/NoCom.app"</code>
+            <button type="button" class="copiar" data-para="cmd-liberar-macos-0"
+                    data-anuncio="Command copied."
+                    data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
+                    data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
+                    aria-label="copy: xattr -dr com.apple.quarantine "/Applications/NoCom.app"">
+              <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1">
+                <rect x="0.5" y="2.5" width="7" height="9" />
+                <path d="M3.5 2.5V0.5h8v9h-2" />
+              </svg>
+              <span class="marca-copiar">copy</span>
+              <svg class="marca-copiado" viewBox="0 0 12 12" aria-hidden="true" fill="none"
+                   stroke="currentColor" stroke-width="1.4">
+                <path d="M1 6.5 4.5 10 11 2.5" />
+              </svg>
+              <span class="marca-copiado">copied</span>
+            </button>
+          </div>
+            <p class="depois-do-comando">Installing through Homebrew, repeat after every <code>brew upgrade</code>.</p>
+          </div>
+          <div data-sistema="windows">
+            <blockquote class="sistema">
+              Windows protected your PC.
+              <cite>what SmartScreen shows</cite>
+            </blockquote>
+            <p>Click <strong>More info</strong> and then <strong>Run anyway</strong>. The installer is not signed yet; through <code>winget</code> the warning never appears.</p>
+          </div>
+          <div data-sistema="linux">
+            <p>On Linux there is no system warning: the package installs and the app opens straight away.</p>
+          </div>
+        </div>
+      </li>
+      <li id="nota-2">
+        <div class="nota-num">note 2</div>
+        <div class="nota-corpo">
+          <h3>What it is not</h3>
+          <p>Not a project manager: no due dates, priorities, subtasks, labels or collaboration. It is a list, and that is all.</p>
+        </div>
+      </li>
+      <li id="nota-3">
+        <div class="nota-num">note 3</div>
+        <div class="nota-corpo">
+          <h3>Where your tasks live</h3>
+          <p>In a <code>todos.json</code> file on your machine. To delete everything, delete the file.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <footer class="carimbo">
+    <div>
+      <h3>Project status</h3>
+      <p>Version <strong>0.3.0</strong>, in daily use. Not signed by Apple or Microsoft yet. Found something odd? <a href="https://github.com/Zheonatan/nocom/issues">Open an issue</a>.</p>
+    </div>
+    <div>
+      <h3>Support</h3>
+      <p>Free, no account, no telemetry, and staying that way. <a href="https://livepix.gg/zheo">Pix via LivePix</a> or <a href="https://ko-fi.com/zheos">card via Ko-fi</a>.</p>
+    </div>
+    <div>
+      <h3>Code</h3>
+      <p>Source on <a href="https://github.com/Zheonatan/nocom">GitHub</a>, under the MIT licence.</p>
+    </div>
+  </footer>
+
+</div>
+
+<script src="../folha.js" defer></script>
+</body>
+</html>

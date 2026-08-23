@@ -15,6 +15,15 @@ colors:
   control-border: "oklch(0.643 0 0)"
   ring: "oklch(0.48 0 0)"
   destructive: "oklch(0.529 0.245 27.325)"
+  folha-pelicula: "#e8ebee"
+  folha-prancha: "#f6f7f9"
+  folha-tinta: "#161a1f"
+  folha-tinta-fraca: "#5c6672"
+  folha-fio: "#c9cfd6"
+  folha-fio-forte: "#adb6c0"
+  folha-cota: "oklch(0.529 0.245 27.325)"
+  folha-cota-fraca: "oklch(0.529 0.245 27.325 / 12%)"
+  folha-halo: "oklch(0.48 0 0)"
 typography:
   title:
     fontFamily: "Geist Variable, ui-sans-serif, system-ui, -apple-system, sans-serif"
@@ -41,7 +50,70 @@ typography:
     lineHeight: 1
     letterSpacing: "normal"
     fontFeature: "tabular-nums"
+  folha-display:
+    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontSize: "clamp(38px, 5.6vw, 68px)"
+    fontWeight: 700
+    lineHeight: 0.92
+    letterSpacing: "-0.035em"
+  folha-assunto:
+    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontSize: "clamp(19px, 2vw, 25px)"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "-0.02em"
+  folha-zona:
+    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "0.13em"
+  folha-rotulo:
+    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "0.13em"
+  folha-corpo:
+    fontFamily: "Spectral, Georgia, Times New Roman, serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.6
+    letterSpacing: "normal"
+  folha-corpo-secundario:
+    fontFamily: "Spectral, Georgia, Times New Roman, serif"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.6
+    letterSpacing: "normal"
+  folha-escolha:
+    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "-0.01em"
+  folha-medida:
+    fontFamily: "Azeret Mono, ui-monospace, SF Mono, Menlo, monospace"
+    fontSize: "0.875rem"
+    fontWeight: 500
+    lineHeight: 1.6
+    letterSpacing: "normal"
+    fontFeature: "tabular-nums"
+  folha-codigo:
+    fontFamily: "Azeret Mono, ui-monospace, SF Mono, Segoe UI Symbol, Noto Sans Symbols 2, monospace"
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.6
+    letterSpacing: "normal"
+  folha-numero:
+    fontFamily: "Azeret Mono, ui-monospace, SF Mono, Menlo, monospace"
+    fontSize: "0.6875rem"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "normal"
+    fontFeature: "tabular-nums"
 rounded:
+  folha: "0"
   checkbox: "4px"
   sm: "0.375rem"
   md: "0.5rem"
@@ -54,6 +126,10 @@ spacing:
   snug: "6px"
   base: "8px"
   gutter: "12px"
+  folha-margem: "clamp(16px, 4vw, 56px)"
+  folha-recuo-prancha: "clamp(16px, 2.4vw, 28px)"
+  folha-zona: "clamp(40px, 5vw, 64px)"
+  folha-pe: "clamp(56px, 8vw, 104px)"
 components:
   surface:
     backgroundColor: "{colors.card}"
@@ -146,13 +222,122 @@ components:
     rounded: "{rounded.md}"
     padding: "4px 8px"
     typography: "{typography.label}"
+  folha-prancha:
+    backgroundColor: "{colors.folha-prancha}"
+    textColor: "{colors.folha-tinta}"
+    rounded: "{rounded.folha}"
+    padding: "{spacing.folha-recuo-prancha}"
+  folha-comando:
+    backgroundColor: "{colors.folha-pelicula}"
+    textColor: "{colors.folha-tinta}"
+    rounded: "{rounded.folha}"
+    padding: "8px 11px"
+    typography: "{typography.folha-codigo}"
+    width: "max 62ch"
+  folha-botao-copiar:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta-fraca}"
+    rounded: "{rounded.folha}"
+    padding: "0 11px"
+    typography: "{typography.folha-rotulo}"
+  folha-botao-copiar-hover:
+    backgroundColor: "{colors.folha-cota-fraca}"
+    textColor: "{colors.folha-tinta}"
+  folha-botao-varredura:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta}"
+    rounded: "{rounded.folha}"
+    padding: "7px 13px"
+    typography: "{typography.folha-rotulo}"
+  folha-botao-varredura-hover:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-cota}"
+  folha-seletor-botao:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta-fraca}"
+    rounded: "{rounded.folha}"
+    padding: "9px 18px"
+  folha-seletor-botao-escolhido:
+    backgroundColor: "{colors.folha-tinta}"
+    textColor: "{colors.folha-prancha}"
+  folha-aviso-movel:
+    backgroundColor: "{colors.folha-cota-fraca}"
+    textColor: "{colors.folha-tinta}"
+    rounded: "{rounded.folha}"
+    padding: "12px 14px"
+  folha-especime:
+    backgroundColor: "transparent"
+    rounded: "{rounded.folha}"
+    width: "600px"
+    height: "520px"
+  folha-chamada:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta-fraca}"
+    rounded: "{rounded.folha}"
+    padding: "11px 0"
+    typography: "{typography.folha-corpo-secundario}"
+  folha-chamada-escolhida:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta}"
+  folha-chamada-numero:
+    backgroundColor: "transparent"
+    textColor: "{colors.folha-tinta-fraca}"
+    rounded: "{rounded.folha}"
+    typography: "{typography.folha-numero}"
+    padding: "1px 0"
+  folha-chamada-numero-escolhido:
+    backgroundColor: "{colors.folha-cota}"
+    textColor: "{colors.folha-prancha}"
+  folha-balao:
+    backgroundColor: "{colors.folha-prancha}"
+    textColor: "{colors.folha-cota}"
+    rounded: "{rounded.folha}"
+    size: "20px"
+    typography: "{typography.folha-medida}"
+  folha-detalhe-vidro:
+    backgroundColor: "{colors.folha-pelicula}"
+    rounded: "{rounded.folha}"
+    height: "80px"
+    width: "max 560px"
 ---
 
 # Design System: NoCom
 
+## Este documento guarda DOIS mundos, e diz qual superfície cada um governa
+
+O projeto tem duas superfícies de tela, com trabalhos diferentes, e elas **não** compartilham
+uma única escala tipográfica, um único ritmo de espaçamento nem um único vocabulário de forma.
+Tentar unificá-las produziria um documento que não descreve nenhuma das duas.
+
+| Mundo | Superfície | Código |
+| --- | --- | --- |
+| **A Vidraça** | a janela do aplicativo — 360x480 px, sempre por cima, acromática | `src/**`, `src-tauri/**` |
+| **A Folha de Cotas** | a landing page de duas línguas — folha de desenho técnico | `site/**`, gerada por `scripts/site.mjs` |
+
+**Como ler as seções abaixo.** Em cada seção canônica, o conteúdo **sem rótulo de mundo é
+d'A Vidraça** — ele é o incumbente, está no ar e continua valendo verbatim. Os blocos
+intitulados **"A Folha de Cotas"** governam a página, e só ela.
+
+**Onde os dois discordam, não há deriva a reconciliar: são duas superfícies com orçamentos
+opostos.** Dois exemplos que não devem ser mediados:
+
+- A janela proíbe qualquer espaçamento acima de 12px e não tem tipografia de exibição. A
+  folha tem um nome de produto de até 68px e um pé de até 104px. As duas coisas estão
+  certas, cada uma na sua superfície. Uma janela de 480px de altura disputa cada pixel com
+  a lista; uma folha rolável não disputa nada.
+- A janela declara que **responsividade não existe, e é uma decisão**. A folha tem cinco
+  pontos de quebra (1100, 1080, 720, 700, 560px), inclusive um que troca o SVG do palco
+  inteiro. Também é uma decisão: a janela tem um tamanho só, a página é aberta em qualquer
+  tela que exista.
+
+**O que atravessa as duas, de propósito:** a **Regra do Pigmento Único** (uma matiz, o
+vermelho), o anel de foco de **2px sólidos sem raio**, o tema pelo sistema **sem toggle**, e
+a regra de **um estado, uma voz** na acessibilidade. Cada uma está registrada nas duas
+seções, com o motivo de valer nos dois lugares.
+
 ## Overview
 
-**Creative North Star: "A Vidraça"**
+**Creative North Star: "A Vidraça"** — *superfície: a janela do aplicativo.*
 
 Uma lâmina de vidro pousada sobre o trabalho real. A janela flutua permanentemente
 acima de tudo — editor, planilha, navegador — e por isso ela não pode ter cor
@@ -192,6 +377,85 @@ nunca vaza pela borda. Uma linha que desliza 180ms até o novo lugar em vez de s
 - Movimento reservado a três coisas que se mexem sozinhas — a tinta do checkbox, a linha
   que muda de lugar por causa dela, e a faixa de aviso que toma altura da lista; nada
   acima de 200ms, nada no caminho de abrir a janela
+
+### A Folha de Cotas
+
+**Creative North Star: "A Folha de Cotas"** — *superfície: `site/index.html` e `site/en/index.html`,
+geradas por `scripts/site.mjs`.*
+
+Uma prancha de desenho técnico. **Nada é afirmado, tudo é mostrado.** A página não tem herói,
+não tem manchete e não tem uma única frase de venda em corpo grande: ela tem um bloco de
+título com dois campos do desenho, um seletor de sistema, uma prancha com o espécime anotado
+de um lado e a instalação do outro, e três notas. O argumento do produto são oito linhas
+conferíveis, quatro delas zeros.
+
+**O contrato de direção era "nada é afirmado, tudo é medido", e a forma honesta hoje é
+"tudo é mostrado".** O desenho parou de anotar TAMANHO e passou a anotar FUNÇÃO: as cotas de
+360 e 480 saíram, e no lugar delas há cinco chamadas numeradas que apontam para pixels reais
+de uma captura real, com o detalhe ampliado a 2:1 embaixo. **A medida não foi descartada, ela
+mudou de lugar:** `360 × 480` é uma linha da tabela de números, que é onde medida pertence.
+Ninguém instala um app de tarefas porque a janela tem 360x480 — as cotas mediam exatamente a
+coisa que menos importa, e ocupavam o dispositivo central da folha para dizê-la. O que
+substitui é **nativo do mesmo mundo**: o balão numerado com linha de chamada e o detalhe
+ampliado numa escala declarada são desenho técnico tanto quanto a cota, e a primeira revisão
+de acabamento já os tinha listado como teto não usado da folha.
+
+**O nome do mundo continua "A Folha de Cotas"**, e não por inércia: a cotação não saiu da
+folha, ela saiu do *desenho*. A tabela de números é uma cotação em forma de lista — oito
+linhas, coluna de valor em vermelho —, e é ela que carrega `360 × 480` agora. O que mudou é
+qual dos dois dispositivos ocupa o centro da prancha.
+
+**O seletor de sistema é o dispositivo que organiza a folha.** Ele fica entre o bloco de
+título e a prancha, e tudo que é específico de um sistema — o bloco de instalação e o trecho
+de primeira abertura — aparece ou desaparece com ele. Uma prancha mostra o corte que
+interessa; esta folha passou a mostrar o sistema que interessa, e ninguém mais lê uma linha
+de `brew` estando no Windows.
+
+O mundo visual é **herdado de `assets/marca/especificacao.html`**, a folha que documenta a
+marca: película cinza-fria, prancha um tom acima, fio de 1px, Archivo em versalete tracked,
+Spectral no corpo e Azeret Mono em toda medida. Os seis neutros são **os mesmos valores**,
+não uma aproximação. A diferença de propósito é uma só e decide todo o resto: **aquela folha
+mede a marca, esta mede o produto.** E a única substituição de token é a cor de cota — o
+azul daquela folha saiu para entrar o vermelho `destructive` do próprio app, para a Regra do
+Pigmento Único valer no projeto inteiro e não só dentro da janela.
+
+A folha é **plana e reta por lei**: não existe um `border-radius` nem um `box-shadow` em
+lugar nenhum do seu CSS. A única profundidade na tela é a sombra que o PNG do espécime já
+carrega — a sombra que o sistema operacional desenha sob a janela real, que é a borda física
+do app. Profundidade aqui se faz com **tom** (película e prancha, um tom de diferença) e com
+**fio de 1px**.
+
+**Key Characteristics:**
+
+- Escala 1:1 literal: o espécime mede 360x480 px CSS na tela de quem visita, e o realce de
+  cada chamada é cravado nas coordenadas reais da janela dentro do raster — **nas duas
+  geometrias**, derivadas de uma lista só
+- **Cinco chamadas numeradas** (1 o campo, 2 as abas, 3 a data, 4 a concluída, 5 a saída) são
+  o dispositivo central do desenho e o único controle do palco: escolher uma realça a região
+  na janela, acende o balão e recorta o detalhe ampliado a 2:1
+- Um seletor de sistema no topo, e o escolhido marcado por **inversão** (placa de tinta
+  cheia, texto em prancha): o sinal mais forte disponível sem abrir uma segunda matiz. **São
+  duas as superfícies preenchidas da folha**, e as duas dizem "escolhido": a placa de tinta do
+  sistema, e o número da chamada escolhida, preenchido em cota
+- Sem JavaScript o seletor desaparece e os três sistemas ficam à vista: a folha degrada para
+  a página que ela era, e aquela página funcionava
+- Zero canto arredondado e zero sombra em toda a folha; a única sombra é a do raster
+- Uma matiz, o vermelho `destructive` do app, reservada a **valor medido e a índice de
+  desenho** — coluna de valor, numeral do ciclo, número de nota, número de chamada — e às
+  duas faixas que avisam
+- Três famílias auto-hospedadas com trabalhos separados: Archivo (rótulo e nome), Spectral
+  (prosa), Azeret Mono (toda medida, comando e numeral)
+- **Rótulo de zona em vez de manchete de seção:** o único texto grande da página é o nome do
+  produto
+- Tema claro como definição base, escuro redefinindo a mesma lista por `prefers-color-scheme`,
+  sem toggle — igual ao app
+- Um único movimento autoral (a linha de chamada que se desenha, uma vez) e uma varredura de
+  2s que só corre a pedido; nada em laço, nada ambiente. A troca de chamada é transição de
+  140ms em opacidade e cor, e não um movimento novo
+- Zero requisição de terceiro: fontes, capturas, marca e favicons saem do próprio domínio,
+  porque um produto que promete "sem telemetria" não entrega o IP de quem visita ao Google Fonts
+- A ação primária (instalar) fica **ao lado da prova**, na primeira dobra e não no pé da
+  página, e os números que a sustentam ficam logo abaixo dela, na mesma prancha
 
 ## Colors
 
@@ -281,6 +545,102 @@ checkbox desmarcado em 1.26:1 — praticamente invisível sobre branco.
 para `muted-foreground` com riscado, e a manda para o fim da lista. Estado resolvido é
 estado com menos contraste, jamais estado ausente.
 
+### A Folha de Cotas
+
+Seis neutros cinza-frios em hex, herdados verbatim da folha de especificação da marca, mais
+**uma matiz** — a mesma do app — em duas densidades, e o cinza do anel de foco. O **tema
+claro é a definição base**; o escuro redefine a **mesma lista** dentro de
+`prefers-color-scheme: dark`. Nenhuma cor tem sua única definição no bloco escuro, e não há
+toggle: o app segue o sistema e a folha também.
+
+Os valores normativos estão no frontmatter (prefixo `folha-`), com o claro como canônico.
+Os pares do escuro: película `#15181c`, prancha `#1d2126`, tinta `#e6e9ec`, tinta-fraca
+`#909aa5`, fio `#2e343b`, fio-forte `#414951`, cota `oklch(0.704 0.191 22.216)`, cota-fraca
+a 14% da mesma, halo `oklch(0.72 0 0)`.
+
+#### Primary
+
+- **Cota** (`--cota`): o vermelho `destructive` do próprio app. É a tinta de **toda medida e
+  de todo índice de desenho**: a coluna de valor da tabela de números, o numeral do ciclo de
+  2 s, o número de cada nota e o ponteiro para ela, e o desenho inteiro de uma chamada — o
+  contorno do balão de 20x20, o numeral dentro dele, a linha de chamada, a seta, e o
+  retângulo de realce sobre a região. Quando uma chamada é a escolhida, o número dela na
+  lista **inverte**: fundo cota, texto prancha. E o fio de 1px das duas faixas tintas — a
+  citação de aviso do sistema e o aviso de celular. Medido pelo código: **5.1:1 sobre a
+  película no claro e 6.0:1 no escuro**.
+- **Cota Fraca** (`--cota-fraca`): a mesma matiz a 12% (14% no escuro). Três usos, todos
+  "isto é para você agora": o fundo da citação de aviso do sistema, o fundo do aviso de
+  celular, e o fundo do hover do botão de copiar. Também é a cor de `::selection`. A faixa
+  que marcava a linha do sistema de quem visita saiu junto com o seletor: com um sistema por
+  vez na tela, não há mais o que destacar entre iguais.
+
+#### Neutral
+
+- **Película** (`--pelicula`): o cinza-frio de fundo da folha inteira — a mesa sobre a qual a
+  prancha está. Também é o fundo da linha de comando, para o `<code>` recuar um tom em
+  relação à prancha.
+- **Prancha** (`--prancha`): um tom acima da película. É o papel — a caixa única que guarda o
+  espécime, a instalação e os números. **A diferença de um tom é a única elevação que a folha
+  tem.** Também é o **preenchimento do balão de chamada** — um quadrado de papel sobre a
+  captura, para o numeral se ler sem placa opaca e sem halo —, o texto do número de chamada
+  quando ele está invertido, e o texto da placa de tinta do sistema escolhido.
+- **Tinta** (`--tinta`): o texto de corpo, o nome do produto, a linha de assunto, os rótulos
+  de zona. E os dois fios estruturais de **2px**: a base do bloco de título e o topo do
+  carimbo. É também **uma das duas superfícies preenchidas da folha**: a placa do sistema
+  escolhido no seletor, onde a tinta deixa de ser texto e passa a ser fundo. (A outra é o número
+  da chamada escolhida, preenchido em cota — ver a Regra da Inversão para o Escolhido.)
+- **Tinta Fraca** (`--tinta-fraca`): tudo que é secundário — subtítulos de zona, a coluna de
+  observação da tabela, os rótulos do diagrama de ciclo, o rótulo do detalhe, o pé. E as
+  quatro linhas de chamada que não estão escolhidas, incluindo o contorno do número delas em
+  fio-forte: **nenhum texto de chamada é vermelho**, só o índice.
+- **Fio** (`--fio`): a moldura da prancha, o divisor entre as duas zonas, o fio que separa os
+  números da instalação, o fio abaixo da faixa do seletor, e os separadores das listas de
+  instalação, de notas e de chamadas. Linha decorativa: divide, não informa.
+- **Fio Forte** (`--fio-forte`): o traço que **delimita algo com que se interage** — a borda
+  da linha de comando, a borda do botão de varredura, o sublinhado dos links em repouso, o
+  polegar da barra de rolagem, o fio abaixo de um rótulo de zona e do cabeçalho da tabela, e
+  o contorno do número de chamada em repouso. É a mesma distinção que a Regra da Linha que
+  Informa faz no app, aplicada aqui. **A moldura da vidraça do detalhe é a única exceção
+  declarada:** ela não é clicável, mas é o *resultado* do controle ao lado dela e precisa se
+  ler como instrumento — em fio simples, a caixa de 80px pareceria uma divisão de papel em
+  vez de uma lente.
+- **Halo** (`--halo`): o anel de foco. `oklch(0.48 0 0)` no claro — **exatamente o valor do
+  `ring` do app**, e não um cinza novo. No escuro sobe para `oklch(0.72 0 0)`.
+
+### Named Rules (A Folha de Cotas)
+
+**A Regra do Pigmento Único vale nos DOIS mundos, e é por isso que a cota é vermelha.** A
+folha herdou tudo de `assets/marca/especificacao.html` menos uma coisa: aquela folha coteja
+em **azul** (`#1f6f9c` no claro, `#6bbde8` no escuro), e a landing page trocou esse azul pelo
+`destructive` do app. O motivo é a própria regra — *uma matiz no projeto inteiro, e ela é o
+vermelho* — e a troca não custou autenticidade nenhuma, porque **cota em vermelho de revisão
+é nativa do desenho técnico**: a lei do produto e a verdade do mundo pediram a mesma cor. A
+consequência é que as duas superfícies do projeto têm exatamente um pigmento em comum e
+nenhum outro. Teste, aqui como lá: **matiz que não seja a do vermelho é bug.**
+
+**A Regra do Valor Medido.** Nesta folha, a cor de cota marca **valor medido ou índice de
+desenho**, e nada mais. Coluna de valor, numeral do ciclo, número de nota, número de chamada
+e o desenho que o acompanha (balão, linha, seta, realce). Não marca ênfase, não
+marca link de corpo, não marca título e não marca estado — e em particular **não marca o
+sistema escolhido no seletor**, que se resolve por inversão de tom. A tabela de números é uma
+cotação em forma de lista, não um quadro de destaques — é por isso que a coluna do meio
+inteira é vermelha e as outras duas não. Teste: se o vermelho está em algo que não é um
+número ou o seu rótulo de linha, ele está decorando.
+
+A exceção é declarada e são duas: as **faixas tintas**, que abrem com um fio de 1px em cota
+sobre fundo cota-fraca — a citação do aviso do sistema e o aviso de celular. Ali a matiz não
+mede, ela **avisa**, que é exatamente o trabalho que o vermelho saturado faz na janela do
+app. Uma terceira faixa tinta precisa provar que também é um aviso, e não uma ênfase.
+
+**A Regra das Superfícies que o Navegador Desenha.** As superfícies que ninguém lembra de
+vestir são vestidas pela paleta, e não pelo padrão do navegador: `::selection` (cota-fraca
+com tinta por cima), `caret-color` e `accent-color` (cota), `scrollbar-color` (fio-forte
+sobre transparente, `thin`), o polegar `-webkit` de 11px com 3px de borda em película para
+ele se ler como um traço e não como uma barra, o sublinhado de link (fio-forte de 1px a 3px
+de distância, virando cota no hover) e o anel de foco (**2px sólidos em halo, 2px de
+deslocamento, sem raio** — a mesma lei do app). Um azul de seleção padrão do sistema seria
+uma segunda matiz entrando pela porta que ninguém olhou.
+
 ## Typography
 
 **Body Font:** Geist Variable (com `ui-sans-serif`, `system-ui`, `-apple-system`,
@@ -319,6 +679,141 @@ nenhuma largura, nem gerar rolagem horizontal. Título de tarefa: `wrap-anywhere
 Mensagem de erro: `wrap-anywhere` + `line-clamp-3` com `title`. Teste: uma tarefa de
 200 caracteres sem um único espaço tem que caber.
 
+### A Folha de Cotas
+
+**Display / Label Font:** Archivo (variável 100–900, com `Helvetica Neue`, `Arial`,
+`sans-serif`)
+**Body Font:** Spectral (400, 400 itálico e 500, com `Georgia`, `Times New Roman`, `serif`)
+**Mono Font:** Azeret Mono (variável 100–900, com `ui-monospace`, `SF Mono`, `Menlo`,
+`monospace`)
+
+**Todas as três são auto-hospedadas**, copiadas de `node_modules` por `scripts/site.mjs`, no
+subconjunto latino, `font-display: swap`, com Archivo e Azeret pré-carregadas no `<head>`.
+Nenhuma requisição sai para um terceiro — é requisito do produto, não preferência técnica.
+
+**Character:** três famílias com três trabalhos que não se cruzam. Archivo é a caligrafia do
+desenhista: versalete tracked a `0.13em` nos rótulos, e o único texto grande da página no
+nome do produto. Spectral é a voz que explica — a página tem prosa de verdade, e prosa longa
+em grotesca cansa. Azeret Mono é o instrumento: **toda medida, todo comando e todo numeral**,
+sempre com `tabular-nums`.
+
+**A pilha separada dos modificadores** (`--mono-atalho`). Os glifos `⌃` (U+2303) e `⌥`
+(U+2325) **não estão no subconjunto latino da Azeret Mono**. Sem uma pilha própria, `⌃⌥T` cai
+na fonte de fallback do navegador com métrica alheia, ou pior, em retângulo vazio. A pilha
+acrescenta `Segoe UI Symbol` (Windows) e `Noto Sans Symbols 2` (Linux) depois de `SF Mono`
+(mac), e hoje ela é **a pilha de `<code>` inteira**, sem classe nenhuma: `code {
+font-family: var(--mono-atalho) }`. A razão é que os modificadores passaram a morar dentro de
+`<code>` no texto das chamadas (`⌃⌥T` na chamada 1), e um seletor de exceção só funciona
+enquanto alguém lembra de aplicá-lo. A pilha custa dois nomes de família a mais e resolve
+todo `<code>` futuro. **Retirados nesta passagem:** a classe `.atalho-texto`, morta, e a
+classe `.atalho` de dentro do SVG, que saiu junto com o rótulo `atalho global` do palco.
+
+#### Hierarchy
+
+- **Nome do produto** (Archivo 700, `clamp(38px, 5.6vw, 68px)`, altura 0.92, `-0.035em`): o
+  `h1`, e o **único** texto de exibição da folha. Aparece uma vez.
+- **Assunto** (Archivo 500, `clamp(19px, 2vw, 25px)`, altura 1.3, `-0.02em`, `text-wrap:
+  balance`, máx. 32ch): a linha de assunto do bloco de título, do outro lado do eixo em
+  relação à marca.
+- **Nome de sistema** (Archivo 600, 17px): o `macOS` / `Windows` / `Linux` do bloco de
+  instalação que está à vista. É o maior texto fora do bloco de título, e não é um cabeçalho.
+- **Escolha do seletor** (Archivo 600, 15px, `-0.01em`): os três botões do seletor de
+  sistema. É Archivo **sem versalete**, e de propósito: `macOS` é um nome próprio, não um
+  rótulo de campo, e versalete o transformaria em `MACOS`. Os outros dois usos de Archivo a
+  15px são peso 500, nas duas faixas tintas.
+- **Nome de chamada** (Archivo 600, 13px, `0.02em`, **sem versalete**): o `O campo` / `As
+  abas` / `A data` / `A concluída` / `A saída` da lista de chamadas, numa coluna de 6.5rem. É
+  o segundo texto funcional em Archivo que não é versalete, pela mesma razão do seletor: um
+  nome de peça é nome, não rótulo de campo, e `A CONCLUÍDA` em versalete gritaria mais alto
+  que o rótulo de zona acima dele. O tracking mínimo de `0.02em` é o que separa 13px liso do
+  corpo Spectral ao lado, sem virar rótulo.
+- **Rótulo de zona** (Archivo 600, 13px, `0.13em`, versalete, sobre um fio de 1px): o `h2`.
+  É o **único nível de cabeçalho de seção** que a folha tem. O `h3` é o mesmo desenho a 11px — o passo de rótulo, e não um degrau intermediário,
+  sem fio.
+- **Corpo** (Spectral 400, 17px, altura 1.6, máx. 68ch): a prosa das notas.
+- **Corpo secundário** (Spectral 400, 15px): subtítulo de zona (máx. 62ch), legenda do
+  espécime (60ch), coluna de observação da tabela, parágrafos do carimbo (40ch).
+- **Rótulo funcional** (Archivo 600, **11px**, `0.13em`, versalete): o piso. Campos do bloco
+  de título, seletor de idioma, o rótulo do seletor de sistema, cabeçalho de tabela, `via`,
+  `nota N`, os dois rótulos do diagrama de ciclo, o rótulo `Detalhe · 2:1`, o texto dos
+  botões de copiar e de varredura, o `cite`.
+- **Medida** (Azeret Mono 500, 14px, `tabular-nums`): os valores dos campos do bloco de
+  título, a tabela de números inteira, o numeral do ciclo. Dentro do SVG, o numeral do balão
+  de chamada é 14px — herda `.cotas text`, que é o mesmo passo.
+- **Número de chamada** (Azeret Mono 500, **11px**, `tabular-nums`, dentro de um contorno de
+  1px): o índice de cada linha da lista de chamadas. É mono no piso de 11px porque é um
+  índice e não um nome, e o contorno é o que faz o número parecer o balão que está no desenho
+  acima — a lista e o palco falam do mesmo objeto.
+- **Código** (13px na linha de comando; `0.8235em` para `<code>` inline, que é a razão que
+  devolve 14px no corpo de 17px). A família é a pilha `--mono-atalho`, não `--mono` — ver
+  acima.
+
+#### Named Rules (A Folha de Cotas)
+
+**A Regra do Rótulo de Zona.** Uma prancha de desenho **não tem manchete de seção**; tem
+legenda de zona. Todo cabeçalho de seção desta folha é Archivo 600 em versalete tracked, a
+13px (`h2`) ou **11px** (`h3`) — menor que o corpo que ele encima. (O registro anterior dizia
+12px para o `h3`; o CSS diz 11px, e o comentário ao lado dele explica por quê: a 12 contra os
+13 do rótulo de zona a diferença era invisível.) O único texto grande da página
+é o nome do produto, e é exatamente por isso que ele é o foco. Corolário: uma seção nova
+recebe um rótulo de zona, nunca um título de 29px.
+
+**A Regra dos Dois Passos Vizinhos.** A folha tem 14px e 15px, e eles não são um
+descuido entre 13 e 17: **14px é mono e 15px é serifa.** Azeret a 14px e Spectral a 15px
+têm largura de olho parecida, então a medida e a prosa secundária pesam igual na página
+apesar do número diferente. Dois valores adjacentes numa rampa precisam dessa justificativa
+ou são ruído — e o teste é o de sempre: se os dois passassem a ser da mesma família, um dos
+dois teria que sair.
+
+**A regra já cobrou essa conta.** A coluna de característica da tabela de números esteve em
+serif a **16px**, e com a prosa a 15px e o corpo a 17px isso dava **três passos vizinhos na
+mesma família** — exatamente o ruído que a regra recusa, e sem justificativa nenhuma para o
+degrau do meio. A correção foi subir para **17px**, o corpo da folha: a característica é o que
+se varre com o olho descendo a tabela, então ela pertence ao corpo cheio e não a um passo
+inventado entre dois que já existiam. Piso e teto de serif na folha: 15px e 17px, e nada
+entre eles.
+
+**A Regra do Piso de 11px.** Nenhum texto funcional da folha desce abaixo de 11px
+(`0.6875rem`) — e isso vale **inclusive dentro de SVG**, que é onde o piso é fácil de
+furar por acidente. É por isso que o diagrama do ciclo de 2 s **não carrega texto nenhum**:
+ele escala com a largura da coluna, e texto dentro dele encolheria abaixo do piso no
+telefone. O numeral "2 s" e os dois rótulos são HTML, no fluxo, fora do SVG. Duas rodadas de
+revisão impuseram esse piso; ele não é uma preferência.
+
+**A Regra da Medida em Mono, e da Prosa em Serif.** O mono existe nesta folha para **código,
+dado e medida**. Nota em mono é defeito duas vezes: mente sobre a natureza do texto e ainda
+cobra a largura de uma medida — foi o que empurrava a coluna de observação para fora da caixa
+de rolagem no telefone. Por isso a terceira coluna da tabela de números é Spectral enquanto
+as outras duas são Azeret; o `<code>` dentro dela continua mono, porque ali é nome de
+arquivo. Corolário simétrico: medida em serif também é bug.
+
+**A Regra do Número Tabular.** Todo numeral da folha usa `tabular-nums` — os campos do bloco
+de título, a tabela de números inteira, o numeral do ciclo, os números da lista de chamadas e
+os numerais dentro do SVG do palco. É a mesma regra do app, aplicada a uma superfície onde
+números se empilham em coluna.
+
+**A Regra da Frase que Ajuda a Instalar.** É a lei de texto desta folha, e ela está escrita
+no cabeçalho do dicionário em `scripts/site.mjs`: **toda frase precisa ajudar alguém a decidir
+instalar.** Explicação que serve a quem **construiu** o app, e não a quem vai usá-lo, mora no
+README. A revisão que aplicou a lei cortou a dissertação sobre assinatura ad-hoc e quarentena
+do Homebrew, o aviso de que os 2 s são ergonomia e não benchmark, o inventário de métricas
+ausentes, a nota sobre um conjunto de folhas que não existe, as quatro negativas da regra de
+data, e a legenda do próprio seletor — que explicava um controle que já se explica. No mesmo
+passo os rótulos de zona ficaram lisos: `O espécime` virou **A janela**, `Tabela de revisão —
+instalar` virou **Instalar**, `Tabela de calibre` virou **Em números**. O passo continua; o
+ensaio técnico foi embora. Teste: uma frase que só faz sentido para quem leu o código é uma
+frase que sai.
+
+**Dois cortes desta passagem, e os dois pela mesma lei.** **Um:** a **nota 4** ("A data que
+você escreveu") deixou de existir — ela *descrevia* uma funcionalidade em prosa, e a chamada 3
+**aponta para ela** nos pixels em que ela acontece. Um parágrafo que explica o que um realce
+mostra é o parágrafo que sai; as notas são 1, 2 e 3 agora. **Dois: a densidade de travessão.**
+Nove travessões em saturação foram reescritos como vírgula, parêntese ou ponto. Travessão é
+pausa forte e a folha o gastava como conjunção de uso geral — em densidade alta ele para de
+marcar ênfase e passa a ser tique de voz, que é o oposto de uma prancha. Sobraram três na
+página: o título, a frase do `Cancelar` e o sinal `—` de "não há nota", e cada um desses é um
+travessão que faz trabalho de travessão.
+
 ## Layout
 
 A janela é uma **pilha vertical de faixas de altura fixa com exatamente um elemento
@@ -349,9 +844,21 @@ exatamente o defeito corrigido aqui (as folgas eram `0 → 3 → 0 → 8`, e os 
 chip de aba colidir com o campo).
 
 **Goteira de 12px.** Toda faixa de cromo — barra de título, abas, campo, aviso, rodapé —
-usa 12px de recuo lateral. A lista usa 10px (8px de contêiner + 8px de linha, menos o
-que a área expandida do checkbox recupera), de modo que o texto das tarefas alinha
-opticamente com o texto das faixas acima e abaixo.
+usa 12px de recuo lateral, **e a lista também**: 4px no contêiner mais 8px na linha põem
+o quadrado do checkbox exatamente a 12px da borda do cartão, na mesma vertical do nome
+do app, da borda do campo e do contador do rodapé. O `×` de remover fecha a conta pelo
+outro lado, também a 12px.
+
+Os dois recuos não são um número só por acaso, e a divisão entre eles é o que a linha
+precisa: os 8px de dentro da linha são a distância entre o conteúdo e a beirada do
+realce de hover, e o `after:-left-2` do checkbox é dimensionado para chegar exatamente
+nela. Mudar a divisão mexe nas três coisas.
+
+**O que não alinha, e não tem como:** o *texto* da tarefa fica a 36px, porque entre ele
+e a goteira há um checkbox de 16px e o `gap-2`. O que alinha é a coluna de controles,
+que é o que o olho segue descendo a janela. Já foi escrito aqui que o texto das tarefas
+alinhava com o das faixas; não alinhava, e a lista inteira ainda começava com um degrau
+de 4px porque o contêiner usava 8px.
 
 **Ritmo de espaçamento:** 2px, 4px, 6px, 8px, 12px. Não há nada acima de 12px em lugar
 nenhum da interface, exceto os 24px de respiro vertical do estado vazio — o único lugar
@@ -380,6 +887,18 @@ aconteceu com a faixa de abas: scroller de 24px, chip de 24px, anel invisível.
 o tamanho do que substituiu — mesmo raio, mesma altura — e sinaliza foco **por dentro**.
 Crescer para fora empurra o layout e, dentro de um contêiner que rola, some recortado.
 
+**"Mesma altura" é a altura OCUPADA, e não a desenhada.** O editor de tarefa mede 24px e o
+título que ele cobre mede 20px, então ele entra com `-my-0.5`: a caixa externa volta aos
+20px e a linha não muda de altura no instante do duplo clique. A alternativa — subir o
+título para 24px — custaria 4px em **toda** linha da lista, cerca de uma das oito que
+caibem, e numa janela onde a altura é o orçamento é o lado errado da troca.
+
+**O que esta regra não alcança:** um título de duas linhas (40px) editado num campo de uma
+linha encolhe a linha em 16px, e isso é inerente — o editor é um `input`, e um `input` não
+tem duas alturas de texto. Fica registrado como consequência aceita, e não como coisa a
+consertar: o caminho seria um `textarea`, que traria um segundo padrão de edição para o app
+justamente onde ele tem um só.
+
 **A Regra dos 2px de Vizinhança.** Dois elementos focáveis vizinhos precisam de pelo menos
 4px entre as caixas, ou os anéis de um invadem o outro. Vale entre bandas, não dentro de um
 mesmo controle composto (no chip, nome e `×` ficam a 2px, mas só um recebe foco por vez).
@@ -388,31 +907,176 @@ mesmo controle composto (no chip, nome e `×` ficam a 2px, mas só um recebe foc
 empurrou para fora da dobra. Dicas, avisos e estados de ajuda são passageiros
 (auto-dispensa) ou vivem no espaço vazio que some quando há tarefas.
 
+### A Folha de Cotas
+
+**A folha é uma coluna única de zonas empilhadas**, com uma prancha de duas colunas dentro
+dela. Não há grade global de doze colunas, não há barra de navegação e não há rodapé de
+links: há o bloco de título, o seletor de sistema, a prancha, a zona de notas e o carimbo.
+
+- **A coluna da folha:** máx. 1320px, centrada, com margem lateral
+  `clamp(16px, 4vw, 56px)`, `clamp(20px, 3.5vw, 44px)` de respiro no topo e
+  `clamp(56px, 8vw, 104px)` no pé.
+- **Bloco de título** (o canto de uma prancha de verdade): grade de **três campos** —
+  `auto | minmax(0,1fr) | auto`, alinhados pela **base** (`align-items: end`) — identidade
+  (a marca sangrando no seu próprio campo preto de 52–74px, mais o nome), assunto (linha de
+  assunto, subtítulo e o link da outra língua), e a tabela de campos do desenho (`dl` de
+  duas colunas: **versão e licença, e nada mais**; rótulo em 11px versalete, valor em mono
+  tabular, alinhados à direita). Fecha com um fio de **2px em tinta** — o mais grosso da
+  folha, junto com o topo do carimbo. Os dois campos que saíram: `sistemas`, porque o seletor
+  passou a dizer isso melhor e em lugar mais útil, e `folha 01/04`, porque prometia um
+  conjunto de folhas que não existe — um campo de desenho técnico não pode ser cenografia.
+- **Seletor de sistema:** faixa própria entre o bloco de título e a prancha — `flex` com
+  `flex-wrap`, 16px de ar acima e abaixo, fechada por um fio de 1px. Rótulo de 11px versalete
+  à esquerda, e à direita dele os três botões dentro de um contorno único. Ele fica **antes de
+  tudo que filtra**, que é a única posição em que um filtro se lê como filtro.
+- **Zona:** `clamp(40px, 5vw, 64px)` acima de cada uma. O rótulo de zona substitui a
+  manchete.
+- **A prancha:** fundo prancha, fio de 1px, e recuo interno `--recuo-prancha`
+  (`clamp(16px, 2.4vw, 28px)`). Este recuo é um **token com dependentes**: no estreito, a caixa
+  de rolagem do palco e a caixa da tabela de números usam-no em **margem negativa** para sangrar
+  até a aresta da prancha, e a tabela ainda o devolve como recuo nas células das pontas. Mudar o
+  token move as três coisas juntas, que é o objetivo.
+- **A prancha de duas zonas:** `600px | minmax(0, 1fr)` — o palco do espécime à esquerda, a
+  instalação à direita, separadas por um fio de 1px que é o `border-left` da coluna da
+  direita. **A ação primária fica ao lado da prova**, na primeira dobra.
+- **A coluna do palco é uma pilha de cinco coisas, nessa ordem:** rótulo de zona, palco
+  (600x520), legenda de escala, **lista de chamadas** (18px abaixo, fechada por fio em cima e
+  embaixo de cada linha), **detalhe ampliado** (20px abaixo, máx. 560px, vidraça de 80px), e o
+  diagrama do ciclo (18px). A ordem é a do desenho técnico: o desenho, o que ele afirma, a
+  legenda das chamadas, e a ampliação — o detalhe fica **depois** do controle que o move, para
+  a mudança acontecer abaixo do dedo e não acima dele.
+- **A coluna da direita tem duas seções**, não uma: a instalação e, abaixo dela, a zona
+  "Em números", separadas por um fio de 1px (26px acima do fio, 22px abaixo). Os zeros são o
+  argumento de venda, e por isso eles moram **dentro da prancha, encostados na ação** — não
+  numa zona própria a uma rolagem de distância.
+- **Ritmo de espaçamento:** 5, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 26, 28px nos detalhes, e os
+  quatro clamps do frontmatter na estrutura, até 104px. **O teto de 12px d'A Vidraça não
+  atravessa para cá** — ver o preâmbulo dos dois mundos.
+- **Pontos de quebra, e o que cada um resolve:** **1100px** o bloco de título passa a duas
+  colunas com a identidade em linha própria; **1080px** a prancha empilha as duas zonas e o
+  fio vertical vira horizontal; **720px** o palco troca para a geometria estreita, o SVG
+  estreito (só realces, sem balão) substitui o largo, e a caixa da tabela de números sangra até
+  as arestas da prancha com o recuo voltando nas células das pontas; **700px** os campos do
+  bloco de título passam a se alinhar à esquerda, as células da tabela apertam para `9px 10px`
+  e a coluna de característica cai de 17px para 15px; **560px** as notas deixam de ter coluna
+  de número e a linha de chamada passa de três colunas para duas, com o texto descendo para
+  baixo do nome.
+- **Medidas de linha declaradas** em quase todo bloco de texto: 68ch no corpo, 62ch no
+  subtítulo e na linha de comando, 60ch na legenda, 56ch na citação, 54ch nas alternativas,
+  46ch no subtítulo de assunto, 40ch no carimbo, 32ch no assunto. **A exceção é o aviso de
+  celular** (`max-width: none`): uma faixa que interrompe a página ocupa a largura da página, e
+  medi-la a 56ch a faria parecer uma citação.
+
+### Named Rules (A Folha de Cotas)
+
+**A Regra do Fio que Alcança o Chão.** O divisor entre as duas zonas da prancha é
+`align-items: stretch` na grade, e não `start`. Com `start`, o `border-left` da coluna de
+revisão parava na altura do conteúdo mais curto e as duas zonas deixavam de ser uma
+composição para virar duas páginas encostadas. **Um divisor de zona vai até o chão da
+prancha ou não é um divisor de zona.**
+
+**A Regra da Goteira que Não é Recuo.** A goteira entre as zonas é `column-gap`, nunca
+`padding` dentro da trilha. Com `box-sizing: border-box`, um recuo dentro da trilha de 600px
+deixa o palco (600px, fixo em px porque o realce das chamadas aponta para arestas reais)
+**maior** que a caixa de conteúdo, e o `overflow-x` corta o balão da chamada da goteira
+direita — a anotação some justamente na folha que existe para mostrar.
+
+**A Regra da Tabela que Vive Dentro da Prancha.** A tabela de números não tem caixa própria:
+ela é a segunda seção da coluna de instalação. Três consequências, e todas as três são
+obrigação de qualquer tabela que more dentro de uma prancha. **Um:** ela não desenha borda nem
+fundo — a prancha já é a caixa, e uma segunda moldura a 1px de outra é um erro de desenho, não
+uma hierarquia. **Dois:** as células das pontas perdem o recuo horizontal, para o texto
+encostar na mesma vertical do rótulo de zona que a encima; uma tabela recuada dentro de uma
+caixa recuada abre um degrau que nenhum fio explica. **Três:** ela **nunca** declara largura
+mínima (`min-width: 0`) — envolve o texto em qualquer largura, e abaixo de 720px a caixa sangra
+até as arestas da prancha com o recuo voltando só nas pontas, que é o que devolve à coluna de
+observação os 32px que o recuo da prancha lhe tirava.
+
+Aquela coluna é o **argumento do produto**, a explicação dos quatro zeros: com largura mínima
+ela caía inteira fora da caixa de rolagem e ficava invisível no telefone. E envolver é a saída
+certa em vez de `display: block`, que faria a tabela caber destruindo a semântica de tabela
+para leitor de tela.
+
 ## Elevation & Depth
 
-**O sistema é plano por dentro. Existe uma sombra e ela vive do lado de fora.**
+**O sistema é plano por dentro, e a única sombra que existe não é desenhada por ele.**
 
-A janela tem `decorations: false` e `transparent: true`: o sistema operacional não
-desenha moldura nem sombra nenhuma. O `shadow-lg` do cartão raiz não é um efeito de
-interface — é **a borda física do aplicativo contra a área de trabalho**, o que impede
-que a vidraça se dissolva sobre um fundo claro. Junto dela trabalham uma borda de 1px
-(`border`) e um anel interno de 1px em `foreground/10`, que sustentam o contorno quando
-o fundo atrás é escuro demais para a sombra aparecer.
+A janela tem `decorations: false` e `transparent: true`, e o cartão raiz preenche
+exatamente os 360x480 de um `#root` com `overflow: hidden`. **Isso torna todo
+`box-shadow` outset impossível aqui:** ele cai fora do único retângulo que existe e é
+recortado antes de chegar à tela. Não é uma sombra discreta — é nenhuma sombra.
+
+Quem separa a vidraça da área de trabalho é **o sistema operacional, a partir do alfa
+da janela**: o macOS desenha a sombra de uma janela em camada com fundo transparente, e
+no Windows é o DWM (com `cantos.rs` desligando o arredondamento próprio dele, para os
+dois arcos não brigarem). No Linux depende do compositor, e é por isso que a **borda de
+1px** (`border`) é a única separação garantida em todas as máquinas: ela é o contorno do
+app, não um detalhe, e é o que sobra quando o sistema não desenha nada.
+
+Uma sombra de verdade em CSS exigiria a janela do Tauri ser maior que o cartão, com a
+folga sobrando de cada lado. São pixels que o orçamento de 360x480 não tem.
 
 Dentro da janela não há uma única sombra. Profundidade é feita por **tom e por linha**:
 `muted` como fundo para o que está ativo ou sob o cursor, e o `Separator` de 1px para
 dividir o cromo da lista. Não há camadas, não há popover elevado, não há modal.
 
 ### Shadow Vocabulary
-- **Sombra da janela** (`box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`):
-  a única sombra do sistema. Aplicada uma vez, no cartão raiz. Nunca em mais nada.
+
+Vazio, e é a leitura certa: **não existe nenhuma sombra no CSS deste app.** O cartão
+raiz leva `ring-0` para desligar o anel outset que o primitivo `Card` do shadcn traz —
+ele também era recortado.
+
+Registrado porque a versão anterior deste documento afirmava o contrário, e por muito
+tempo: descrevia o `shadow-lg` do cartão como "a borda física do aplicativo contra a
+área de trabalho" e um anel interno de `foreground/10` que "sustenta o contorno". Os
+dois estavam no código, os dois eram recortados, e nenhum dos dois nunca apareceu.
+**A pista que existia e não foi lida:** `scripts/vitrine/index.html` põe o `#root` num
+viewport maior justamente para a sombra não sair cortada na captura — as fotos do README
+mostravam uma separação que o app não desenhava. A sombra simulada mora lá agora, com o
+motivo escrito ao lado dela.
 
 ### Named Rules
 
-**A Regra da Sombra Externa.** Sombra é a borda do app contra a área de trabalho, não
-um recurso de interface. Nenhum elemento dentro da janela projeta sombra — nem no
-hover, nem no foco, nem em elevação. Se um componente novo parece precisar de sombra
-para se destacar, ele precisa é de `muted` atrás dele.
+**A Regra da Sombra Externa.** Sombra é a borda do app contra a área de trabalho, não um
+recurso de interface — e neste app ela é **do sistema operacional**, não do CSS. Nenhum
+elemento dentro da janela projeta sombra, nem no hover, nem no foco, nem em elevação. Se
+um componente novo parece precisar de sombra para se destacar, ele precisa é de `muted`
+atrás dele. Corolário novo, e mecânico: **nenhum `box-shadow` outset funciona no cartão
+raiz.** Se a separação da janela precisar de reforço algum dia, ela tem que ser desenhada
+por dentro (`inset-ring`, `inset` shadow) ou a janela precisa crescer — e crescer custa
+altura de lista.
+
+### A Folha de Cotas
+
+**Não existe um único `box-shadow` no CSS da folha** — verificável por busca em
+`site/folha.css`: zero ocorrências de `shadow`, zero de `radius`. E, ao contrário do app,
+aqui não é uma consequência técnica: nada recorta nada nesta página, sombra funcionaria
+perfeitamente, e ela não está lá **por decisão**. Uma prancha de desenho não tem
+profundidade; ela tem papel, fio e tinta.
+
+**A única profundidade na tela é a sombra que o raster do espécime já carrega.** As capturas
+`telas/janela-clara.png` e `telas/janela-escura.png` trazem a sombra que o sistema
+operacional desenha sob a janela real — a mesma sombra que a seção d'A Vidraça descreve como
+a borda física do app contra a área de trabalho. A folha não a desenha, ela a **fotografa**;
+e é por isso que ela é a única, e por isso que ela é correta: é uma medida, não um efeito.
+
+O resto da profundidade é **tom e linha**: película e prancha com um tom de diferença marcam
+"mesa" e "papel", e o fio de 1px delimita. A folha tem hoje **uma** caixa de prancha sobre
+película — a prancha, que guarda o espécime, a instalação e os números; a tabela de números
+deixou de ser uma segunda caixa quando entrou nesta. A linha de comando é o caso inverso: uma
+caixa de **película** sobre a prancha, um tom para dentro em vez de para fora — e a vidraça do
+detalhe ampliado é a segunda do tipo, com película como fundo enquanto o recorte não chega. E as duas
+faixas tintas (a citação de sistema e o aviso de celular) são o terceiro caso, que não gasta
+tom nenhum: fundo em cota-fraca com um fio de 1px em cota à esquerda.
+
+### Named Rules (A Folha de Cotas)
+
+**A Regra da Sombra Fotografada.** A única sombra da folha é a que a captura do app já
+contém. Nenhum elemento da página projeta sombra — não no repouso, não no hover, não no foco,
+não em elevação. Corolário para trabalho futuro: se algo parece precisar de sombra para se
+destacar, ele precisa é de **um tom** (a prancha sobre a película, ou a película sobre a
+prancha) ou de **um fio**. Teste: `box-shadow` em `site/folha.css` é bug, e a busca é a
+verificação.
 
 ## Shapes
 
@@ -443,6 +1107,45 @@ Bordas são sempre de 1px — não existe borda mais grossa em lugar nenhum. O a
 10px nos controles, 8px nas linhas e chips, 4px no checkbox. Um raio constante em
 elementos de 480px e de 16px faria o pequeno parecer uma pastilha e o grande parecer
 uma caixa.
+
+### A Folha de Cotas
+
+**Retângulos de canto reto, e nada além disso.** Não existe um `border-radius` no CSS da
+folha, em nenhum valor, em nenhum elemento — nem no botão, nem na placa de tinta do sistema
+escolhido, nem na caixa de comando, nem no anel de foco. O canto reto é a forma nativa de uma prancha de desenho: papel
+tem canto, cota tem ponta, e um raio de 8px numa caixa de medida a faria parecer um cartão.
+
+O vocabulário de forma é **linha, e a espessura dela informa**:
+
+- **1px em fio** — moldura da prancha, divisor de zona, separador de lista, linhas da tabela.
+- **1px em fio-forte** — o contorno do que se interage (linha de comando, botão de varredura,
+  o contorno único do seletor e os fios entre os seus três botões) e o fio que fecha um rótulo
+  de zona ou um cabeçalho de tabela.
+- **1px em cota** — o desenho de anotação inteiro (o contorno do quadrado de 20x20 do balão,
+  a linha de chamada, e o retângulo de realce sobre a região), o contorno do número de chamada
+  escolhido, e as duas coisas que abrem uma faixa tinta: o fio à esquerda da citação de aviso
+  do sistema e o do aviso de celular.
+- **2px em tinta** — os dois fios estruturais da folha: a base do bloco de título e o topo
+  do carimbo. Eles fecham o desenho.
+- **2px em halo, sem raio, a 2px de distância** — o anel de foco, idêntico ao do app.
+
+As setas das chamadas (e as do diagrama de ciclo) são **polígonos preenchidos** de três
+pontos, desenhados à mão no SVG, e não `marker-end`: um marcador escala com a espessura do
+traço e a ponta engorda quando o fio é 1px.
+
+**O balão de chamada é um quadrado de 20x20 sem raio**, e isso não é uma escolha de estilo
+dentro da Regra do Canto Reto — é a regra sendo obedecida no lugar onde ela é mais fácil de
+furar. Balão de chamada é redondo em quase todo software de anotação, e um círculo aqui seria
+a única curva de uma folha que não tem nenhuma. O quadrado ainda ganha uma coisa: ele repete
+a forma do contorno do número na lista, então a lista e o palco se leem como o mesmo objeto
+visto duas vezes.
+
+### Named Rules (A Folha de Cotas)
+
+**A Regra do Canto Reto.** Nenhum elemento da folha tem raio. Não há exceção de tamanho, de
+componente nem de estado, e o anel de foco também é reto. Teste: um `border-radius` computado
+diferente de `0` nesta página é bug. (Nos dois mundos a lei é oposta e as duas estão certas:
+a janela é um objeto de interface e arredonda por isso; a folha é papel.)
 
 ## A Marca
 
@@ -575,6 +1278,14 @@ aparência.
   fundo `muted`, texto `foreground` e peso 500. `transition-colors`.
 - **Fechar:** sempre visível na aba ativa (a 70% de opacidade); nas demais, só no hover
   ou no foco de teclado. Escondido por completo quando existe uma aba só.
+- **Fechar — tom e raio.** O hover é `foreground/10`, e não o `background` da janela: este
+  `×` mora dentro de um chip que já é `muted`, que é o caso exato da Regra do Destaque que
+  Sobrevive ao Fundo. O `background` também é a **superfície errada** — a superfície aqui é
+  o `card` —, e os dois só coincidem no tema claro: no escuro o `background` é mais escuro
+  que o cartão, então o mesmo hover clareava num tema e escurecia no outro. O raio é o do
+  **checkbox** (4px) e não os 8px dos botões de ícone: os 8px são dimensionados para uma
+  caixa de 24px, e nos 16px desenhados deste `×` eles consomem metade da caixa e o transformam
+  num círculo — o mesmo motivo que mantém o checkbox em 4px.
 - **Alvo:** o botão do nome ocupa a **altura inteira** do chip (24px). O `×` é desenhado
   com **16px** e alcança 24×24 por pseudo-elemento — o mesmo recurso do checkbox. Inflar
   a caixa desenhada para 24px fazia o fundo do hover cobrir a altura toda da aba, e o `×`
@@ -802,6 +1513,26 @@ de fora do teclado: o `Escape` é dela, e os atalhos da vista que ela cobriu fic
 desligados (`⌘T` não pode criar uma aba enquanto a pessoa está dizendo que quer usar
 `⌘T`).
 
+**Desligar atalho não basta — o que MUTA fica inerte.** A regra valia pela metade: as teclas
+de aba eram desligadas, mas o campo de nova tarefa continuava alcançável por `Tab` e o
+"Limpar concluídas" por clique, então dava para acrescentar e apagar tarefas numa lista fora
+da tela, com o resultado invisível. Agora a banda do campo recebe `inert` e o botão do rodapé
+fica desabilitado enquanto a vista está aberta. O teste para uma vista nova: **todo controle
+que grava fora dela precisa parar de responder, não só de ouvir teclas.**
+
+O que **não** fica inerte, e por quê: a faixa de abas continua clicável (trocar de aba muda o
+que está atrás da vista, mas o chip ativo se acende — o resultado é visível, e nada é
+gravado), e o rodapé inteiro também não, porque ele é região de arrasto da janela e carrega a
+região viva do contador. Daí o `disabled` no botão em vez de `inert` na faixa: perder o
+arrasto de metade da janela cada vez que o painel abrisse seria trocar um defeito por outro.
+
+**Sair da vista devolve o cursor ao campo.** Toda saída, e num lugar só — um efeito que
+observa a vista fechar, e não uma chamada em cada handler. Com uma chamada por saída, o botão
+"Concluir" devolvia o foco e o `Escape` e a engrenagem não: o painel desmontava com o foco no
+capturador, ele caía no `body`, e as teclas seguintes não iam a lugar nenhum. Numa janela cujo
+ciclo é `⌃⌥T → digitar → Enter`, uma vista que sai deixando o teclado sem destino quebra o
+gesto **seguinte**, que é o mais difícil de atribuir à causa.
+
 **A Regra do Destaque que Sobrevive ao Fundo.** Um destaque desenhado **dentro** de um
 elemento que também se destaca precisa ser medido contra o estado mais forte do
 hospedeiro, e não contra a superfície em repouso. `muted` é o recurso de destaque do
@@ -902,7 +1633,442 @@ ter mudado) e com rolagem **seca**: a linha ainda chega pelo `arrive`, mas rolag
 caminho de acrescentar seria a latência com outro nome que a Regra do Movimento que se Paga
 proíbe.
 
+### A Folha de Cotas
+
+O caráter é **instrumental**: quase nada tem cor, e quase todo componente é um retângulo de
+fio com texto dentro. **Existem exatamente dois preenchimentos em toda a folha, e os dois
+dizem a mesma palavra: escolhido.** A placa de tinta do sistema no seletor, e o número da
+chamada escolhida em cota. Nada mais nesta página tem fundo, e é essa escassez que faz os dois
+serem lidos como estado e não como decoração.
+
+#### O seletor de sistema (o dispositivo que organiza a folha)
+
+- **Três botões num contorno único** de 1px em fio-forte, com um fio do mesmo tom **entre**
+  eles e nenhum antes do primeiro, dentro de uma faixa própria (`role="group"`, `aria-label`
+  "Sistema") que tem o rótulo de zona à esquerda e fecha com um fio de 1px.
+- **O escolhido é marcado por INVERSÃO:** fundo em tinta cheia, texto em prancha. Os outros
+  dois ficam transparentes com texto em tinta-fraca e sobem para tinta no hover. Texto Archivo
+  600 a 15px, recuo `9px 18px`, transição de 120ms em cor e fundo.
+- **O estado mora em `aria-pressed`, não numa classe:** a inversão é desenhada a partir do
+  atributo (`button[aria-pressed="true"]`). O que a tela mostra e o que o leitor de tela
+  anuncia são o mesmo fato, e não duas fontes que podem divergir.
+- **O que ele filtra:** todo `[data-sistema]` da página. Hoje são dois painéis por sistema — o
+  bloco de instalação e o trecho de primeira abertura dentro da nota 1 —, e **exatamente dois
+  ficam visíveis por vez**. Um painel novo entra na filtragem só por carregar o atributo.
+- **A escolha inicial é palpite, não decisão:** `userAgentData.platform`, depois `platform`,
+  depois `userAgent`; sem resposta nenhuma, macOS. O palpite é barato porque o seletor está
+  logo ali e o custo de errar é um clique — e é essa disponibilidade que autoriza a página a
+  esconder os outros dois sistemas, coisa que a versão anterior não podia fazer.
+
+#### O aviso de celular
+
+- **Uma faixa tinta** (`#aviso-movel`), `hidden` no HTML e desescondida pelo JavaScript quando
+  a visitante está num telefone ou tablet: fundo cota-fraca, fio de 1px em cota à esquerda,
+  Archivo 500 a 15px em tinta, recuo `12px 14px`, sem medida de linha.
+- **É o único elemento da folha que usa a faixa tinta fora de um aviso de sistema**, e merece
+  a matiz pelo mesmo motivo que o app pinta o erro de vermelho: quem abria no telefone recebia
+  uma linha de `brew` sem ter onde rodá-la, e uma página que entrega um comando inútil sem
+  dizer nada está falhando em silêncio.
+- A detecção de celular vem **antes** da de sistema, porque o Android chega com `linux` no
+  `userAgent` e o iPad moderno se anuncia como `macintosh`. E mesmo no telefone um sistema
+  fica escolhido e o seletor continua funcionando: a folha segue inteira e legível, ela só diz
+  primeiro que a instalação não é para agora.
+
+#### O espécime anotado (componente-assinatura)
+
+É a claim central da folha. A geometria continua exata porque **`ESCALA 1:1` é uma afirmação
+literal** — mas o que ela sustenta mudou: antes ela sustentava duas cotas, hoje ela sustenta
+**cinco realces cravados em pixels reais** e um recorte ampliado a 2:1. A exatidão passou de
+enfeite da medida a condição da anotação: um realce 30px fora de lugar contorna metade de um
+campo de texto e se lê como defeito do app.
+
+- **Palco largo: 600 x 520 px**, fixos em px (`.palco`). O `<picture>` é a **caixa
+  posicionada** — `position: absolute; left: 100px; top: 0; width: 420px; height: 540px` — e o
+  `<img>` apenas a preenche a 100%/100%. Posicionar os dois foi o defeito que deslocou a
+  imagem em 70px e desalinhou toda a anotação.
+- **O palco encurtou 100px nesta passagem** (620 → 520) e a imagem subiu (`top: 60px` → `top:
+  0`). Os 90px de ar acima da janela existiam **para a cota de 360 correr ali** e não tinham
+  nenhum outro trabalho; com a cota fora, eram altura morta na primeira dobra. Um palco de
+  desenho não guarda espaço para um traço que não existe mais.
+- **A imagem é 840x1080 e entra a 420x540** — metade, porque foi capturada a 2x. Ela carrega
+  **30px CSS de margem transparente em cada lado**.
+- **Logo, a JANELA ocupa (130, 30) a (490, 510) dentro do palco: exatamente 360 x 480 px
+  CSS.** É isto que torna a escala 1:1 verdadeira na tela de quem visita, e é por isso que
+  todo realce é somado a `JANELA = {esq: 130, topo: 30}` — **as arestas da janela, nunca as da
+  imagem**. Realçar contra a caixa da imagem daria 420x540 e a folha estaria anotando a moldura
+  do seu próprio raster. Corolário mecânico: mudar a margem transparente da captura, o
+  `left/top` do `picture` ou a escala da imagem **obriga a rederivar a origem `JANELA`** — e
+  ela é um lugar só, o que é o ponto.
+- **Palco estreito (≤720px): 360px de largura**, com a imagem em `left: -30px; top: -30px`: a
+  margem transparente é recortada **nos dois eixos**, e a janela ocupa **(0, 0) a (360, 480)**
+  do palco, então o realce entra com deslocamento zero. A escala 1:1 se mantém em 360px de
+  largura, e a caixa de rolagem sangra até as arestas da prancha por margem negativa de
+  `--recuo-prancha`.
+- **Achado aberto: o palco estreito ainda declara `height: 540px`.** O seu SVG é
+  `viewBox="0 0 360 480"` e a janela recortada termina em y=480, então há **60px de altura
+  morta** embaixo dela — 30px de margem transparente da captura e 30px de prancha vazia. Os 540
+  eram a altura do viewBox da cotação estreita, que desenhava abaixo da janela; com a cota fora,
+  eles são exatamente o mesmo tipo de ar que o palco largo acabou de devolver ao encurtar de 620
+  para 520. **A correção é `height: 480px`**, e ela não move nenhuma coordenada, porque o realce
+  estreito soma zero.
+- **Dois SVGs, cada um 1:1 com o seu palco.** O largo tem `viewBox="0 0 600 520"`, o estreito
+  `viewBox="0 0 360 480"`, e a troca é por `display` no ponto de quebra de 720px. Um viewBox de
+  600 servindo um palco de 360 escalaria toda a geometria por 0,6 e desalinharia cada realce —
+  é por isso que são dois desenhos e não um responsivo.
+- **No estreito não há balão, não há linha e não há seta: só o realce.** Em 360px de largura
+  não existe goteira, e um balão dentro do espécime cobriria a interface que ele aponta. **A
+  lista de chamadas é o único controle ali**, e ela basta: o realce continua acontecendo na
+  janela e o detalhe continua se recortando.
+- **A captura muda com o tema:** `<source media="(prefers-color-scheme: dark)">` troca o PNG,
+  então o espécime é sempre a janela no mesmo tema em que a folha está sendo lida. O detalhe
+  ampliado troca o mesmo par de arquivos por `@media (prefers-color-scheme: dark)` no CSS.
+
+**O que saiu do palco, e é uma lista para ninguém tentar trazer de volta sem ler o motivo:**
+as duas linhas de cota (360 e 480) com as suas linhas de extensão e setas; a terceira cota de
+gesto, que saía do texto `⌃⌥T` à esquerda e apontava para dentro da janela; o rótulo `atalho
+global` dentro do SVG; a cotação por dentro do espécime estreito e o halo em prancha que a
+tornava legível. O atalho não se perdeu: ele é a chamada 1, dita em `<code>` no fluxo, onde
+tem métrica e pode ser copiado.
+
+**Um comentário de geometria continua sendo fonte, e continua sendo o ponto frágil.** A
+passagem anterior fechou dois defeitos de geometria que este documento tinha registrado como
+abertos, e a lição registrada era sobre o comentário e não sobre o número: **enquanto ele
+mente, a próxima pessoa desenha pelo número errado e nada quebra.** O guarda automático
+(`conferirCaptura`) segue no lugar — ele lê largura e altura do IHDR do PNG e falha o build se
+a captura deixar de ser 840x1080 —, e a mensagem dele hoje manda acertar `JANELA`/`CHAMADAS`,
+que são os nomes que existem. **Dois comentários ainda mentem, e ficam registrados aqui como
+achados abertos:** o cabeçalho de `conferirCaptura` em `scripts/site.mjs` ainda descreve a
+imagem em `(100, 60)` e "as cotas" em `(130, 90)–(490, 570)`, e o bloco da seção 3 do mesmo
+arquivo ainda diz que o realce largo soma `(130, 90)`. O código faz `(100, 0)` e soma
+`(130, 30)`; os comentários são de antes do encurtamento do palco. **O comentário de geometria
+de `site/folha.css` já está certo** (600x520, `left: 100`, janela em `(130, 30)–(490, 510)`), o
+que torna o par ainda mais perigoso: dois comentários concordantes e um discordante são um
+convite a acreditar no errado. **Terceiro achado, menor:** a chave `cota_atalho_rotulo` continua
+nos dois dicionários (`atalho global` / `global shortcut`) e não é emitida em lugar nenhum — é
+texto morto que saiu com o rótulo do SVG.
+
+#### As chamadas de detalhe (o dispositivo central)
+
+Cinco chamadas, e a ordem é **a da história de uso, não a espacial**: 1 o campo, 2 as abas,
+3 a data, 4 a concluída, 5 a saída. Numeração de desenho segue a sequência em que alguém usa a
+peça, e de cima para baixo daria 5, 2, 1, 3, 4 — a ordem em que ninguém aprende nada.
+
+- **Uma lista, e todo o resto derivado dela.** `CHAMADAS` em `scripts/site.mjs` guarda cada
+  região em **px da janela** (a janela é 360x480, e a origem é o canto superior esquerdo dela).
+  Dessa fonte única saem cinco coisas: o retângulo de realce do palco largo (somado a
+  `JANELA`), o do palco estreito (somado a zero), a posição do balão, a linha de chamada, e a
+  seta. O JavaScript deriva a sexta — o recorte do detalhe — da mesma lista, por
+  `data-regiao`. Mexer numa coordenada move as seis juntas, e é por isso que elas não podem
+  divergir: se divergirem, o detalhe mostra uma parte e a seta aponta outra.
+- **`regiao` e `detalhe` são dois campos, e colapsá-los foi um defeito de verdade.** `regiao`
+  realça a **funcionalidade inteira**; `detalhe`, quando existe, é o pedaço que **cabe
+  ampliado 2:1**. O campo de nova tarefa tem 336px de largura, e a 2:1 isso pediria 672px numa
+  vidraça de 560px — então o detalhe mostra 256px, a parte que interessa. A tentação é usar um
+  campo só, e ela foi testada: realçar apenas o pedaço recortado desenhava um retângulo em
+  volta de **meio campo de texto**, o que não se lê como recorte, se lê como bug do app.
+  **Realce e recorte respondem a perguntas diferentes** — "onde isto fica" e "como isto é de
+  perto" — e uma coordenada só não responde às duas.
+- **O balão:** quadrado de **20x20** em prancha com contorno de 1px em cota, na **goteira do
+  palco** — `x=92` à esquerda, `x=512` à direita, centrado na vertical do meio da região. Três
+  chamadas ficam na goteira esquerda (campo, abas, concluída) e duas na direita (data, saída),
+  escolhidas por proximidade: um balão atravessa a janela inteira quando fica do lado errado.
+- **A seta aponta PARA DENTRO da região, e a ponta assenta 2px antes da aresta.** A ponta e a
+  base são calculadas **a partir da aresta** (`aresta ∓ 2`, base a 9px da ponta), e não de um
+  deslocamento fixo, para os dois lados espelharem de verdade. Os 2px são a diferença entre
+  uma seta que aponta e uma seta que rabisca em cima do que ela aponta.
+- **O realce:** retângulo de 1px em cota, sem preenchimento,
+  `shape-rendering: geometricPrecision`, `opacity: 0` em repouso e `1` quando aceso. Ele
+  contorna, nunca cobre — a captura embaixo tem que continuar legível, porque ela é a prova.
+- **A chamada não escolhida NÃO desaparece: ela recua para 38%** de opacidade (140ms
+  `ease-out`, `transition: none` sob `prefers-reduced-motion`). Um desenho que mostra só a
+  chamada ativa perde a informação de que existem cinco — **e é essa informação que faz alguém
+  clicar na segunda.** Ver a Regra das Cinco que Continuam à Vista.
+- **A lista de chamadas é o controle**, e ela é uma `<ol>` de cinco botões. Grade de
+  `1.75rem | 6.5rem | 1fr` (número, nome, texto) alinhada pela base, `11px 0` de recuo
+  vertical, fio de 1px acima e abaixo de cada linha, cor de repouso em tinta-fraca subindo para
+  tinta no hover e no escolhido. **O escolhido acende o próprio número, e não o fundo da
+  linha:** são cinco linhas, e uma placa cheia trocando de lugar a cada escolha piscaria a
+  coluna inteira. Abaixo de 560px a grade cai para duas colunas e o texto desce para baixo do
+  nome.
+- **O detalhe ampliado** (`.detalhe-vidro`): 80px de altura, até 560px de largura, moldura de
+  1px em fio-forte, fundo película enquanto a imagem não chega. Ele pinta **a mesma captura**
+  do espécime como `background-image`, a `background-size: 840px 1080px` — o tamanho **natural**
+  (2x) do raster que o espécime mostra a 420x540. É exatamente isso que faz a ampliação ser
+  2:1, bater com o rótulo `Detalhe · 2:1`, e **não custar um raster novo**: uma imagem por
+  tema, as duas já baixadas. O `background-position` é calculado em `site/folha.js`: px da
+  janela mais 30 (a margem transparente da captura), vezes 2.
+- **Duas correções no cálculo do recorte, as duas defeitos encontrados e fechados.** **Uma:**
+  o recorte é **preso dentro dos 360x480 da janela**, senão ele passa da aresta e mostra a
+  margem transparente da captura, que aparece como um bloco de outra cor — foi o que aconteceu
+  com a chamada 3, a data, que fica a 18px da borda direita. **Duas:** uma região **mais larga
+  que a vidraça alinha pelo COMEÇO**, e não pelo centro; região que cabe fica centrada.
+  Centralizar um campo de texto corta justamente o início dele, que é onde a leitura começa. O
+  recorte é recalculado no `resize`, porque a largura da vidraça acompanha a coluna.
+- **Sem JavaScript a lista continua legível como lista numerada** — cinco itens em tinta, com
+  o cursor padrão em vez de `pointer` — e **o detalhe não é renderizado** (`.sem-js .detalhe {
+  display: none }`). Um retângulo ampliado parado numa região que ninguém escolheu não informa
+  nada e finge ser um controle.
+
+#### O diagrama do ciclo de 2 s
+
+- **Fica fora do palco**, com diagrama próprio, porque **mede o gesto e não a janela**. O
+  ciclo é `⌃⌥T → digitar → Enter → ⌃⌥T`.
+- **O SVG carrega só linha, seta e a faixa de varredura — nenhum texto** (viewBox
+  `0 0 460 34`, largura fluida até 460px). O numeral `2 s` e os rótulos `lembrar` / `anotado`
+  são HTML, pela Regra do Piso de 11px.
+- **O numeral fica ACIMA da linha inteira, no fluxo, centrado** (`text-align: center`, sem
+  percentual vertical, que é frágil numa caixa que escala). É a colocação clássica do desenho
+  técnico e resolve um defeito real: uma placa opaca no meio da linha tapava justamente o
+  trecho em que a varredura é a única tinta, e a faixa desaparecia no meio da corrida.
+- **A varredura:** `stroke-width: 5`, opacidade 0.3, `stroke-dasharray/offset: 458` — as 458
+  unidades são o comprimento real da linha (1 a 459), declarado no CSS e ancorado na
+  geometria do SVG.
+
+#### A linha de comando
+
+- Caixa de **película** sobre a prancha, fio de 1px em fio-forte, máx. 62ch, `display: flex`
+  com `align-items: stretch`. Comandos consecutivos ficam a 5px um do outro.
+- O `<code>` é 13px mono, `white-space: pre`, com **rolagem horizontal própria e barra
+  escondida** (`scrollbar-width: none`): um comando longo rola dentro da sua caixa em vez de
+  quebrar em duas linhas ou esticar a coluna.
+- **Botão copiar:** `flex: none`, sem fundo, separado por um `border-left` (o mesmo fio),
+  rótulo de 11px versalete e um ícone SVG de 12px desenhado à mão em `currentColor`. No hover
+  ganha fundo cota-fraca e texto em tinta. No estado `copiado` troca **ícone e palavra** e vai
+  para a cor de cota por 1800ms.
+- **Sem JavaScript o botão não existe** (`.sem-js .copiar { display: none }`; a classe do
+  `<html>` vira `js` por um script inline no `<head>`). O texto continua ali para selecionar,
+  e um botão morto é pior que nenhum. Sem `navigator.clipboard`, o clique **seleciona a
+  linha** em vez de fingir que copiou, e diz isso na região viva.
+
+#### O bloco de instalação (a ação primária)
+
+- **Um bloco por sistema, e o seletor mostra um por vez.** Blocos empilhados, e não uma tabela
+  de quatro colunas: os comandos precisam de largura, e uma tabela que rola na horizontal é o
+  pior lugar possível para a ação primária da página.
+- Cada bloco: cabeça em `flex` com o nome do sistema (Archivo 600, 17px) e a via (11px
+  versalete em tinta-fraca); depois os comandos, a alternativa de download (14px, máx. 54ch) e
+  o ponteiro para a nota. Separados por fio de 1px, sem fio no último.
+- **As letras de revisão saíram, e a razão é aritmética.** `rev A` / `rev B` / `rev C`
+  indexavam três blocos abertos ao mesmo tempo; com um só na tela, **um índice de três não tem
+  o que indexar**. A mesma conta levou a faixa cota-fraca e o selo "o seu sistema": os dois
+  existiam para apontar uma linha entre iguais, e não há mais iguais na tela. O bloco carrega
+  agora o nome do sistema e a via, e nada além disso.
+
+#### A zona "Em números" (dentro da prancha)
+
+- **Não é mais uma zona da página: é a segunda seção da coluna de instalação**, separada dela
+  por um fio de 1px. Ver a Regra da Tabela que Vive Dentro da Prancha — dela vêm as três
+  obrigações desta tabela: sem borda, sem fundo, e com as células das pontas sem recuo
+  horizontal para o texto encostar na vertical do rótulo de zona.
+- **Sem `caption`.** A legenda "Valores medidos na versão X" saiu porque a versão já está no
+  bloco de título, dita uma vez — e uma tabela dentro de uma prancha já está apresentada pelo
+  rótulo da zona acima dela.
+- `thead th` em 11px versalete sobre fio-forte; `tbody th` em **serif a 17px e 36% de
+  largura** (a característica é prosa, e cede largura para a observação, que é a que explica o
+  zero; 17px é o corpo da folha, e não um passo novo — ver a Regra dos Dois Passos Vizinhos);
+  valor em **mono, cota, `nowrap`**; observação em serif 15px com `hyphens: auto`. Abaixo de
+  700px a característica desce para 15px, junto com o aperto das células.
+- **A linha `janela` é onde a medida foi morar.** `360 × 480` sai do desenho e entra aqui, na
+  coluna de valor, como qualquer outro número conferível da folha. Foi essa linha que
+  autorizou as cotas a sair do palco: a medida não foi descartada, ela foi para o lugar onde
+  medida pertence.
+- **Oito linhas, quatro zeros, e a ordem vende:** preço, contas, nuvem, telemetria, arquivo de
+  dados, janela, sistemas, licença. Os quatro zeros primeiro; a coluna do meio é a cotação em
+  forma de lista. Saíram as quatro linhas que mediam **o desenho e não o produto** — a escala
+  da própria folha, o limite de 200 caracteres de título, os 40 do nome de aba, e a contagem
+  de requisições de terceiro da página. Eram verdadeiras e não eram argumento.
+
+#### Notas, citação de sistema e carimbo
+
+- **Notas:** grade `4.5rem | 1fr` com o número em cota (11px versalete), separadas por fio de
+  1px; abaixo de 560px o número passa para cima do corpo.
+- **Citação de sistema** (`blockquote.sistema`): a frase que o macOS ou o SmartScreen
+  realmente mostra, em Archivo 500 15px sobre cota-fraca, com fio de 1px em cota à esquerda e
+  `cite` de 11px versalete dizendo de quem é a voz. **É a única citação da folha, e ela existe
+  para a pessoa reconhecer o aviso quando ele aparecer na tela dela.** As duas citações e a
+  frase do Linux ("não há aviso de sistema: o pacote instala e o app abre direto") são painéis
+  `[data-sistema]` dentro da nota 1: quem escolheu Windows não lê a frase que o macOS mostra.
+- **Carimbo** (o pé): fio de 2px em tinta no topo, grade `auto-fit` de `minmax(230px, 1fr)`,
+  parágrafos de 15px em tinta-fraca com máx. 40ch, em três campos — estado do projeto, apoiar,
+  código. Diz o estado do projeto na voz de quem o escreveu. **O inventário do que não existe**
+  (número de usuários, depoimento, métrica) saiu do texto: a folha não inventa nenhum deles, e
+  listar ausências era explicação sobre a página em vez de ajuda para instalar. A proibição
+  continua na lista de Don't; o que saiu foi a frase que a anunciava.
+
+#### Named Rules (A Folha de Cotas)
+
+**A Regra da Inversão para o Escolhido.** Numa folha de uma matiz só, o sinal mais forte
+disponível não é cor: é **inverter**. O sistema escolhido recebe placa de tinta cheia com texto
+em prancha; a chamada escolhida recebe o número preenchido em cota com o algarismo em prancha.
+São os dois únicos preenchimentos da página — a mesma economia que o app usa no checkbox
+marcado, onde concluir é o único lugar com tinta cheia. Três corolários:
+
+- **Um estado "escolhido" novo se resolve por inversão**, nunca por sombra, raio, negrito extra
+  ou uma matiz nova.
+- **Inverte-se com a tinta que o elemento JÁ usa.** Este é o corolário corrigido nesta
+  passagem, e a correção importa: o registro anterior dizia "nunca gastando a matiz de cota,
+  que está reservada a valor medido", e o número de chamada escolhido preenche em **cota**. Não
+  é uma exceção aberta — é a regra lida certo. Aquele número já era cota (é um índice de
+  desenho, como o número de nota), e inverter uma coisa é trocar figura e fundo **dentro da
+  tinta dela**, não importar a tinta de outra. Preenchê-lo em tinta o faria parecer a placa do
+  seletor, que é outro controle, sobre outro assunto. O teste continua o mesmo de antes, só
+  mais preciso: um estado escolhido que introduz uma tinta que aquele elemento não usava em
+  repouso está errado.
+- **A inversão se desenha a partir de `aria-pressed`**, não de uma classe, para o estado visto
+  e o estado anunciado serem o mesmo fato. Vale nos dois lugares.
+
+**Corolário de escala, e ele decidiu o desenho da lista de chamadas:** inverter o **número** e
+não a linha inteira. São cinco linhas trocando de estado a cada `mouseenter`, e uma placa cheia
+de largura total piscaria a coluna a cada passagem do mouse. O que muda de fundo é o menor
+elemento que carrega o estado; o resto da linha muda só de cor de texto.
+
+**A Regra do Seletor que Não Promete Setas.** O seletor é `role="group"` com `aria-pressed`, e
+**não** um `tablist` — porque a página não cumpre a navegação por setas que um tablist promete.
+É a mesma decisão que a faixa de abas do app tomou, pela mesma regra: **não anunciar semântica
+ARIA que a interface não cumpre.** Uma das duas superfícies chegou a essa conclusão primeiro; a
+outra herdou a conclusão em vez de repetir o erro, que é para isso que este documento serve.
+
+**A Regra da Página que Sobrevive ao Seletor.** Sem JavaScript o seletor **não aparece**
+(`.sem-js .seletor`) e todos os painéis `[data-sistema]` ficam visíveis: a folha degrada
+exatamente para a página que ela era antes do seletor, e aquela página funcionava. É a mesma lei
+do botão de copiar — um controle que não pode agir sai da tela em vez de ficar morto —, e ela
+vale ao contrário também: **o filtro é a melhoria, nunca o conteúdo.** Nenhum `hidden` escrito
+pelo JavaScript pode ser a única via até uma informação. Teste: com o JavaScript desligado, os
+três sistemas se leem inteiros e nada fica escondido.
+
+**A Regra do Cotar por Dentro está RETIRADA.** Ela governava a cotação do palco estreito —
+a cota de altura correndo em `x=334` sobre a interface, o halo de 4px em prancha com
+`paint-order: stroke`, e a exigência de que cotar por dentro não autoriza cotar por
+aproximação. **Nada disso existe mais:** não há cota em nenhuma das duas geometrias, e o palco
+estreito é só realce. Uma regra que governa um dispositivo removido não é uma regra fraca, é
+uma regra sobre nada — e mantê-la faria a próxima pessoa procurar um `x=334` que não está no
+código. O que **sobrevive dela** é a parte que não era sobre cotas, e ela está reescrita abaixo
+como a Regra da Anotação que Não Tapa: quando a anotação passa por cima do espécime, ela tem de
+se separar do que está embaixo sem esconder, e ela tem de ser exata. Junto com ela saem, do
+registro e da folha: a cotação unidirecional (todo numeral na horizontal), que só existia
+porque havia numeral de cota; e a linha de extensão a 0.55 de opacidade dentro do palco, que só
+existia para apontar de onde uma medida começava. **A linha de extensão continua no CSS e
+continua em uso — no diagrama do ciclo**, que é o único desenho da folha que ainda mede algo.
+
+**A Regra da Fonte Única de Geometria.** Uma coordenada do desenho é declarada **uma vez**, num
+lugar, e todo o resto é derivado dela. `CHAMADAS` guarda cinco regiões em px da janela; delas
+saem o realce largo (somado a `JANELA`), o realce estreito (somado a zero), o balão, a linha, a
+seta e o recorte do detalhe. **A prova de que isto não é elegância é o que acontece quando se
+duplica:** duas coordenadas que descrevem a mesma coisa divergem na primeira correção, e o
+resultado não é uma quebra — é uma seta apontando um lugar enquanto o detalhe mostra outro,
+numa folha cuja única promessa é que o que ela mostra é real. Teste: uma coordenada de pixel
+escrita à mão em `folha.css`, `folha.js` ou no HTML gerado é bug. Corolário: **realce e recorte
+podem ser dois campos** (`regiao` e `detalhe`) porque respondem a perguntas diferentes; o que
+não pode é a mesma pergunta ter duas respostas.
+
+**A Regra da Anotação que Não Tapa.** Uma anotação desenhada por cima do espécime **contorna,
+nunca cobre** — a captura embaixo é a prova, e prova coberta não é prova. Três consequências
+mecânicas: o realce é retângulo de 1px sem preenchimento; a ponta da seta assenta **2px antes
+da aresta**, apontando para dentro da região, e é calculada a partir da aresta para os dois
+lados espelharem; e o balão fica **fora do espécime**, na goteira do palco, onde não há
+interface debaixo dele. Onde não existe goteira — o palco estreito, em 360px — a resposta certa
+é **não desenhar balão nenhum** e deixar a lista de chamadas ser o controle, e não empurrar o
+balão para dentro da janela. Teste: se um traço de anotação cobre um pixel de conteúdo que ele
+está apontando, ele está errado.
+
+**A Regra das Cinco que Continuam à Vista.** A chamada não escolhida **recua, não desaparece**:
+38% de opacidade, e não `display: none`. Um desenho que mostra só a chamada ativa perde a
+informação de que existem cinco, **e é essa informação que faz alguém clicar na segunda** — o
+mesmo raciocínio que na janela do app manda a tarefa concluída desbotar em vez de sair da
+lista (a Regra do Desbotamento). Corolário para qualquer seletor futuro do desenho: o estado
+não escolhido é estado com menos contraste, jamais estado ausente. Teste: com uma chamada
+escolhida, ainda é possível contar quantas existem.
+
+**A Regra do Recorte que Não Sai da Janela.** Um recorte ampliado é **preso dentro dos 360x480
+da janela**, sempre, e nunca centrado quando a região é mais larga que a vidraça. Os dois
+lados dessa regra são defeitos que aconteceram: sem a prisão, a chamada 3 (a data, a 18px da
+borda direita) mostrava a margem transparente da captura como um bloco de outra cor; com
+centralização, o campo de texto aparecia cortado justamente no início, que é onde a leitura
+começa — **região mais larga que a vidraça alinha pelo começo**, região que cabe fica centrada.
+Teste: renderize os cinco recortes e olhe cada um. Um recorte que mostra margem transparente,
+ou que começa no meio de uma palavra, está errado, e nenhuma asserção pontual pega isso.
+
+**A Regra da Cota que se Desenha** (o nome fica; o que ela desenha mudou). A folha tem
+**exatamente um movimento autoral**, e ele acontece **uma vez**: quando a prancha entra na
+tela, cada traço corre até o fim e a seta assenta por último. Os traços hoje são as **linhas de
+chamada** do palco largo e as duas do diagrama de ciclo; a mecânica é a mesma, `path.traco` é a
+mesma classe, e é isso que fez a troca de dispositivo não custar um movimento novo. A mecânica,
+porque ela é o que faz o gesto se ler como desenho e não como transição de CSS:
+
+- Cada `path.traco` recebe **o próprio comprimento** em `--corrida`
+  (`getTotalLength().toFixed(1)`, escrito pelo JS), e o CSS usa esse valor em
+  `stroke-dasharray` e `stroke-dashoffset`. **A linha corre na velocidade do desenho, não na
+  do CSS** — traços de comprimentos diferentes terminam juntos em vez de todos correrem a
+  mesma distância. Vale visivelmente aqui: as cinco linhas de chamada têm comprimentos
+  diferentes, porque a região de cada uma começa num x diferente.
+- **460ms em `cubic-bezier(0.16, 1, 0.3, 1)`** — a mesma curva `ease-settle` que o app usa em
+  todo movimento. Desaceleração exponencial: sai rápido, encosta devagar.
+- **Setas e numerais entram por último:** opacidade em 180ms `ease-out` com **380ms de
+  atraso**, então o número aparece depois de a linha ter chegado. É a ordem em que uma mão
+  anota. O quadrado do balão não participa: ele é papel, não traço, e já está lá.
+- **Disparo único por `IntersectionObserver`** (`threshold: 0.25`), com `unobserve`
+  imediatamente depois: a anotação não se redesenha ao rolar de volta. Sem
+  `IntersectionObserver`, tudo entra já desenhado.
+- **O estado inicial depende da classe `js`.** Sem JavaScript, nada fica escondido por
+  temporização — a folha inteira se lê e a anotação aparece pronta.
+- **Especificidade é parte da regra:** o estado desenhado precisa de especificidade **maior**
+  que o inicial, e não apenas vir depois dele. `.desenhada text` (0,1,1) perdia de
+  `.js .cotas text` (0,2,1) e o numeral ficava invisível para sempre.
+- **A troca de chamada não é este movimento.** Escolher uma chamada é transição de 140ms em
+  opacidade (balão, realce) e cor (a linha da lista), sem deslocamento e sem redesenho de
+  traço. O movimento autoral responde à **entrada da prancha na tela**, acontece uma vez, e
+  não se repete a cada clique — que é a diferença entre um desenho que se desenha e um desenho
+  que pisca.
+
+**A Regra da Varredura que Só Corre a Pedido.** A única coisa cronometrada da folha é a
+varredura de **2000ms linear** do diagrama de ciclo, e ela **não começa sozinha**: existe um
+botão de verdade, com rótulo escrito ("Correr os 2 segundos"), e ele fica `aria-disabled`
+enquanto a corrida acontece. Um laço que corre sem causa é exatamente o que o produto recusa —
+e um número que se anima sozinho seria um anúncio, não uma medida. **Nada nesta folha entra em
+laço, e nada é ambiente.**
+
+**A Regra do Movimento Reduzido Chega ao Fim.** Sob `prefers-reduced-motion: reduce`, os dois
+movimentos **curto-circuitam para o estado final**: `transition: none` com `stroke-dashoffset:
+0` e opacidade 1 na anotação, `animation: none` com a varredura inteira desenhada, e
+`scroll-behavior: auto` no `html`. A preferência tira o movimento, **nunca a informação** — é
+a mesma leitura que a Regra do Movimento Reduzido é Menos, Não Nada faz no app.
+
+**A Regra de Um Estado, Uma Voz (na folha).** Todo desenho decorativo é `aria-hidden`, e o
+que ele diz é **redito em texto de verdade** logo ao lado. Os dois SVGs do palco e o diagrama
+de ciclo inteiro são `aria-hidden="true"`; a legenda embaixo do palco diz por escrito que a
+escala é 1:1 e que aquele é o tamanho real da janela na tela, mais o ciclo completo em texto,
+e a tabela de números carrega o `360 × 480` em linha conferível. Três fragmentos anunciados
+soltos ("2 s",
+"lembrar", "anotado") dizem menos do que a frase da legenda. **É a mesma regra que o app já
+declara sobre a pílula do contador:** um estado, uma voz — o desenho para o olho, a frase para
+quem ouve. Acompanham a regra: o link "pular para a instalação" como primeiro elemento
+focável, uma região viva (`role="status"`, `aria-live="polite"`) para o resultado da cópia, o
+`aria-label` do botão de copiar carregando **o comando inteiro**, e a marca com
+`role="img"` e nome acessível.
+
+**As chamadas são o caso mais afiado da regra, porque aqui o desenho tem estado.** Escolher
+uma chamada muda três coisas de uma vez — o realce na janela, o balão aceso, o recorte do
+detalhe —, e nenhuma delas é anunciada, porque **todas as três são a mesma coisa dita pelo
+botão**: o `aria-pressed` carrega o estado, e o nome e o texto do próprio botão são a versão
+anunciada do que o desenho mostra. Por isso a `<figure>` do detalhe é `aria-hidden="true"`:
+uma imagem de fundo recortada não tem descrição honesta que já não esteja escrita na linha que
+a pediu, e anunciar "detalhe mudou" a cada `mouseenter` seria a região viva virando ruído. O
+estado mora em `aria-pressed`, e não numa classe — a mesma decisão do seletor de sistema, pela
+mesma razão: o que a tela mostra e o que o leitor de tela anuncia têm de ser um fato só.
+
+**Três eventos escolhem, e cada um existe por um motivo diferente.** `click` é o gesto óbvio;
+`focus` é o que faz **Tab** funcionar sem um segundo caminho de código (e cobre o clique de
+tabela); `mouseenter` dá a **prévia que só o mouse consegue pedir** — passar por cima de cinco
+linhas e ver cinco recortes é como alguém descobre que a lista responde. Nenhum dos três é
+exclusivo de um dispositivo de entrada, que é a Regra da Revelação com Teclado do app dita
+nesta superfície. A primeira chamada entra escolhida, porque um detalhe vazio à espera de um
+clique é uma vidraça que parece quebrada.
+
 ## Do's and Don'ts
+
+**As duas primeiras listas governam A Vidraça — a janela do aplicativo.** As duas últimas
+governam A Folha de Cotas — a landing page em `site/`. Uma regra de um mundo não é argumento
+no outro; ver o preâmbulo dos dois mundos.
 
 ### Do:
 - **Do** manter croma `0` em toda cor nova. As duas exceções que existem (erro e hoje)
@@ -975,3 +2141,102 @@ proíbe.
   cabeçalho esconde a janela, e chamava-se "Fechar janela" para quem usa leitor de tela —
   numa janela sem decoração e fora da barra de tarefas, "fechei e não sei voltar" é o pior
   desfecho que existe aqui.
+
+### Do (A Folha de Cotas):
+
+- **Do** manter todo canto reto e toda superfície plana. Zero `border-radius`, zero
+  `box-shadow` — a busca em `site/folha.css` é o teste.
+- **Do** usar o vermelho `destructive` do app como a única matiz, e **só em valor medido**:
+  coluna de valor, numeral do ciclo, número de nota, número de chamada e o desenho de anotação
+  que o acompanha. A exceção declarada são as duas faixas tintas, onde a matiz **avisa** em vez
+  de medir.
+- **Do** marcar um estado "escolhido" por **inversão**, invertendo com a tinta que o elemento
+  já usa (tinta na placa do seletor, cota no número da chamada), e desenhá-la a partir de
+  `aria-pressed`. Ver a Regra da Inversão para o Escolhido.
+- **Do** inverter o **menor** elemento que carrega o estado quando há vários itens trocando: o
+  número, não a linha inteira.
+- **Do** cortar toda frase que não ajude alguém a decidir instalar. Explicação que serve a quem
+  construiu o app mora no README — ver a Regra da Frase que Ajuda a Instalar.
+- **Do** pôr um controle que filtra a página **antes** de tudo que ele filtra, e filtrar por
+  atributo (`[data-sistema]`) para um painel novo entrar na filtragem só por carregá-lo.
+- **Do** definir toda cor no `:root` claro e apenas **redefini-la** dentro de
+  `prefers-color-scheme: dark`. Nenhuma cor pode ter a sua única definição no bloco escuro.
+- **Do** pôr medida, comando e numeral em Azeret Mono com `tabular-nums`, e prosa em
+  Spectral — inclusive dentro de uma célula de tabela.
+- **Do** rotular uma zona (Archivo 600, 11–13px, `0.13em`, versalete, sobre um fio) em vez de
+  escrever uma manchete de seção.
+- **Do** declarar toda coordenada de desenho **numa lista só** (`CHAMADAS`, em px da janela) e
+  derivar dela o realce das duas geometrias, o balão, a linha, a seta e o recorte. Rederive a
+  origem (`JANELA`) sempre que a margem transparente, o `left/top` do `picture` ou a escala da
+  imagem mudarem. Ver a Regra da Fonte Única de Geometria.
+- **Do** deixar a anotação **contornar** o que ela aponta: realce sem preenchimento, ponta de
+  seta 2px antes da aresta e apontando para dentro, balão na goteira. Ver a Regra da Anotação
+  que Não Tapa.
+- **Do** manter as cinco chamadas à vista, recuando a não escolhida para 38% em vez de
+  esconder. Ver a Regra das Cinco que Continuam à Vista.
+- **Do** prender todo recorte ampliado dentro dos 360x480 da janela, e alinhar pelo começo a
+  região que não cabe na vidraça. Depois **renderize os cinco recortes e olhe cada um** — esta
+  classe de defeito é invisível para asserção.
+- **Do** manter o comentário de geometria do CSS e do gerador **igual ao código**. Ele é fonte:
+  quando mente, nada quebra e o desenho passa a apontar para o lugar errado.
+- **Do** manter todo texto funcional em 11px ou acima. Se o texto de um diagrama escalaria
+  abaixo do piso, tire-o do SVG e componha-o em HTML — foi o que o diagrama do ciclo fez.
+- **Do** redizer em texto de verdade o que um desenho `aria-hidden` diz, no elemento vizinho.
+- **Do** auto-hospedar todo recurso. Zero requisição de terceiro é requisito do produto: a
+  página que promete "sem telemetria" não entrega o IP de quem visita a um CDN de fontes.
+- **Do** deixar a folha inteira legível **sem JavaScript** — comandos selecionáveis, anotação
+  já desenhada, nenhum botão morto, o seletor escondido, os três sistemas à vista, a lista de
+  chamadas legível como lista numerada e o detalhe **não renderizado**.
+- **Do** deixar um controle do desenho responder a `click`, `focus` **e** `mouseenter`: o foco
+  é o que faz Tab funcionar, e o hover é a prévia que só o mouse consegue pedir.
+
+### Don't (A Folha de Cotas):
+
+- **Don't** acrescentar raio, sombra, gradiente, `backdrop-filter` ou brilho. A profundidade
+  é um tom de diferença entre película e prancha, e mais nada.
+- **Don't** introduzir uma segunda matiz — e em particular **não** o azul de cota de
+  `assets/marca/especificacao.html` (`#1f6f9c` / `#6bbde8`). O projeto tem uma matiz.
+- **Don't** escrever uma manchete de seção, um herói ou uma frase de venda em corpo grande. O
+  único texto de exibição da folha é o nome do produto.
+- **Don't** compor uma medida em serif nem uma nota de prosa em mono.
+- **Don't** anotar contra a caixa da imagem: o raster carrega 30px CSS de margem transparente
+  por lado, e anotar a imagem aponta a moldura em vez do produto.
+- **Don't** deixar um traço de anotação **cobrir** o que ele aponta — nem a ponta da seta, nem
+  o balão, nem um preenchimento de realce. Ver a Regra da Anotação que Não Tapa.
+- **Don't** escrever a mesma coordenada de pixel em dois lugares. Se o realce e o recorte
+  divergirem, a seta aponta uma coisa e o detalhe mostra outra, e nada quebra.
+- **Don't** colapsar `regiao` e `detalhe` num campo só para "simplificar": realçar apenas o
+  pedaço recortado contorna metade de um campo de texto e se lê como bug do app.
+- **Don't** esconder a chamada não escolhida. Ela recua para 38%; quem não vê que existem
+  cinco não clica na segunda.
+- **Don't** centrar um recorte mais largo que a vidraça, nem deixá-lo passar da aresta da
+  janela: alinhe pelo começo e prenda dentro de 360x480, ou o detalhe mostra a margem
+  transparente da captura.
+- **Don't** anunciar `tablist` (nem qualquer outra semântica ARIA) que a página não cumpre. O
+  seletor é `group` com `aria-pressed` exatamente por isso.
+- **Don't** deixar um `hidden` escrito pelo JavaScript ser a única via até uma informação. Sem
+  JavaScript, tudo que o filtro esconderia fica visível.
+- **Don't** indexar com letra (`rev A`, `rev B`) o que aparece sozinho na tela. Um índice de
+  três não tem o que indexar quando só um bloco está à vista.
+- **Don't** entregar comando de terminal a quem abriu no telefone sem dizer que ele não serve
+  ali. Uma página que passa um `brew` a um celular está falhando em silêncio.
+- **Don't** dar borda, fundo ou recuo de ponta a uma tabela que já mora dentro de uma prancha.
+- **Don't** declarar uma escala que a geometria não produz. `ESCALA 1:1` é conferível com uma
+  régua na tela, e `Detalhe · 2:1` é conferível na conta: `background-size` de 840x1080 contra
+  um espécime de 420x540.
+- **Don't** animar nada em laço, nada que comece sozinho e nada que continue depois de a causa
+  ter passado. A varredura tem botão; a anotação se desenha uma vez e nunca mais, e a troca de
+  chamada é transição de cor e opacidade, não movimento novo.
+- **Don't** guardar ar no palco para um traço que não existe mais. Os 90px acima da janela
+  eram da cota de 360 e saíram com ela.
+- **Don't** escalar um viewBox para servir dois palcos. Dois palcos, dois desenhos, cada um
+  1:1 com o seu.
+- **Don't** mover a ação primária (instalar) para o pé da página. Ela fica ao lado da prova.
+- **Don't** resolver largura estreita com `display: block` numa tabela: envolver o texto cabe
+  igual e não destrói a semântica para leitor de tela.
+- **Don't** fazer do botão de copiar o único caminho até o texto do comando.
+- **Don't** inventar número de usuários, depoimento, métrica, selo ou logotipo de imprensa.
+  Não existem. O carimbo já não gasta uma frase dizendo que não existem — listar ausências era
+  explicação sobre a página —, e a proibição vale sem ela.
+- **Don't** trazer para cá o teto de 12px de espaçamento d'A Vidraça, nem levar para lá o
+  texto de 68px desta folha. Cada lei é da sua superfície.

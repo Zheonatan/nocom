@@ -1,0 +1,1135 @@
+/* A folha de cotas do NoCom.
+ *
+ * O mundo visual vem de `assets/marca/especificacao.html`, a folha que documenta
+ * a marca -- pelicula cinza-fria, prancha um tom acima, fio de 1px, Archivo em
+ * versalete tracked, Spectral no corpo e Azeret Mono em toda medida. A diferenca
+ * de proposito e uma so, e ela decide tudo aqui: aquela folha mede a MARCA, esta
+ * mede o PRODUTO.
+ *
+ * A cor de cota NAO e o azul daquela folha. E o `destructive` do proprio app
+ * (`src/index.css`), porque a Regra do Pigmento Unico do `DESIGN.md` vale para o
+ * projeto inteiro e nao so para dentro da janela: uma matiz, o vermelho, e
+ * nenhuma outra. Cota em vermelho de revisao e nativa do desenho tecnico, entao
+ * a autenticidade do mundo e a lei do produto pedem a mesma cor.
+ *
+ * DUAS DECISOES QUE PARECEM DETALHE E NAO SAO:
+ *
+ * 1. NAO HA SOMBRA E NAO HA CANTO ARREDONDADO em lugar nenhum desta folha. A
+ *    unica sombra na tela e a que o PNG do especime ja carrega -- a que a propria
+ *    janela projeta sobre a area de trabalho, que e a borda fisica do app.
+ *
+ * 2. NAO HA MANCHETE DE SECAO. Uma prancha de desenho nao tem titulos de 29px;
+ *    tem rotulos de zona. O unico texto grande da pagina e o nome do produto, e
+ *    e por isso que ele e o foco. */
+
+/* --------------------------------------------------------------------------
+   Fontes auto-hospedadas. Nenhuma requisicao de terceiro sai desta pagina: um
+   produto que promete "sem telemetria" nao pode entregar o IP de quem visita
+   para o Google Fonts. Copiadas de `node_modules` por `scripts/site.mjs`.
+   -------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("fontes/archivo-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Azeret Mono";
+  src: url("fontes/azeret-mono-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("fontes/spectral-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("fontes/spectral-latin-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("fontes/spectral-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+   Tokens. O tema claro e a definicao base; o escuro redefine a MESMA lista em
+   `prefers-color-scheme`. Sem toggle: o app segue o sistema e a folha tambem.
+   Nenhuma cor tem sua unica definicao dentro do bloco escuro.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --pelicula: #e8ebee;
+  --prancha: #f6f7f9;
+  --tinta: #161a1f;
+  --tinta-fraca: #5c6672;
+  --fio: #c9cfd6;
+  --fio-forte: #adb6c0;
+
+  /* O `destructive` do app, tema claro. Medido em 5.1:1 sobre a pelicula. */
+  --cota: oklch(0.529 0.245 27.325);
+  --cota-fraca: oklch(0.529 0.245 27.325 / 12%);
+  --halo: oklch(0.48 0 0);
+
+  --serif: "Spectral", Georgia, "Times New Roman", serif;
+  --grot: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Azeret Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Os glifos de modificador (U+2303, U+2325) nao estao no subconjunto latino da
+     Azeret. Esta pilha existe para eles: SF Mono no mac, Segoe UI Symbol no
+     Windows, Noto Sans Symbols 2 no Linux. */
+  --mono-atalho: "Azeret Mono", ui-monospace, "SF Mono", "Segoe UI Symbol",
+    "Noto Sans Symbols 2", Menlo, monospace;
+
+  --margem: clamp(16px, 4vw, 56px);
+  --recuo-prancha: clamp(16px, 2.4vw, 28px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pelicula: #15181c;
+    --prancha: #1d2126;
+    --tinta: #e6e9ec;
+    --tinta-fraca: #909aa5;
+    --fio: #2e343b;
+    --fio-forte: #414951;
+
+    /* O `destructive` do app, tema escuro. Medido em 6.0:1 sobre a pelicula. */
+    --cota: oklch(0.704 0.191 22.216);
+    --cota-fraca: oklch(0.704 0.191 22.216 / 14%);
+    --halo: oklch(0.72 0 0);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  margin: 0;
+  background: var(--pelicula);
+  color: var(--tinta);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* As superficies que o navegador desenha e que ninguem lembra de vestir. */
+::selection {
+  background: var(--cota-fraca);
+  color: var(--tinta);
+}
+:root {
+  caret-color: var(--cota);
+  accent-color: var(--cota);
+  scrollbar-color: var(--fio-forte) transparent;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--fio-forte);
+  border: 3px solid var(--pelicula);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--tinta-fraca); }
+
+:focus-visible {
+  /* A mesma lei do app: 2px solidos, por fora, sem deslocamento. */
+  outline: 2px solid var(--halo);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--tinta);
+  text-decoration-color: var(--fio-forte);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease-out;
+}
+a:hover { text-decoration-color: var(--cota); }
+
+code { font-family: var(--mono-atalho); font-size: 0.8235em; }
+
+.pular {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  background: var(--prancha);
+  border: 1px solid var(--tinta);
+  padding: 8px 14px;
+  font-family: var(--grot);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  text-decoration: none;
+  z-index: 10;
+}
+.pular:focus { left: 8px; }
+
+.folha {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: clamp(20px, 3.5vw, 44px) var(--margem) clamp(56px, 8vw, 104px);
+}
+
+/* --------------------------------------------------------------------------
+   Bloco de titulo. O canto de uma prancha: marca em campo proprio, nome,
+   campos do desenho, e a linha de assunto do outro lado do eixo.
+   -------------------------------------------------------------------------- */
+
+.bloco-titulo {
+  /* Tres campos, como o canto de uma prancha de verdade: identidade, assunto, e
+     a tabela de campos do desenho. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: clamp(20px, 3vw, 44px);
+  align-items: end;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--tinta);
+}
+
+.bt-identidade {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(14px, 2vw, 22px);
+}
+
+/* A marca sangra no seu proprio campo preto -- o compromisso de marca e um anel
+   branco de fio fino num campo preto, e ele nao vira anel de tinta na pelicula. */
+.bt-marca {
+  display: block;
+  width: clamp(52px, 6vw, 74px);
+  height: clamp(52px, 6vw, 74px);
+}
+
+h1 {
+  font-family: var(--grot);
+  font-weight: 700;
+  font-size: clamp(38px, 5.6vw, 68px);
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  margin: 0 0 10px;
+}
+
+.bt-campos {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 12px clamp(18px, 2.2vw, 32px);
+  margin: 0;
+  text-align: right;
+  align-self: end;
+}
+.bt-campos div { min-width: 0; }
+.bt-campos dt {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.bt-campos dd {
+  margin: 2px 0 0;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-assunto { align-self: end; }
+.assunto {
+  font-family: var(--grot);
+  font-size: clamp(19px, 2vw, 25px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 0;
+  max-width: 32ch;
+  text-wrap: balance;
+}
+.assunto-sub {
+  margin: 10px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+  max-width: 46ch;
+}
+.assunto-sub em { color: var(--tinta); font-style: italic; }
+
+.idioma {
+  margin-top: 12px;
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.idioma a { color: var(--tinta-fraca); }
+.idioma a:hover { color: var(--tinta); }
+
+@media (max-width: 1100px) {
+  .bloco-titulo { grid-template-columns: minmax(0, 1fr) auto; }
+  .bt-identidade { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .bloco-titulo { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .bt-campos {
+    justify-content: start;
+    text-align: left;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   O seletor de sistema. A pagina inteira mostra so o que serve ao sistema
+   escolhido, entao ele fica no topo, antes de qualquer conteudo que ele filtra.
+
+   O escolhido e marcado por INVERSAO -- placa de tinta cheia com texto na cor da
+   prancha. E o sinal mais forte disponivel nesta folha sem abrir uma segunda
+   matiz, e a mesma economia que o app usa no checkbox marcado.
+   -------------------------------------------------------------------------- */
+
+.seletor {
+  display: flex;
+  align-items: center;
+  gap: 10px clamp(12px, 2vw, 22px);
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--fio);
+}
+.seletor-rotulo {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.seletor-botoes {
+  display: flex;
+  border: 1px solid var(--fio-forte);
+}
+.seletor-botoes button {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--fio-forte);
+  color: var(--tinta-fraca);
+  font-family: var(--grot);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: color 120ms ease-out, background-color 120ms ease-out;
+}
+.seletor-botoes button:first-child { border-left: 0; }
+.seletor-botoes button:hover { color: var(--tinta); }
+.seletor-botoes button[aria-pressed="true"] {
+  background: var(--tinta);
+  color: var(--prancha);
+}
+/* Sem JavaScript o seletor nao filtra nada, entao ele nao aparece -- e os tres
+   sistemas ficam visiveis, que e a pagina funcionando por inteiro. */
+.sem-js .seletor { display: none; }
+
+.aviso-movel {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 1px solid var(--cota);
+  background: var(--cota-fraca);
+  font-family: var(--grot);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--tinta);
+  max-width: none;
+}
+.aviso-movel[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Rotulo de zona. E o unico nivel de cabecalho que esta folha tem: Archivo em
+   versalete tracked sobre um fio, como a legenda de uma zona de prancha.
+   -------------------------------------------------------------------------- */
+
+.zona { margin-top: clamp(40px, 5vw, 64px); }
+
+h2 {
+  font-family: var(--grot);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--tinta);
+  margin: 0;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--fio-forte);
+}
+h3 {
+  /* 11px, o passo de rotulo -- e nao 12px. A 12 contra os 13 do rotulo de zona a
+     diferenca era invisivel, e titulo de nota e rotulo de zona pareciam o mesmo
+     nivel. A 11 o titulo desce para o mesmo tamanho do numero da nota, que e o
+     par a que ele pertence, e a zona volta a dominar. */
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--tinta);
+  margin: 0 0 8px;
+}
+
+.sub {
+  margin: 14px 0 20px;
+  color: var(--tinta-fraca);
+  font-size: 0.9375rem;
+  max-width: 62ch;
+}
+
+p { max-width: 68ch; }
+
+/* --------------------------------------------------------------------------
+   A prancha do especime. Duas zonas lado a lado: o especime medido, e a tabela
+   de revisao -- que e a acao primaria, e por isso esta na primeira dobra e nao
+   no fim da pagina.
+
+   O palco tem geometria fixa em px porque as cotas apontam para arestas reais.
+   A imagem de 840x1080 entra a 420x540 (metade: foi capturada a 2x) na posicao
+   (100, 0) do palco de 600x520, e carrega 30px CSS de margem transparente em cada
+   lado -- entao a JANELA ocupa (130, 30) a (490, 510): exatamente 360 x 480,
+   escala 1:1. E por isso que o realce das chamadas aponta para 130/490/30/510 e
+   nao para as bordas da imagem.
+
+   NO ESTREITO a margem transparente e recortada nos DOIS eixos (`left: -30px` e
+   `top: -30px`), e nao so na horizontal: com `top: 0` a janela comecava em y=30 e
+   terminava em y=510, e as cotas -- desenhadas para uma janela em 0..480 --
+   ficavam 30px fora de lugar, com a cota de largura caindo por dentro do
+   especime. Recortar os dois eixos e o que faz a geometria estreita fechar.
+   -------------------------------------------------------------------------- */
+
+.especime-prancha { margin-top: clamp(24px, 3vw, 40px); }
+
+.prancha {
+  background: var(--prancha);
+  border: 1px solid var(--fio);
+  padding: var(--recuo-prancha);
+}
+
+.especime-grade {
+  display: grid;
+  grid-template-columns: 620px minmax(0, 1fr);
+  /* A goteira e `column-gap` e nao `padding` na coluna: com `box-sizing:
+     border-box`, um recuo dentro da trilha de 600px deixa o palco (600px) maior
+     que a caixa de conteudo, e o `overflow-x` corta o numeral da cota. */
+  column-gap: clamp(20px, 2.4vw, 40px);
+  /* `stretch` e nao `start`: e o que leva o fio de zona (o `border-left` da
+     coluna de revisao) ate o chao da prancha. Com `start` ele parava na altura do
+     conteudo mais curto e as duas zonas deixavam de ser uma composicao. */
+  align-items: stretch;
+}
+/* O fio entre as duas zonas: e o divisor de zona de uma prancha, e sem ele as
+   duas colunas parecem duas paginas encostadas. */
+.coluna-instalar {
+  border-left: 1px solid var(--fio);
+  padding-left: clamp(20px, 2.4vw, 40px);
+}
+@media (max-width: 1080px) {
+  .especime-grade { grid-template-columns: minmax(0, 1fr); }
+  .coluna-instalar {
+    border-left: 0;
+    border-top: 1px solid var(--fio);
+    padding-left: 0;
+    padding-top: 28px;
+    margin-top: 28px;
+  }
+}
+
+/* O PALCO NAO ROLA E NAO E FIXO.
+   Nao rola: `overflow-x: auto` faz o navegador computar `overflow-y: auto` junto,
+   e era dai que vinham as duas barras -- nao de conteudo transbordando.
+   Nao e fixo: `sticky` mantinha a janela no lugar e deixava a lista rolar POR
+   BAIXO dela, tapando a legenda e as primeiras linhas. Quem resolve o problema
+   real (realcar uma regiao que ja saiu da tela) e a fileira compacta de etiquetas
+   logo abaixo da janela: janela e controle cabem na tela juntos. */
+.palco-caixa { position: relative; }
+
+.palco {
+  position: relative;
+  width: 600px;
+  height: 520px;
+  margin: 0 auto;
+}
+
+/* O `picture` e a caixa posicionada; o `img` apenas a preenche. Posicionar os
+   dois foi o defeito que deslocou a imagem em 70px e desalinhou toda a cotacao. */
+.palco picture {
+  display: block;
+  position: absolute;
+  left: 100px;
+  top: 0;
+  width: 420px;
+  height: 540px;
+}
+.palco .tela {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cotas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.cotas-estreitas { display: none; }
+
+.cotas .linha,
+.cotas .extensao,
+.cotas .seta,
+.ciclo .linha,
+.ciclo .extensao,
+.ciclo .seta {
+  stroke: var(--cota);
+  fill: none;
+  stroke-width: 1;
+  shape-rendering: geometricPrecision;
+}
+.cotas .extensao,
+.ciclo .extensao { opacity: 0.55; }
+.cotas .seta,
+.ciclo .seta { fill: var(--cota); stroke: none; }
+
+.cotas text {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  fill: var(--cota);
+}
+/* --------------------------------------------------------------------------
+   As chamadas de detalhe. O balao numerado na goteira, a linha ate a aresta da
+   regiao, o realce sobre ela, e o detalhe ampliado embaixo.
+
+   A chamada NAO ESCOLHIDA nao desaparece: ela recua para 38%. Um desenho que
+   mostra so a chamada ativa perde a informacao de que existem cinco -- e e essa
+   informacao que faz a pessoa querer clicar na segunda.
+   -------------------------------------------------------------------------- */
+
+.cotas .balao {
+  fill: var(--prancha);
+  stroke: var(--cota);
+  stroke-width: 1;
+}
+.chamada { opacity: 0.38; transition: opacity 140ms ease-out; }
+.chamada.acesa { opacity: 1; }
+
+.realce {
+  fill: none;
+  stroke: var(--cota);
+  stroke-width: 1;
+  shape-rendering: geometricPrecision;
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+.realce.acesa { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chamada,
+  .realce { transition: none; }
+}
+
+.chamadas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.chamadas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--fio-forte);
+  padding: 7px 12px 7px 8px;
+  cursor: pointer;
+  color: var(--tinta-fraca);
+  font-family: var(--grot);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+.chamadas button:hover { color: var(--tinta); }
+.chamadas button[aria-pressed="true"] {
+  color: var(--tinta);
+  border-color: var(--cota);
+}
+
+/* O escolhido acende o proprio numero, e nao o fundo da etiqueta: cinco etiquetas
+   trocando de fundo a cada `mouseenter` piscariam a fileira inteira. */
+.chamada-num {
+  display: inline-block;
+  min-width: 1.25rem;
+  text-align: center;
+  border: 1px solid var(--fio-forte);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--tinta-fraca);
+  padding: 1px 0;
+  transition: background-color 120ms ease-out, color 120ms ease-out,
+    border-color 120ms ease-out;
+}
+.chamadas button[aria-pressed="true"] .chamada-num {
+  background: var(--cota);
+  border-color: var(--cota);
+  color: var(--prancha);
+}
+
+/* A frase mora dentro do botao para leitor de tela, e fora dele para o olho. */
+.chamada-texto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.chamada-explicacao {
+  margin: 12px 0 0;
+  min-height: 3em;
+  max-width: 58ch;
+  font-size: 0.9375rem;
+  color: var(--tinta);
+}
+
+/* Sem JavaScript a fileira volta a ser lista: as frases saem de dentro dos botoes
+   para a tela, o slot unico desaparece (nada o preencheria), e o detalhe tambem --
+   ele ficaria parado numa regiao que ninguem escolheu. Nenhuma informacao se perde;
+   o que se perde e a interacao. */
+.sem-js .chamadas { display: block; }
+.sem-js .chamadas button {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 3px 12px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--fio);
+  padding: 11px 0;
+  cursor: default;
+  color: var(--tinta);
+  font-family: var(--serif);
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+.sem-js .chamada-nome {
+  font-family: var(--grot);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.sem-js .chamada-texto {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  grid-column: 2;
+  color: var(--tinta-fraca);
+}
+.sem-js .chamada-explicacao,
+.sem-js .detalhe { display: none; }
+
+/* O detalhe: a mesma captura, recortada e ampliada 2:1. Nenhum raster novo -- o
+   `background-size` de 840x1080 e o tamanho natural (2x) da imagem que o especime
+   mostra a 420x540, e por isso a ampliacao e exatamente 2:1 e sai nitida. */
+.detalhe {
+  margin: 20px 0 0;
+  max-width: 560px;
+}
+.detalhe figcaption {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+  margin-bottom: 6px;
+}
+.detalhe-vidro {
+  height: 80px;
+  border: 1px solid var(--fio-forte);
+  background-color: var(--pelicula);
+  background-image: url("telas/janela-clara.png");
+  background-size: 840px 1080px;
+  background-repeat: no-repeat;
+  background-position: -84px -212px;
+}
+@media (prefers-color-scheme: dark) {
+  .detalhe-vidro { background-image: url("telas/janela-escura.png"); }
+}
+
+/* A cota que se desenha: um momento autoral, uma vez, causado pela entrada da
+   prancha na tela. A linha corre e a seta assenta por ultimo. Nada aqui volta a
+   se mexer depois. O estado inicial depende da classe `js`: sem JavaScript nada
+   fica escondido por temporizacao. */
+.js .traco {
+  stroke-dasharray: var(--corrida);
+  stroke-dashoffset: var(--corrida);
+  transition: stroke-dashoffset 460ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.js .cotas .seta,
+.js .cotas text,
+.js .ciclo .seta,
+.js .ciclo-numeral,
+.js .ciclo-rotulos {
+  opacity: 0;
+  transition: opacity 180ms ease-out 380ms;
+}
+/* O estado desenhado precisa de especificidade MAIOR que o estado inicial, e nao
+   apenas vir depois dele: `.desenhada text` (0,1,1) perdia de `.js .cotas text`
+   (0,2,1), e o numeral ficava invisivel para sempre. */
+.js .desenhada .traco { stroke-dashoffset: 0; }
+.js .desenhada .cotas .seta,
+.js .desenhada .cotas text,
+.js .desenhada .ciclo .seta,
+.js .desenhada .ciclo-numeral,
+.js .desenhada .ciclo-rotulos { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .traco { transition: none; stroke-dashoffset: 0; }
+  .js .cotas .seta,
+  .js .cotas text,
+  .js .ciclo .seta,
+  .js .ciclo-numeral,
+  .js .ciclo-rotulos { transition: none; opacity: 1; }
+}
+
+.legenda-palco {
+  margin: 18px 0 0;
+  max-width: 60ch;
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
+}
+.legenda-palco b {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+
+/* O ciclo de 2 s, fora do palco: ele mede o gesto, nao a janela. */
+.ciclo { margin-top: 18px; }
+.ciclo-diagrama { max-width: 460px; }
+.ciclo-diagrama svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* Acima da linha, no fluxo, centrado: a largura do numeral e a mesma da linha,
+   entao `text-align: center` acerta o meio dela em qualquer escala -- sem
+   percentual vertical, que e fragil numa caixa que escala, e sem placa opaca,
+   que tapava a varredura. */
+.ciclo-numeral {
+  display: block;
+  text-align: center;
+  margin-bottom: 3px;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--cota);
+}
+.ciclo-rotulos {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0;
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.ciclo .varredura {
+  stroke: var(--cota);
+  stroke-width: 5;
+  stroke-linecap: butt;
+  stroke-dasharray: 458;
+  stroke-dashoffset: 458;
+  opacity: 0.3;
+}
+.ciclo.correndo .varredura { animation: varrer 2000ms linear; }
+@keyframes varrer {
+  from { stroke-dashoffset: 458; }
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ciclo.correndo .varredura { animation: none; stroke-dashoffset: 0; }
+}
+
+.botao-varredura {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--fio-forte);
+  color: var(--tinta);
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, color 120ms ease-out;
+}
+.botao-varredura:hover { border-color: var(--cota); color: var(--cota); }
+.botao-varredura[aria-disabled="true"] {
+  color: var(--tinta-fraca);
+  border-color: var(--fio);
+  cursor: default;
+}
+
+/* No estreito a janela encosta nas arestas do palco: a margem transparente da
+   imagem e recortada, e a escala 1:1 se mantem em 360px de largura. */
+@media (max-width: 720px) {
+  .cotas-largas { display: none; }
+  .cotas-estreitas { display: block; }
+  /* A tabela dos numeros recupera o recuo da prancha: dentro dela ela perdeu 32px
+     e a coluna de observacao voltou a ser cortada. A caixa sangra ate a borda da
+     prancha, e o RECUO volta nas celulas das pontas -- entao o texto continua
+     alinhado com o rotulo da zona e a coluna cabe de novo. */
+  .zona-numeros .rolo {
+    margin-left: calc(var(--recuo-prancha) * -1);
+    margin-right: calc(var(--recuo-prancha) * -1);
+  }
+  .zona-numeros thead th:first-child,
+  .zona-numeros tbody th:first-child { padding-left: var(--recuo-prancha); }
+  .zona-numeros thead th:last-child,
+  .zona-numeros tbody td:last-child { padding-right: var(--recuo-prancha); }
+
+  .palco { width: 360px; height: 480px; overflow: clip; }
+  .palco picture { left: -30px; top: -30px; }
+  /* A prancha sangra ate a borda da viewport, e e isso que da lugar aos 360px da
+     janela em 1:1 numa tela de 390 sem uma unica barra de rolagem. */
+  .especime-prancha {
+    margin-left: calc(var(--margem) * -1);
+    margin-right: calc(var(--margem) * -1);
+    border-left: 0;
+    border-right: 0;
+  }
+  .palco-caixa {
+    margin-left: calc(var(--recuo-prancha) * -1);
+    margin-right: calc(var(--recuo-prancha) * -1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   O bloco de instalacao. Um sistema por vez, escolhido no seletor do topo, e em
+   bloco empilhado e nao em tabela: os comandos precisam de largura, e uma tabela
+   que rola na horizontal e o pior lugar possivel para a acao primaria da pagina.
+   -------------------------------------------------------------------------- */
+
+.instalacoes {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+.instalacoes > li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--fio);
+}
+.instalacoes > li:first-child { padding-top: 0; }
+.instalacoes > li:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.instalar-cabeca {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.sistema-nome {
+  font-family: var(--grot);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.via {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.alternativa,
+.ref-nota {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  color: var(--tinta-fraca);
+  max-width: 54ch;
+}
+.ref-nota a { color: var(--cota); }
+
+/* --------------------------------------------------------------------------
+   Comando: a linha que a pessoa copia. Nao e enfeite tecnico -- e codigo, e o
+   mono existe por isso.
+   -------------------------------------------------------------------------- */
+
+.comando {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--fio-forte);
+  background: var(--pelicula);
+  max-width: 62ch;
+}
+.comando + .comando { margin-top: 5px; }
+.comando code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  padding: 8px 11px;
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: none;
+}
+.comando code::-webkit-scrollbar { display: none; }
+
+.copiar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--fio-forte);
+  color: var(--tinta-fraca);
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0 11px;
+  cursor: pointer;
+  transition: color 120ms ease-out, background-color 120ms ease-out;
+}
+.copiar:hover { color: var(--tinta); background: var(--cota-fraca); }
+.copiar svg { width: 12px; height: 12px; flex: none; }
+.copiar .marca-copiado { display: none; }
+.copiar.copiado { color: var(--cota); }
+.copiar.copiado .marca-copiar { display: none; }
+.copiar.copiado .marca-copiado { display: inline; }
+
+/* Sem JavaScript o botao nao existe e o texto continua selecionavel. */
+.sem-js .copiar { display: none; }
+
+/* --------------------------------------------------------------------------
+   A tabela de numeros: unidades identicas repetidas, lidas por varredura. Ela
+   vive DENTRO da prancha, encostada na instalacao -- ver `.zona-numeros` acima.
+   -------------------------------------------------------------------------- */
+
+/* A zona dos numeros mora dentro da prancha, encostada na instalacao: os zeros
+   sao o argumento de venda, e o lugar deles e ao lado da acao. O fio de cima os
+   separa da instalacao sem abrir uma segunda caixa. */
+.zona-numeros {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--fio);
+}
+
+.rolo {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+
+.zona-numeros table { min-width: 0; }
+/* Dentro da coluna a caracteristica cede largura para a observacao, que e a que
+   explica o zero -- e o zero sem explicacao nao vende nada. */
+.zona-numeros tbody th { width: 36%; }
+.zona-numeros thead th:first-child,
+.zona-numeros tbody th:first-child { padding-left: 0; }
+.zona-numeros thead th:last-child,
+.zona-numeros tbody td:last-child { padding-right: 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+thead th {
+  text-align: left;
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+  padding: 13px 16px 9px;
+  border-bottom: 1px solid var(--fio-forte);
+  white-space: nowrap;
+  margin: 0;
+}
+
+tbody td,
+tbody th {
+  text-align: left;
+  font-weight: 400;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--fio);
+  vertical-align: baseline;
+}
+tbody tr:last-child td,
+tbody tr:last-child th { border-bottom: 0; }
+
+tbody th {
+  /* 17px, o corpo da folha -- e nao 16px. Serifa a 15, 16 e 17 seriam tres passos
+     vizinhos sem justificativa, que e o ruido que a Regra dos Dois Passos Vizinhos
+     recusa. A caracteristica e o que se varre, entao ela fica no corpo cheio. */
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--tinta);
+  text-transform: none;
+  letter-spacing: normal;
+  margin: 0;
+}
+
+/* Todo valor medido desta folha usa a cor de cota, aqui e no especime: a tabela
+   de calibre e uma cotacao em forma de lista, e nao um quadro de destaques. */
+.valor {
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--cota);
+}
+
+/* No estreito a tabela para de rolar e passa a envolver: com 500px de largura
+   minima, a coluna de observacao caia inteira fora da caixa de rolagem, e as
+   explicacoes dos sete zeros -- que sao o argumento do produto -- ficavam
+   invisiveis no telefone. Envolver em vez de rolar preserva a semantica de
+   tabela, que `display: block` destruiria para leitor de tela. */
+@media (max-width: 700px) {
+  thead th,
+  tbody td,
+  tbody th { padding: 9px 10px; }
+  tbody th { font-size: 0.9375rem; }
+}
+/* A coluna de observacao e PROSA, nao medida: serif, e nao o mono das outras
+   duas colunas. O mono existe nesta folha para codigo, dado e medida, e uma nota
+   em mono ainda cobra a largura de uma medida -- era o que empurrava a coluna
+   para fora da caixa de rolagem no telefone. O `<code>` de dentro dela continua
+   mono, porque ali e nome de arquivo. */
+.obs {
+  color: var(--tinta-fraca);
+  font-family: var(--serif);
+  font-size: 0.9375rem;
+  hyphens: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Notas gerais. Numeradas porque a tabela de revisao aponta para elas.
+   -------------------------------------------------------------------------- */
+
+.lista-notas {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--fio);
+}
+.lista-notas > li {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0 clamp(12px, 2vw, 24px);
+  padding: 22px 0;
+  border-bottom: 1px solid var(--fio);
+}
+@media (max-width: 560px) {
+  .lista-notas > li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+.nota-num {
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--cota);
+  padding-top: 4px;
+}
+.nota-corpo > :first-child { margin-top: 0; }
+.nota-corpo > :last-child { margin-bottom: 0; }
+.nota-corpo p { margin: 0 0 12px; }
+.nota-corpo p:last-child { margin-bottom: 0; }
+.nota-corpo .depois-do-comando { margin-top: 12px; }
+
+blockquote.sistema {
+  margin: 0 0 14px;
+  padding: 11px 15px;
+  border-left: 1px solid var(--cota);
+  background: var(--cota-fraca);
+  font-family: var(--grot);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--tinta);
+  max-width: 56ch;
+}
+blockquote.sistema cite {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--grot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--tinta-fraca);
+}
+
+/* --------------------------------------------------------------------------
+   Carimbo: o pe da folha. Estado do projeto na voz de quem o escreveu.
+   -------------------------------------------------------------------------- */
+
+.carimbo {
+  margin-top: clamp(48px, 6vw, 80px);
+  padding-top: 22px;
+  border-top: 2px solid var(--tinta);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: clamp(22px, 3vw, 40px);
+}
+.carimbo p {
+  margin: 0 0 9px;
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
+  max-width: 40ch;
+}
+.carimbo p:last-child { margin-bottom: 0; }
+.carimbo strong { color: var(--tinta); font-weight: 500; }
+.carimbo .conjunto { font-variant-numeric: tabular-nums; }
+
+.aviso-vivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

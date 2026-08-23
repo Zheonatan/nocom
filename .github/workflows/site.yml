@@ -1,0 +1,78 @@
+name: Site
+
+# Publica a landing page (`site/`) no GitHub Pages.
+#
+# A página é HTML estático: não há framework, não há bundler e não há requisição de
+# terceiro em tempo de execução. O que este workflow faz antes de publicar é uma
+# coisa só, e é a que importa:
+#
+#   `node scripts/site.mjs --check` falha se o HTML em disco divergir do que o
+#   gerador produz — isto é, se alguém editou `site/index.html` à mão. Sem essa
+#   trava, a próxima geração sobrescreveria a edição em silêncio, e a versão em
+#   inglês sairia divergindo da portuguesa sem ninguém notar.
+#
+# Por que o `npm ci` numa página estática: as três fontes são auto-hospedadas e
+# vêm de `node_modules`. É o mesmo caminho que `assets/marca/card-social.html` já
+# usa para ler a Geist — a fonte entra pelo pacote, não pelo CDN de ninguém.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/site.mjs"
+      - ".github/workflows/site.yml"
+      - "assets/telas/**"
+      - "assets/marca/nocom.svg"
+      - "assets/marca/card-social.png"
+  workflow_dispatch:
+
+# O Pages precisa destas três; nada além delas.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicação por vez, e a mais nova ganha: uma fila de deploys de página
+# estática não tem por que existir.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    name: Conferir e publicar
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Regera por cima e confere: o `--check` compara byte a byte o HTML gerado
+      # com o que está commitado, e para a publicação se houver divergência.
+      - name: Conferir se site/ está em sincronia com o gerador
+        run: node scripts/site.mjs --check
+
+      # As fontes e as capturas não são commitadas dentro de `site/` por acidente:
+      # esta geração as copia de `node_modules` e de `assets/` para o artefato.
+      - name: Gerar site/
+        run: node scripts/site.mjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

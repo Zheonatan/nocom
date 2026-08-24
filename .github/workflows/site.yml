@@ -68,11 +68,15 @@ jobs:
       - name: Gerar site/
         run: node scripts/site.mjs
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      # `include-hidden-files`: a v5 passou a usar `upload-artifact@v7`, que exclui
+      # nomes começando com ponto. Sem este input o `.nojekyll` que o gerador escreve
+      # sairia do artefato, e a v3 o incluía.
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+          include-hidden-files: true
 
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

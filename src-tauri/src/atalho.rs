@@ -20,7 +20,7 @@
 
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
@@ -50,6 +50,16 @@ use crate::persistencia;
 pub const PADRAO: &str = "Control+Alt+Space";
 #[cfg(not(target_os = "linux"))]
 pub const PADRAO: &str = "Control+Alt+KeyT";
+
+/// O padrão de fábrica já interpretado. O `expect` é seguro — a constante é do
+/// código e coberta por teste (`o_padrao_e_o_da_plataforma`) — e mora num lugar
+/// só: eram cinco cópias da mesma linha, cinco chances de uma divergir. O
+/// `OnceLock` dispensa o parse de rodar de novo a cada cadeado envenenado.
+fn padrao() -> Shortcut {
+    static CACHE: OnceLock<Shortcut> = OnceLock::new();
+    *CACHE
+        .get_or_init(|| interpretar(PADRAO).expect("o padrão precisa ser uma combinação válida"))
+}
 
 /// O que vai para o disco. Objeto, e não a string crua: um campo com nome sobrevive
 /// a um segundo campo no futuro, e um JSON que é só `"control+alt+KeyT"` não.
@@ -129,11 +139,9 @@ impl Atalho {
         let escolhido = persistencia::ler_opcional::<Gravado>(&arquivo)
             .and_then(|gravado| interpretar(&gravado.accelerator).ok());
         // O padrão é constante do código e é validado pelos testes: se ele não
-        // interpretar, é bug de digitação nossa, e `expect` aqui grita no primeiro
-        // teste em vez de deixar o app abrir sem via de volta pelo teclado.
-        let atual = escolhido.unwrap_or_else(|| {
-            interpretar(PADRAO).expect("o padrão precisa ser uma combinação válida")
-        });
+        // interpretar, é bug de digitação nossa, e o `expect` de `padrao()` grita
+        // no primeiro teste em vez de deixar o app abrir sem via de volta.
+        let atual = escolhido.unwrap_or_else(padrao);
         Self {
             estado: Mutex::new(Estado {
                 atual,
@@ -152,7 +160,7 @@ impl Atalho {
         // a resposta certa para "não sei qual é".
         match self.estado.lock() {
             Ok(estado) => estado.atual,
-            Err(_) => interpretar(PADRAO).expect("o padrão precisa ser uma combinação válida"),
+            Err(_) => padrao(),
         }
     }
 
@@ -209,8 +217,7 @@ impl Atalho {
                 valendo: estado.valendo,
             },
             Err(_) => Situacao {
-                combinacao: interpretar(PADRAO)
-                    .expect("o padrão precisa ser uma combinação válida"),
+                combinacao: padrao(),
                 registrada: false,
                 valendo: false,
             },
@@ -220,18 +227,12 @@ impl Atalho {
     pub fn descrever(&self) -> Descricao {
         let (atual, valendo, gravado) = match self.estado.lock() {
             Ok(estado) => (estado.atual, estado.valendo, estado.gravado),
-            Err(_) => (
-                interpretar(PADRAO).expect("o padrão precisa ser uma combinação válida"),
-                false,
-                false,
-            ),
+            Err(_) => (padrao(), false, false),
         };
         Descricao {
             accelerator: atual.into_string(),
             label: etiqueta(&atual),
-            default_accelerator: interpretar(PADRAO)
-                .expect("o padrão precisa ser uma combinação válida")
-                .into_string(),
+            default_accelerator: padrao().into_string(),
             active: valendo,
             remembered: gravado,
         }
@@ -349,10 +350,6 @@ fn nome_da_tecla(tecla: Code) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn padrao() -> Shortcut {
-        interpretar(PADRAO).expect("o padrão precisa ser uma combinação válida")
-    }
 
     /// A constante é lida por um parser, então um erro de digitação nela só
     /// apareceria em execução — e apareceria como "o atalho não faz nada", que é

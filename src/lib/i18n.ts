@@ -315,6 +315,10 @@ const pt = {
     "Um arquivo local leva abas e tarefas para outro computador. Importar acrescenta; nunca remove.",
   "data.export": "Exportar…",
   "data.import": "Importar…",
+  // O nome sugerido no diálogo de salvar. É texto do usuário como outro
+  // qualquer: "tarefas" num sistema em inglês seria a única palavra da
+  // interface fora do dicionário.
+  "data.exportFileName": "nocom-tarefas.json",
   // O caminho completo do arquivo vai no `title` da linha de status, como todo
   // detalhe cru.
   "data.exported": "Tudo exportado.",
@@ -522,6 +526,7 @@ const en: Record<MessageKey, Entry> = {
     "One local file carries tabs and tasks to another computer. Importing adds; it never removes.",
   "data.export": "Export…",
   "data.import": "Import…",
+  "data.exportFileName": "nocom-tasks.json",
   "data.exported": "Everything exported.",
   "data.imported": "Imported: {todos}, {tabs}.",
   "data.importedTodos": {
@@ -602,7 +607,10 @@ export function detectLocale(
  */
 export const locale: Locale = detectLocale();
 
-const plurals = new Intl.PluralRules(locale);
+const plurals: Record<Locale, Intl.PluralRules> = {
+  "pt-BR": new Intl.PluralRules("pt-BR"),
+  en: new Intl.PluralRules("en"),
+};
 
 function interpolate(text: string, params?: Params): string {
   if (!params) return text;
@@ -615,12 +623,18 @@ function interpolate(text: string, params?: Params): string {
 }
 
 /**
- * Traduz uma chave. Com `params.n` presente e a entrada sendo plural, escolhe a
- * categoria pelo `Intl.PluralRules` do idioma ativo — o que faz uma língua com
- * `few`/`many` (russo, polonês) ser uma mudança de dados, não de código.
+ * Traduz uma chave num idioma dado. É o `t` de baixo com o idioma por
+ * parâmetro, e existe separado por uma razão só: os testes precisam ver as
+ * DUAS línguas — a sobreposição do `zero` e a concordância do plural são
+ * regras escritas à mão, por idioma —, e `t` está preso ao locale detectado
+ * na carga do módulo, que muda de máquina para máquina.
  */
-export function t(key: MessageKey, params?: Params): string {
-  const entry = DICTS[locale][key];
+export function translate(
+  idioma: Locale,
+  key: MessageKey,
+  params?: Params,
+): string {
+  const entry = DICTS[idioma][key];
   if (typeof entry === "string") return interpolate(entry, params);
 
   const n = params?.n;
@@ -628,8 +642,18 @@ export function t(key: MessageKey, params?: Params): string {
 
   // `zero` é uma sobreposição explícita do autor, aplicada antes da biblioteca:
   // ver o comentário em `pending.count`.
-  const categoria = n === 0 && entry.zero !== undefined ? "zero" : plurals.select(n);
+  const categoria =
+    n === 0 && entry.zero !== undefined ? "zero" : plurals[idioma].select(n);
   return interpolate(entry[categoria] ?? entry.other, params);
+}
+
+/**
+ * Traduz uma chave. Com `params.n` presente e a entrada sendo plural, escolhe a
+ * categoria pelo `Intl.PluralRules` do idioma ativo — o que faz uma língua com
+ * `few`/`many` (russo, polonês) ser uma mudança de dados, não de código.
+ */
+export function t(key: MessageKey, params?: Params): string {
+  return translate(locale, key, params);
 }
 
 /**

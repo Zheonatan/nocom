@@ -210,6 +210,11 @@ export const TodoRow = memo(function TodoRow({
         // (hoje)". Um id que não existe no DOM é ignorado, o que cobre de graça o
         // caso comum de tarefa sem data.
         aria-labelledby={`todo-title-${todo.id} todo-date-${todo.id}`}
+        // Com a edição inline aberta, o span do título SAI do DOM e o
+        // `aria-labelledby` fica apontando para ids que não existem — checkbox
+        // sem nome acessível. O `aria-label` cobre só esse instante; fora dele
+        // o `labelledby` (que concatena título + data) continua mandando.
+        aria-label={editing ? todo.title : undefined}
         // O quadrado continua com 16px, mas a área de clique não: concluir é a
         // ação mais frequente do app e virou o único alvo depois que o título
         // parou de alternar.

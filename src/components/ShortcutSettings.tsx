@@ -261,7 +261,9 @@ export function ShortcutSettings({
     setDataBusy(true);
     try {
       const caminho = await saveDialog({
-        defaultPath: "nocom-tarefas.json",
+        // Do dicionário como toda palavra da interface: "tarefas" num sistema
+        // em inglês seria a única string fora dele.
+        defaultPath: t("data.exportFileName"),
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (caminho === null) return;

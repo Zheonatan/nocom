@@ -824,6 +824,13 @@ pub fn run() {
         // O caminho só existe com o `AppHandle` na mão, então o estado nasce aqui
         // e não em `default()`.
         .setup(|app| {
+            // Esquenta o cache AQUI, na thread principal, antes de qualquer
+            // comando: no Linux a leitura passa por `setlocale`, que muta estado
+            // global do processo e não é thread-safe — deixada para o primeiro
+            // `date_day_first`, ela rodaria numa thread do pool async com as
+            // outras já de pé. Nas demais plataformas o custo é ler um padrão
+            // de data uma vez.
+            formato::dia_primeiro();
             let diretorio = app.path().app_data_dir()?;
             // Antes de qualquer `abrir`: é a leitura de um arquivo ausente que
             // define o app como instalação nova, e quem vem do nome antigo tem os

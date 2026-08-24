@@ -1,5 +1,9 @@
-import { t } from "@/lib/i18n";
-import { isLinux, isMac } from "@/lib/todos";
+// Imports relativos com extensão, e de módulos sem `@tauri-apps/api`, de
+// propósito: é o que deixa este arquivo carregável sob `node --test` — as
+// funções daqui são a fronteira do único dado de configuração do app, e são
+// puras o bastante para merecerem teste.
+import { t } from "./i18n.ts";
+import { isLinux, isMac } from "./platform.ts";
 
 /**
  * A captura de teclas do painel de atalho (Adendo 9): transforma a combinação que

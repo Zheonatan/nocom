@@ -176,7 +176,11 @@ function achar(title: string, today: string, dayFirst: boolean): Achada[] {
   // compartilhado deixa `lastIndex` sujo se este laço sair pelo meio. O
   // `matchAll` trabalha sobre uma cópia.
   for (const m of title.matchAll(DATE_PATTERN)) {
-    const [inteiro, guarda, primeiro, segundo, ano] = m;
+    // Os `= ""` nunca agem — a guarda e os dois campos sempre participam do
+    // casamento (a alternância da guarda casa vazio) — e existem pela régua do
+    // `noUncheckedIndexedAccess`, que não tem como saber disso. Só o ano é
+    // opcional de verdade.
+    const [inteiro, guarda = "", primeiro = "", segundo = "", ano] = m;
     // A guarda é o caractere de antes (ou nada, no começo do título): faz parte
     // da varredura, nunca do destaque.
     const inicio = m.index + guarda.length;
@@ -226,8 +230,11 @@ export function splitTitle(
   let rest = title;
   let inline = achadas;
 
-  if (achadas.length === 1) {
-    const unica = achadas[0];
+  // A única data, quando é exatamente uma (a primeira condição da extração). O
+  // ternário também responde pela régua do `noUncheckedIndexedAccess`: com
+  // `length === 1`, o `[0]` existe, mas o compilador não tem como saber.
+  const unica = achadas.length === 1 ? achadas[0] : undefined;
+  if (unica !== undefined) {
     // `trimEnd` na cauda: "pagar boleto 21/08   " tem espaço depois da data, e
     // ele não desqualifica a extração — só não pode sobrar no `rest`.
     const depois = title.slice(unica.fim);

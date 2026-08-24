@@ -485,10 +485,14 @@ function App() {
    */
   const shortcutActive = shortcut?.active ?? true;
 
-  const carryOver = useFlipRows(
-    listRef,
-    visible.map((item) => `${item.id}:${item.done ? 1 : 0}`).join(),
+  // Memoizada porque este componente re-renderiza a cada tecla digitada no
+  // campo, e a assinatura só muda quando `visible` muda — reconstruir a string
+  // O(n) por tecla é trabalho que o próprio hook existe para evitar.
+  const flipSignature = useMemo(
+    () => visible.map((item) => `${item.id}:${item.done ? 1 : 0}`).join(),
+    [visible],
   );
+  const carryOver = useFlipRows(listRef, flipSignature);
 
   /**
    * A mensagem na tela é NOSSA, escolhida pela operação que falhou, e diz o que
@@ -879,7 +883,11 @@ function App() {
         setSettingsOpen(false);
         return;
       }
-      if (draft !== "") {
+      // Lido do DOM (o campo é controlado, o valor espelha o estado) para o
+      // `draft` ficar FORA das dependências: com ele lá, este listener era
+      // removido e reassinado a cada tecla digitada — o padrão que o listener
+      // de foco já evita com `editingRef`.
+      if ((draftRef.current?.value ?? "") !== "") {
         setDraft("");
         return;
       }
@@ -893,7 +901,7 @@ function App() {
     // do React, com o estado que valia quando a tecla foi apertada.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [editing, editingTab, draft, fail, settingsOpen]);
+  }, [editing, editingTab, fail, settingsOpen]);
 
   // `data-tauri-drag-region` sozinho não move a janela no macOS com
   // `decorations: false` + `transparent: true` (Adendo 1). O atributo fica como
@@ -1016,6 +1024,53 @@ function App() {
     }
   }
 
+  /**
+   * O esqueleto de TODA mutação otimista de tarefa: guardar a lista e a aba em
+   * que o gesto começou, aplicar o palpite na tela, esperar o disco — e, no
+   * erro, devolver a lista SÓ se a tela ainda for daquela aba (a guarda do
+   * Adendo 8) antes de nomear a falha.
+   *
+   * Existe porque o padrão estava copiado em seis handlers, e foi numa das
+   * cópias que a guarda ficou de fora (o `applyRestored` do desfazer). O que
+   * varia mora em `run`: a chamada IPC, a escrita confirmada — que continua
+   * responsável pela PRÓPRIA guarda, porque cada uma escreve uma coisa — e a
+   * oferta de desfazer.
+   */
+  const mutateTodos = useCallback(
+    async (opts: {
+      errorKey: MessageKey;
+      optimistic: (prev: Todo[]) => Todo[];
+      run: () => Promise<void>;
+    }) => {
+      setNotice(null);
+      const before = todos;
+      const tabId = activeTabId;
+      setTodos(opts.optimistic);
+      try {
+        await opts.run();
+      } catch (err) {
+        // `before` é a lista DESTA aba. Repô-la depois de o usuário ter trocado
+        // de aba encheria a tela da outra com tarefas que não são dela — e faria
+        // isso no caminho de erro, que é justamente onde o app promete que a
+        // tela continua contando a verdade.
+        if (activeTabRef.current === tabId) setTodos(before);
+        fail(err, opts.errorKey);
+      }
+    },
+    [todos, activeTabId, fail],
+  );
+
+  /**
+   * A escrita confirmada das mutações de UMA linha: troca a tarefa pelo estado
+   * que o backend devolveu. Dispensa guarda de aba: se a tela já é de outra
+   * aba, o `map` não encontra o id e nada muda.
+   */
+  const applyUpdated = useCallback((updated: Todo) => {
+    setTodos((prev) =>
+      prev.map((item) => (item.id === updated.id ? updated : item)),
+    );
+  }, []);
+
   // Os handlers de linha são `useCallback` e o `TodoRow` é `memo`: digitar no
   // campo de nova tarefa re-renderiza o App a cada tecla, e sem isso cada tecla
   // re-renderizava também todas as linhas da lista — trabalho O(n) por
@@ -1023,29 +1078,19 @@ function App() {
   // estável nos handlers, as teclas não tocam nas linhas; elas só re-renderizam
   // quando `todos` de fato muda.
   const handleToggle = useCallback(
-    async (id: string) => {
-      setNotice(null);
-      const before = todos;
-      const tabId = activeTabId;
-      // A linha muda de grupo já no clique e o FLIP a leva deslizando até o novo
-      // lugar. Se o backend recusar, `before` a devolve — e a volta é animada pelo
-      // mesmo mecanismo, sem nada a mais.
-      setTodos((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item)),
-      );
-      try {
-        const updated = await toggleTodo(id);
-        setTodos((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      } catch (err) {
-        // `before` é a lista DESTA aba. Repô-la depois de o usuário ter trocado de
-        // aba encheria a tela da outra com tarefas que não são dela — e faria isso
-        // no caminho de erro, que é justamente onde o app promete que a tela
-        // continua contando a verdade.
-        if (activeTabRef.current === tabId) setTodos(before);
-        fail(err, "error.toggle");
-      }
-    },
-    [todos, activeTabId, fail],
+    (id: string) =>
+      mutateTodos({
+        errorKey: "error.toggle",
+        // A linha muda de grupo já no clique e o FLIP a leva deslizando até o
+        // novo lugar. Se o backend recusar, o rollback a devolve — e a volta é
+        // animada pelo mesmo mecanismo, sem nada a mais.
+        optimistic: (prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, done: !item.done } : item,
+          ),
+        run: async () => applyUpdated(await toggleTodo(id)),
+      }),
+    [mutateTodos, applyUpdated],
   );
 
   /**
@@ -1065,10 +1110,8 @@ function App() {
   }, []);
 
   const handleDelete = useCallback(
-    async (id: string) => {
+    (id: string) => {
       if (activeTabId === null) return;
-      setNotice(null);
-      const before = todos;
       const removed = todos.find((item) => item.id === id);
       const tabId = activeTabId;
       // **O foco não pode morrer com a linha.** O Enter no `×` (Adendo 7 deu
@@ -1076,7 +1119,8 @@ function App() {
       // tecla seguinte não ia a lugar nenhum. Se o foco estava na linha
       // removida, ele desce para a vizinha — `focusRowAt` clampa, então remover
       // a última foca a que virou última — ou volta ao campo se a lista
-      // esvaziou. No rAF, porque o DOM só perde a linha depois do re-render.
+      // esvaziou. Lido AQUI, antes do palpite otimista tirar a linha do DOM; o
+      // rAF corre depois do re-render, quando ela já saiu.
       const rows = Array.from(
         listRef.current?.querySelectorAll<HTMLElement>("[data-todo-id]") ?? [],
       );
@@ -1086,72 +1130,65 @@ function App() {
         focused !== null && focused.dataset.todoId === id
           ? rows.indexOf(focused)
           : -1;
-      setTodos((prev) => prev.filter((item) => item.id !== id));
       if (focusIndex !== -1) {
         requestAnimationFrame(() => {
           if (!focusRowAt(focusIndex)) focusDraft();
         });
       }
-      try {
-        await deleteTodo(id);
-        // Guarda o `Todo` inteiro, como estava: `restore_todos` devolve com o `id`
-        // e o `created_at` originais, então a tarefa volta ao lugar dela na lista
-        // em vez de reaparecer no fim como se fosse outra.
-        if (!removed) return;
+      return mutateTodos({
+        errorKey: "error.delete",
+        optimistic: (prev) => prev.filter((item) => item.id !== id),
+        run: async () => {
+          await deleteTodo(id);
+          // Guarda o `Todo` inteiro, como estava: `restore_todos` devolve com o
+          // `id` e o `created_at` originais, então a tarefa volta ao lugar dela
+          // na lista em vez de reaparecer no fim como se fosse outra.
+          if (!removed) return;
 
-        // **Remoções seguidas viram um desfazer só.** O lote anterior continua
-        // valendo se for da mesma aba E se o aviso dele ainda estiver na faixa —
-        // as duas condições, porque um aviso que já saiu (por tempo, por `×`, por
-        // outro gesto) não é mais uma oferta que o usuário possa contar. Sem isto,
-        // a segunda remoção substituía o aviso da primeira e o desfazer dela
-        // desaparecia sem nenhum sinal.
-        const anterior = removedBatch.current;
-        const atual = noticeRef.current;
-        const continua =
-          anterior !== null &&
-          anterior.tabId === tabId &&
-          atual !== null &&
-          atual.kind === "undo" &&
-          atual.id === anterior.noticeId;
-        const items = continua ? [...anterior.items, removed] : [removed];
-        const noticeId = offerUndo(
-          t("undo.tasksRemoved", { n: items.length }),
-          // O lote inteiro numa chamada: `restore_todos` é tudo-ou-nada, então as
-          // duas voltam juntas ou nenhuma volta — que é o desfecho certo para um
-          // desfazer de um clique só.
-          async () => {
-            applyRestored(await restoreTodos(items), tabId);
-          },
-        );
-        removedBatch.current = { tabId, items, noticeId };
-      } catch (err) {
-        if (activeTabRef.current === tabId) setTodos(before);
-        fail(err, "error.delete");
-      }
+          // **Remoções seguidas viram um desfazer só.** O lote anterior continua
+          // valendo se for da mesma aba E se o aviso dele ainda estiver na faixa —
+          // as duas condições, porque um aviso que já saiu (por tempo, por `×`, por
+          // outro gesto) não é mais uma oferta que o usuário possa contar. Sem isto,
+          // a segunda remoção substituía o aviso da primeira e o desfazer dela
+          // desaparecia sem nenhum sinal.
+          const anterior = removedBatch.current;
+          const atual = noticeRef.current;
+          const continua =
+            anterior !== null &&
+            anterior.tabId === tabId &&
+            atual !== null &&
+            atual.kind === "undo" &&
+            atual.id === anterior.noticeId;
+          const items = continua ? [...anterior.items, removed] : [removed];
+          const noticeId = offerUndo(
+            t("undo.tasksRemoved", { n: items.length }),
+            // O lote inteiro numa chamada: `restore_todos` é tudo-ou-nada, então as
+            // duas voltam juntas ou nenhuma volta — que é o desfecho certo para um
+            // desfazer de um clique só.
+            async () => {
+              applyRestored(await restoreTodos(items), tabId);
+            },
+          );
+          removedBatch.current = { tabId, items, noticeId };
+        },
+      });
     },
-    [todos, activeTabId, offerUndo, applyRestored, fail, focusRowAt, focusDraft],
+    [todos, activeTabId, mutateTodos, offerUndo, applyRestored, focusRowAt, focusDraft],
   );
 
   const handleRename = useCallback(
-    async (id: string, title: string) => {
+    (id: string, title: string) => {
       setEditingId(null);
-      setNotice(null);
-      const before = todos;
-      const tabId = activeTabId;
-      setTodos((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, title } : item)),
-      );
-      try {
+      return mutateTodos({
+        errorKey: "error.rename",
+        optimistic: (prev) =>
+          prev.map((item) => (item.id === id ? { ...item, title } : item)),
         // `rename_todo` não mexe em `created_at` nem em `done`, então a ordem da
         // lista não muda — só o texto.
-        const updated = await renameTodo(id, title);
-        setTodos((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      } catch (err) {
-        if (activeTabRef.current === tabId) setTodos(before);
-        fail(err, "error.rename");
-      }
+        run: async () => applyUpdated(await renameTodo(id, title)),
+      });
     },
-    [todos, activeTabId, fail],
+    [mutateTodos, applyUpdated],
   );
 
   const handleCancelEdit = useCallback(() => setEditingId(null), []);
@@ -1163,35 +1200,33 @@ function App() {
    * sumir sem via de volta de um clique é o que a faixa existe para não deixar.
    */
   const handleMove = useCallback(
-    async (id: string, destinoId: string) => {
+    (id: string, destinoId: string) => {
       if (activeTabId === null) return;
       const origem = activeTabId;
-      setNotice(null);
-      const before = todos;
-      setTodos((prev) => prev.filter((item) => item.id !== id));
-      try {
-        const movida = await moveTodo(id, destinoId);
-        const destino = tabs.find((tab) => tab.id === destinoId);
-        offerUndo(
-          t("undo.movedTo", { name: destino?.name ?? "" }),
-          async () => {
-            const volta = await moveTodo(movida.id, origem);
-            // Só reentra na tela se a tela ainda for a lista de onde ela saiu.
-            if (activeTabRef.current === origem) {
-              setTodos((prev) =>
-                [...prev.filter((item) => item.id !== volta.id), volta].sort(
-                  byCreatedAt,
-                ),
-              );
-            }
-          },
-        );
-      } catch (err) {
-        if (activeTabRef.current === origem) setTodos(before);
-        fail(err, "error.move");
-      }
+      return mutateTodos({
+        errorKey: "error.move",
+        optimistic: (prev) => prev.filter((item) => item.id !== id),
+        run: async () => {
+          const movida = await moveTodo(id, destinoId);
+          const destino = tabs.find((tab) => tab.id === destinoId);
+          offerUndo(
+            t("undo.movedTo", { name: destino?.name ?? "" }),
+            async () => {
+              const volta = await moveTodo(movida.id, origem);
+              // Só reentra na tela se a tela ainda for a lista de onde ela saiu.
+              if (activeTabRef.current === origem) {
+                setTodos((prev) =>
+                  [...prev.filter((item) => item.id !== volta.id), volta].sort(
+                    byCreatedAt,
+                  ),
+                );
+              }
+            },
+          );
+        },
+      });
     },
-    [todos, activeTabId, tabs, offerUndo, fail],
+    [activeTabId, mutateTodos, tabs, offerUndo],
   );
 
   /**
@@ -1200,22 +1235,14 @@ function App() {
    * carimbado quando a tarefa já estava concluída sem carimbo.
    */
   const handleSetRepeat = useCallback(
-    async (id: string, repeat: Repeat) => {
-      setNotice(null);
-      const before = todos;
-      const tabId = activeTabId;
-      setTodos((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, repeat } : item)),
-      );
-      try {
-        const updated = await setRepeat(id, repeat);
-        setTodos((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      } catch (err) {
-        if (activeTabRef.current === tabId) setTodos(before);
-        fail(err, "error.repeat");
-      }
-    },
-    [todos, activeTabId, fail],
+    (id: string, repeat: Repeat) =>
+      mutateTodos({
+        errorKey: "error.repeat",
+        optimistic: (prev) =>
+          prev.map((item) => (item.id === id ? { ...item, repeat } : item)),
+        run: async () => applyUpdated(await setRepeat(id, repeat)),
+      }),
+    [mutateTodos, applyUpdated],
   );
 
   /**
@@ -1234,10 +1261,8 @@ function App() {
     }
   }, [loadTodosFor, fail]);
 
-  async function handleClearCompleted() {
+  function handleClearCompleted() {
     if (activeTabId === null) return;
-    setNotice(null);
-    const before = todos;
     const tabId = activeTabId;
     // Precisa ser capturado ANTES da chamada: depois dela as concluídas já não
     // estão em lugar nenhum, e é o `done: true` delas que o desfazer restaura.
@@ -1248,7 +1273,6 @@ function App() {
     // ainda existe — o que reprovaria o lote INTEIRO, matando o desfazer das
     // que de fato saíram.
     const removed = todos.filter((item) => item.done && item.repeat === "none");
-    setTodos((prev) => prev.filter((item) => !item.done || item.repeat !== "none"));
     // O mesmo resgate de foco do `handleDelete`, para o outro jeito de remover
     // pelo teclado: limpar tudo o que era limpável DESABILITA o próprio botão,
     // e um botão desabilitado solta o foco no `body`. Aqui não há linha vizinha
@@ -1256,23 +1280,25 @@ function App() {
     requestAnimationFrame(() => {
       if (document.activeElement === document.body) focusDraft();
     });
-    try {
-      const remaining = await clearCompleted(tabId);
-      // **A gravação em disco dá tempo de o usuário trocar de aba.** Sem esta
-      // guarda, `remaining` — que é a lista da aba ANTERIOR — era escrita na tela
-      // da aba nova, e no caminho de sucesso, sem erro nenhum a que culpar.
-      if (activeTabRef.current === tabId) {
-        setTodos([...remaining].sort(byCreatedAt));
-      }
-      if (removed.length > 0) {
-        offerUndo(t("undo.completedRemoved", { n: removed.length }), async () => {
-          applyRestored(await restoreTodos(removed), tabId);
-        });
-      }
-    } catch (err) {
-      if (activeTabRef.current === tabId) setTodos(before);
-      fail(err, "error.clear");
-    }
+    return mutateTodos({
+      errorKey: "error.clear",
+      optimistic: (prev) =>
+        prev.filter((item) => !item.done || item.repeat !== "none"),
+      run: async () => {
+        const remaining = await clearCompleted(tabId);
+        // **A gravação em disco dá tempo de o usuário trocar de aba.** Sem esta
+        // guarda, `remaining` — que é a lista da aba ANTERIOR — era escrita na
+        // tela da aba nova, e no caminho de sucesso, sem erro nenhum a que culpar.
+        if (activeTabRef.current === tabId) {
+          setTodos([...remaining].sort(byCreatedAt));
+        }
+        if (removed.length > 0) {
+          offerUndo(t("undo.completedRemoved", { n: removed.length }), async () => {
+            applyRestored(await restoreTodos(removed), tabId);
+          });
+        }
+      },
+    });
   }
 
   async function handleUndo(run: () => Promise<void>) {
@@ -1284,6 +1310,11 @@ function App() {
       setNotice(null);
     } catch (err) {
       fail(err, "error.undo");
+    } finally {
+      // Também no erro: sem isto o `undoing` ficava preso em `true` até a
+      // próxima oferta — inócuo hoje porque o `fail` troca o aviso, mas é o
+      // tipo de estado torto de que um refactor futuro tropeça.
+      setUndoing(false);
     }
   }
 

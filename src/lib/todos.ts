@@ -1,11 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { t } from "@/lib/i18n";
+import { isMac } from "@/lib/platform";
 import type { Repeat } from "@/lib/recurrence";
 
 // O tipo nasce em `recurrence.ts` (que não pode importar daqui — ver o
 // cabeçalho de lá) e é reexportado porque quem fala de `Todo` fala daqui.
 export type { Repeat };
+
+// Helpers puros que moravam aqui e saíram para módulos que o `node --test`
+// consegue carregar (o runner não resolve `@/`, e este arquivo puxa o
+// `@tauri-apps/api`). Reexportados porque quem fala de `Todo` fala daqui —
+// nenhum importador muda.
+export { isMac, isLinux, hasModKey } from "@/lib/platform";
+export { clampLength, lengthOf } from "@/lib/text";
+export { nextTabName, neighbourTabId } from "@/lib/tabs";
 
 /**
  * Limite de título do contrato (Adendo 1). O backend valida de novo — aqui o
@@ -18,35 +27,6 @@ export const TITLE_MAX_LENGTH = 200;
  * nome de chip numa faixa de 360px, não título de tarefa.
  */
 export const TAB_NAME_MAX_LENGTH = 40;
-
-/**
- * Se o app está rodando num Mac. Decide toda escrita de tecla da interface — o
- * macOS escreve modificadores como símbolos e todo menu do sistema faz assim,
- * enquanto Windows e Linux escrevem por extenso, e "⌃⌥T" numa tela de Windows não
- * significa nada.
- *
- * **O atalho global não passa mais por aqui.** A combinação é escolha do usuário
- * (Adendo 9) e quem escreve o rótulo dela é o backend, que também escreve o do
- * tray: duas escritas do mesmo dado divergiriam no primeiro atalho que não fosse o
- * padrão. O que sobrou aqui são os atalhos da janela em foco, que são constantes.
- */
-export function isMac(): boolean {
-  // Sniffing de user agent é aceitável aqui e só aqui: o app roda numa webview
-  // que nós mesmos embarcamos, e o custo de errar é um glifo fora de convenção,
-  // não uma função quebrada. `navigator.platform` está obsoleto e
-  // `userAgentData` não existe no WebKit, que é justamente o motor do Mac.
-  return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
-/**
- * Se o app está rodando em Linux. Existe por uma decisão só: o padrão de fábrica
- * do atalho é outro lá (Adendo 12 — `Ctrl+Alt+T` é o atalho canônico de terminal
- * em GNOME/KDE/Ubuntu), e o `DEFAULT_SHORTCUT_LABEL` precisa acompanhar o
- * `PADRAO` de `atalho.rs` antes de o backend responder a primeira vez.
- */
-export function isLinux(): boolean {
-  return !isMac() && /Linux/i.test(navigator.userAgent);
-}
 
 /**
  * O modificador de comando de aplicativo, escrito na convenção do sistema —
@@ -112,46 +92,6 @@ export const CLOSE_TAB_ARIA_SHORTCUT: string = `${ARIA_MOD}+W`;
 /** `Meta+1` / `Control+1`, … — o salto direto, na grafia da ARIA. */
 export function tabAriaShortcut(posicao: number): string {
   return `${ARIA_MOD}+${posicao}`;
-}
-
-/**
- * Corta um texto em `max` **pontos de código** — a mesma régua do
- * `chars().count()` que o backend usa no limite de 200 (Adendo 12).
- *
- * O `maxLength` nativo conta unidades UTF-16: um emoji vale 2, o campo parava de
- * aceitar antes do limite do contrato, e o contador "restam N" mentia por fator 2
- * para quem pensa em caracteres. Devolve quanto foi cortado, porque colar além do
- * limite deixou de ser truncamento silencioso — quem chama avisa quando `cut > 1`.
- */
-export function clampLength(
-  text: string,
-  max: number,
-): { text: string; cut: number } {
-  const pontos = Array.from(text);
-  if (pontos.length <= max) return { text, cut: 0 };
-  return { text: pontos.slice(0, max).join(""), cut: pontos.length - max };
-}
-
-/** O comprimento na régua do contrato: pontos de código, não unidades UTF-16. */
-export function lengthOf(text: string): number {
-  return Array.from(text).length;
-}
-
-/**
- * O modificador de comando de aplicativo apertado, para os atalhos com a janela
- * em foco. `⌘` no Mac e `Ctrl` fora dele — a convenção de cada sistema, do lado
- * do teclado e não só do letreiro.
- *
- * Recusa a combinação com os DOIS apertados: `⌃⌘1` não é `⌘1`, e tratar como se
- * fosse tornaria imprevisível qualquer atalho de sistema que use as duas teclas.
- */
-export function hasModKey(evento: {
-  metaKey: boolean;
-  ctrlKey: boolean;
-}): boolean {
-  return isMac()
-    ? evento.metaKey && !evento.ctrlKey
-    : evento.ctrlKey && !evento.metaKey;
 }
 
 /**
@@ -552,41 +492,4 @@ export function byDisplayOrder(a: Todo, b: Todo): number {
   return a.created_at - b.created_at;
 }
 
-/**
- * Nome padrão da aba nova (`Lista 2`, `Lista 3`, …). A primeira aba é a "Tarefas"
- * criada na migração, então a contagem começa em 2 naturalmente.
- *
- * Nome repetido é permitido pelo contrato, mas um nome PADRÃO repetido só cria
- * confusão — se `Lista 3` já existe, sobe para `Lista 4`. Continua sendo um
- * palpite descartável: o gesto de criar já entra em edição do nome.
- */
-export function nextTabName(tabs: Tab[]): string {
-  const taken = new Set(tabs.map((t) => t.name));
-  // Piso em 2: a primeira aba é a "Tarefas" da migração, então "Lista 1" nunca é
-  // o nome certo — nem no instante entre abrir a janela e a lista de abas chegar.
-  let n = Math.max(2, tabs.length + 1);
-  // A comparação usa o nome JÁ traduzido: quem roda em inglês tem "List 2" na
-  // faixa, e é contra esses que a colisão precisa ser checada.
-  while (taken.has(t("tabs.defaultName", { n }))) n += 1;
-  return t("tabs.defaultName", { n });
-}
-
-/**
- * Qual aba fica ativa quando a atual é fechada (Esclarecimento 5.2): a VIZINHA —
- * a próxima na ordem canônica, ou a anterior se a fechada era a última da faixa.
- *
- * Não é a primeira restante: fechar a aba 4 de 5 e cair na aba 1 teleporta o
- * usuário para longe de onde ele estava. E a regra tem que ser exatamente a
- * mesma dos dois lados — o frontend troca a ativa de forma otimista e o backend
- * persiste; destinos diferentes fariam a tela piscar de uma aba para a outra
- * quando a resposta chegasse.
- *
- * Recebe a lista JÁ na ordem canônica (`created_at` crescente), que é como o
- * estado é mantido — "próxima" aqui é a próxima da faixa, na tela.
- */
-export function neighbourTabId(tabs: Tab[], closingId: string): string | null {
-  const index = tabs.findIndex((t) => t.id === closingId);
-  if (index === -1) return null;
-  const neighbour = tabs[index + 1] ?? tabs[index - 1];
-  return neighbour?.id ?? null;
-}
+// `nextTabName` e `neighbourTabId` moram em `lib/tabs.ts` (reexportados no topo).

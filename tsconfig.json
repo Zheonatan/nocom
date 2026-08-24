@@ -22,6 +22,14 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    // Os testes rodam por type stripping (`node --test`, sem transpilar): esta
+    // flag proíbe em compilação exatamente as sintaxes que o Node não consegue
+    // apagar (enum, namespace, parameter properties) — sem ela, a primeira
+    // enum num módulo testado viraria erro de runtime só na suite.
+    "erasableSyntaxOnly": true,
+    // Acesso por índice devolve `T | undefined`: é a strict flag que faltava
+    // com retorno real em `dates.ts`/`recurrence.ts`, que vivem de índice.
+    "noUncheckedIndexedAccess": true,
 
     /* shadcn/ui: alias @ -> src */
     "baseUrl": ".",

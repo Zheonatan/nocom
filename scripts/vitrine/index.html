@@ -11,7 +11,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>NoCom — vitrine</title>
-    <style>
+    <!-- `data-vitrine-moldura`: esta folha é ANDAIME da vitrine, e não interface
+         do app. `captura.mjs` a pula ao extrair o CSS do espécime — ver o
+         comentário da sombra abaixo, e o do `styleSheets` lá. -->
+    <style data-vitrine-moldura>
       /* `src/index.css` põe `#root` em `height: 100%` porque no app ele É a
          janela. Aqui o `#root` precisa ter o TAMANHO da janela (360x480, como
          declarado em `src-tauri/tauri.conf.json`) dentro de um viewport maior, para

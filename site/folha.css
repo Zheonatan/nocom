@@ -14,9 +14,14 @@
  *
  * DUAS DECISOES QUE PARECEM DETALHE E NAO SAO:
  *
- * 1. NAO HA SOMBRA E NAO HA CANTO ARREDONDADO em lugar nenhum desta folha. A
- *    unica sombra na tela e a que o PNG do especime ja carrega -- a que a propria
- *    janela projeta sobre a area de trabalho, que e a borda fisica do app.
+ * 1. NAO HA SOMBRA E NAO HA CANTO ARREDONDADO em lugar nenhum desta folha, e agora
+ *    isso nao tem excecao. Havia uma: o PNG do especime carregava dentro dele uma
+ *    sombra simulada, herdada do `shadow-lg` do Tailwind, para nao sair com beirada
+ *    dura num README sem moldura de sistema. Ela nunca pertenceu a esta folha -- no
+ *    escuro ela sumia contra a pelicula e a janela dissolvia a aresta. Com o
+ *    especime em DOM, quem separa a janela da pelicula e o fio de 1px do proprio
+ *    cartao, que e exatamente o que o app desenha. O canto arredondado continua
+ *    sendo do app, e nao da folha: ele e da janela retratada, nao do desenho.
  *
  * 2. NAO HA MANCHETE DE SECAO. Uma prancha de desenho nao tem titulos de 29px;
  *    tem rotulos de zona. O unico texto grande da pagina e o nome do produto, e
@@ -58,6 +63,40 @@
   src: url("fontes/spectral-latin-500-normal.woff2") format("woff2");
   font-weight: 500;
   font-display: swap;
+}
+
+/* A QUARTA FAMILIA E A TIPOGRAFIA DO APP, e ela nao pertence a folha: ela pertence
+   ao especime. Nenhum texto da pagina usa a Geist -- ela existe so para o desenho
+   da janela sair na fonte que a janela usa. Enquanto o especime era um PNG, ela
+   viajava como pixel dentro dele; agora que ele e DOM, a fonte precisa estar aqui,
+   ou a janela desenhada sai na fallback do sistema e deixa de ser fiel.
+
+   OS DOIS SUBCONJUNTOS COM `unicode-range`, copiados de `src/index.css`: o
+   navegador baixa `latin` e nunca toca em `latin-ext`, porque nem o portugues nem o
+   ingles do especime saem do primeiro. Declarar os dois custa um arquivo parado no
+   repositorio e evita um glifo faltando se o exemplo mudar de palavra.
+
+   E ELE MORA AQUI, e nao dentro do especime: @font-face e do DOCUMENTO, e o
+   documento alcanca a shadow root. O @font-face do app foi descartado na extracao
+   de proposito -- ele aponta para caminhos do servidor de desenvolvimento do Vite,
+   que nao existem no site publicado. */
+@font-face {
+  font-family: "Geist Variable";
+  src: url("fontes/geist-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Geist Variable";
+  src: url("fontes/geist-latin-ext-wght-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 /* --------------------------------------------------------------------------
@@ -472,20 +511,46 @@ p { max-width: 68ch; }
   margin: 0 auto;
 }
 
-/* O `picture` e a caixa posicionada; o `img` apenas a preenche. Posicionar os
-   dois foi o defeito que deslocou a imagem em 70px e desalinhou toda a cotacao. */
-.palco picture {
+/* O ESPECIME: A JANELA DE VERDADE, POUSADA NO PALCO.
+   Dentro dele mora uma shadow root com o DOM montado do app e o CSS do app -- ver
+   `especime()` em `scripts/site.mjs`. Aqui a folha declara so o que e dela: o
+   TAMANHO (o host e o quadro de 360x480 contra o qual o `h-full` do cartao
+   resolve), a POSICAO no palco, e o fato de que isto e um desenho.
+
+   360x480 EXATOS, e sem margem em volta. O raster carregava 30px transparentes de
+   cada lado para a sombra simulada nao sair cortada; o especime nao tem sombra
+   para acomodar -- a folha de cotas e um mundo sem sombra, e quem separa a janela
+   da pelicula e o fio de 1px que o proprio cartao desenha, o mesmo que o app
+   desenha. A posicao (130, 30) e a que a janela ocupava antes, para a geometria dos
+   baloes continuar valendo sem uma segunda revisao.
+
+   `pointer-events: none` e `user-select: none`: e um DESENHO. Sem eles o ponteiro
+   acende o hover das linhas de uma janela que nao responde, e o cursor de texto
+   aparece sobre um campo que nao digita. O foco ja esta resolvido na extracao, que
+   poe `tabindex="-1"` em cada controle. */
+/* O desenho nao renderizado: so aparece em navegador sem shadow root declarativa,
+   porque um host sem <slot> nao renderiza filho de luz. Prosa dentro de um fio, na
+   caixa exata da janela -- na folha, uma vista que nao pode ser desenhada continua
+   sendo uma vista com moldura e legenda. */
+.especime-ausente {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--fio-forte);
+  font-family: var(--serif);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+}
+
+.palco .especime {
   display: block;
   position: absolute;
-  left: 100px;
-  top: 0;
-  width: 420px;
-  height: 540px;
-}
-.palco .tela {
-  display: block;
-  width: 100%;
-  height: 100%;
+  left: 130px;
+  top: 30px;
+  width: 360px;
+  height: 480px;
+  pointer-events: none;
+  user-select: none;
 }
 
 .cotas {
@@ -656,9 +721,15 @@ p { max-width: 68ch; }
 .sem-js .chamada-explicacao,
 .sem-js .detalhe { display: none; }
 
-/* O detalhe: a mesma captura, recortada e ampliada 2:1. Nenhum raster novo -- o
-   `background-size` de 840x1080 e o tamanho natural (2x) da imagem que o especime
-   mostra a 420x540, e por isso a ampliacao e exatamente 2:1 e sai nitida. */
+/* O detalhe: o MESMO especime, clonado por `folha.js` e ampliado 2:1.
+   `transform: scale(2)` sobre DOM amplia texto vetorial, entao o detalhe e nitido
+   em 2:1 como e em 1:1 -- e continuaria nitido em 4:1.
+
+   ISTO ERA O PIOR DEFEITO DA FOLHA, e era do formato. O detalhe recortava o PNG de
+   840x1080 com `background-size` no tamanho natural dele: ampliar 2:1 um raster 2x
+   gasta exatamente toda a resolucao que existe -- um pixel de imagem por pixel de
+   tela --, e numa pagina feita de fio de 1px e tipografia vetorial o especime era o
+   unico objeto borrado. Num telefone 3x era pior ainda. */
 .detalhe {
   margin: 20px 0 0;
   max-width: 560px;
@@ -673,16 +744,24 @@ p { max-width: 68ch; }
   margin-bottom: 6px;
 }
 .detalhe-vidro {
+  position: relative;
   height: 80px;
   border: 1px solid var(--fio-forte);
   background-color: var(--pelicula);
-  background-image: url("telas/janela-clara.png");
-  background-size: 840px 1080px;
-  background-repeat: no-repeat;
-  background-position: -84px -212px;
+  overflow: hidden;
 }
-@media (prefers-color-scheme: dark) {
-  .detalhe-vidro { background-image: url("telas/janela-escura.png"); }
+/* O clone. `transform-origin: 0 0` com `left`/`top` negativos e o que faz o
+   recorte: `folha.js` calcula os dois em coordenadas JA ampliadas. O tema nao e
+   declarado aqui nem la -- ele vem do `prefers-color-scheme` que atravessa a
+   shadow root, o mesmo mecanismo pelo qual o app segue o sistema. */
+.detalhe-vidro .especime {
+  position: absolute;
+  width: 360px;
+  height: 480px;
+  transform: scale(2);
+  transform-origin: 0 0;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* A cota que se desenha: um momento autoral, uma vez, causado pela entrada da
@@ -807,8 +886,12 @@ p { max-width: 68ch; }
   cursor: default;
 }
 
-/* No estreito a janela encosta nas arestas do palco: a margem transparente da
-   imagem e recortada, e a escala 1:1 se mantem em 360px de largura. */
+/* No estreito a janela encosta nas arestas do palco: ela passa a ocupar o palco
+   inteiro, e a escala 1:1 se mantem em 360px de largura.
+
+   Antes isto era um recorte -- `left: -30px; top: -30px` puxava a imagem para tirar
+   da vista a margem transparente que o raster carregava para a sombra. O especime
+   nao tem margem nenhuma, entao o estreito e so uma reorigem. */
 @media (max-width: 720px) {
   .cotas-largas { display: none; }
   .cotas-estreitas { display: block; }
@@ -826,7 +909,7 @@ p { max-width: 68ch; }
   .zona-numeros tbody td:last-child { padding-right: var(--recuo-prancha); }
 
   .palco { width: 360px; height: 480px; overflow: clip; }
-  .palco picture { left: -30px; top: -30px; }
+  .palco .especime { left: 0; top: 0; }
   /* A prancha sangra ate a borda da viewport, e e isso que da lugar aos 360px da
      janela em 1:1 numa tela de 390 sem uma unica barra de rolagem. */
   .especime-prancha {

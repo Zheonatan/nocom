@@ -5,61 +5,128 @@
 // pela entrada `scripts/vitrine/index.html`, que existe fora do `index.html` do
 // build justamente para não viajar dentro de um instalador.
 
+// A versão vem do manifesto, e não de um literal: ver `plugin:app|version` no
+// fim deste arquivo.
+import { version as VERSAO } from "../../package.json";
+
 // -------------------------------------------------------------------- idioma
 //
-// O app escolhe o idioma por `navigator.languages` (ver `src/lib/i18n.ts`), e o
-// README é em português. Sem esta fixação a foto sai no idioma do Chrome de quem
-// regerou, e o mesmo comando produziria uma imagem diferente em duas máquinas.
-Object.defineProperty(navigator, "languages", { get: () => ["pt-BR"] });
-Object.defineProperty(navigator, "language", { get: () => "pt-BR" });
+// O app escolhe o idioma por `navigator.languages` (ver `src/lib/i18n.ts`).
+// Fixar aqui é o que faz o mesmo comando produzir o mesmo espécime em duas
+// máquinas — sem isto ele sai no idioma do Chrome de quem regerou.
+//
+// **É `?lang=` e não uma constante, porque a folha tem duas línguas.** Enquanto o
+// espécime era um PNG havia um só, em português, servido também para a página em
+// inglês — a `alt` dela chegava a nomear as abas "Trabalho" e "Casa" em texto
+// inglês. Extrair o DOM custa alguns kB por língua, então cada página passa a
+// mostrar a janela na língua dela.
+const IDIOMA = new URLSearchParams(location.search).get("lang") || "pt-BR";
+Object.defineProperty(navigator, "languages", { get: () => [IDIOMA] });
+Object.defineProperty(navigator, "language", { get: () => IDIOMA });
 
 // --------------------------------------------------------------------- datas
 //
 // **A data de hoje é CALCULADA, e não escrita à mão.** O destaque vermelho é a
-// coisa que a foto mais precisa mostrar, e ele acende comparando a data do título
-// com o dia de verdade (`src/hooks/use-today.ts`). Uma data fixa aqui funcionaria
-// no dia em que foi escrita e sairia cinza em todos os outros — a foto perderia
-// calada o recurso que ela existe para anunciar. `captura.mjs` confere que o
-// destaque acendeu antes de gravar o PNG.
+// coisa que o espécime mais precisa mostrar, e ele acende comparando a data do
+// título com o dia de verdade (`src/hooks/use-today.ts`). Uma data fixa aqui
+// funcionaria no dia em que foi escrita e sairia cinza em todos os outros.
+//
+// **Calcular aqui não basta para o espécime da folha, e isso é novo.** No app o
+// `useToday` vira a data à meia-noite; num PNG ela congelava no dia da captura, e
+// a folha publicada passou a marcar ANTEONTEM em vermelho enquanto a chamada 3
+// prometia "vermelha no dia". Quem fecha esse buraco é `site/folha.js`, que
+// reescreve estes dois números no navegador de quem visita — e o único motivo de
+// isso ser possível é o espécime ter deixado de ser raster. Os `data-especime-*`
+// que a extração marca são o contrato entre os dois lados.
 const doisDigitos = (n) => String(n).padStart(2, "0");
+/** A ordem de dia e mês acompanha a língua, como `date_day_first` declara abaixo. */
+const DIA_PRIMEIRO = IDIOMA !== "en";
+const escrever = (d) => {
+  const dia = doisDigitos(d.getDate());
+  const mes = doisDigitos(d.getMonth() + 1);
+  return DIA_PRIMEIRO ? `${dia}/${mes}` : `${mes}/${dia}`;
+};
 const agora = new Date();
-/** Hoje em `dd/mm` — a ordem que `date_day_first` abaixo declara. */
-const HOJE = `${doisDigitos(agora.getDate())}/${doisDigitos(agora.getMonth() + 1)}`;
+const HOJE = escrever(agora);
 /**
- * Uma data futura, para a pílula cinza aparecer ao lado da vermelha na mesma
- * foto: é a comparação que ensina que o vermelho quer dizer "é hoje" e não
+ * Uma data futura, para a pílula cinza aparecer ao lado da vermelha no mesmo
+ * espécime: é a comparação que ensina que o vermelho quer dizer "é hoje" e não
  * "tem data". Três dias à frente, que nunca cai no mesmo dia que `HOJE`.
  */
-const daquiTresDias = new Date(agora.getTime() + 3 * 86400000);
-const FUTURO = `${doisDigitos(daquiTresDias.getDate())}/${doisDigitos(daquiTresDias.getMonth() + 1)}`;
+const FUTURO = escrever(new Date(agora.getTime() + 3 * 86400000));
 
 // ---------------------------------------------------------------------- dados
 //
 // Sete tarefas, e não seis nem oito: seis deixam um vazio de três linhas no pé da
 // lista, e oito passam da altura da janela e a última sai cortada ao meio. Medido
 // na janela de 360x480 que o `tauri.conf.json` declara.
+// **`repeat` é obrigatório em toda tarefa, e a falta dele não falha calada.**
+// O Adendo 13 pôs `repeat: Repeat` no `Todo` (`src/lib/todos.ts`) e a linha guarda
+// o glifo com `todo.repeat !== "none"` (`TodoRow.tsx`). Sem o campo, `undefined
+// !== "none"` passa, `REPEAT_TITLE[undefined]` é `undefined`, e `t(undefined)`
+// estoura dentro do render — a página fica branca e a captura morre em
+// "a interface não terminou de montar". Foi o que aconteceu entre o Adendo 13 e
+// este arquivo: o stub ficou no formato de antes e a vitrine parou de subir.
+// **O conteúdo de exemplo acompanha a língua.** Enquanto era um PNG só, a página
+// em inglês mostrava uma janela em português — e a `alt` dela nomeava as abas
+// "Trabalho" e "Casa" em texto inglês, admitindo por escrito o que não dava para
+// consertar sem dobrar o peso em raster. Com o espécime em DOM, a segunda língua
+// custa alguns kB, então ela existe.
+//
+// As sete frases são as MESMAS tarefas traduzidas, e não um exemplo novo: cada
+// linha existe pelo caso que ela mostra (data no fim, data no meio, concluída), e
+// trocar o caso trocaria o que a chamada ao lado promete.
+const CONTEUDO = {
+  "pt-BR": {
+    abas: ["Trabalho", "Casa"],
+    tarefas: [
+      "revisar o PR do updater",
+      `pagar o boleto da luz ${HOJE}`,
+      "escrever o changelog da 0.4.0",
+      `responder o Bruno ${FUTURO}`,
+      "retro do time 19/10 às 15h",
+      "responder o e-mail do contador",
+      "atualizar o cask do Homebrew",
+    ],
+    outraAba: "trocar a resistência do chuveiro",
+  },
+  en: {
+    abas: ["Work", "Home"],
+    tarefas: [
+      "review the updater PR",
+      `pay the electricity bill ${HOJE}`,
+      "write the 0.4.0 changelog",
+      `get back to Bruno ${FUTURO}`,
+      "team retro 10/19 at 3pm",
+      "reply to the accountant",
+      "update the Homebrew cask",
+    ],
+    outraAba: "replace the shower heater element",
+  },
+};
+const texto = CONTEUDO[IDIOMA] ?? CONTEUDO["pt-BR"];
+
 const ms = (i) => 1755000000000 + i * 60000;
 const abas = [
-  { id: "trabalho", name: "Trabalho", created_at: ms(0) },
-  { id: "casa", name: "Casa", created_at: ms(1) },
+  { id: "trabalho", name: texto.abas[0], created_at: ms(0) },
+  { id: "casa", name: texto.abas[1], created_at: ms(1) },
 ];
+const tarefa = (t) => ({ done: false, repeat: "none", tab_id: "trabalho", ...t });
 const tarefas = [
-  { id: "1", title: "revisar o PR do updater", done: false, created_at: ms(2), tab_id: "trabalho" },
-  { id: "2", title: `pagar o boleto da luz ${HOJE}`, done: false, created_at: ms(3), tab_id: "trabalho" },
-  { id: "3", title: "escrever o changelog da 0.3.0", done: false, created_at: ms(4), tab_id: "trabalho" },
-  { id: "4", title: `responder o Bruno ${FUTURO}`, done: false, created_at: ms(5), tab_id: "trabalho" },
-  // Data no MEIO da frase, que é o caso em que o app não move nada para a coluna
-  // da direita. Está na foto de propósito: é a regra que o README leva três
-  // parágrafos para explicar, e aqui ela se explica ao lado do caso oposto.
-  { id: "5", title: "retro do time 19/10 às 15h", done: false, created_at: ms(6), tab_id: "trabalho" },
-  { id: "6", title: "responder o e-mail do contador", done: false, created_at: ms(7), tab_id: "trabalho" },
-  // Concluída, para a foto mostrar o risco no texto e o rodapé com o contador e o
-  // "Limpar concluídas". `created_at` bem à frente porque a ordem de exibição
+  // As cinco primeiras: título simples, data NO FIM (vai para a coluna da direita
+  // e acende em vermelho por ser hoje), título simples, data no fim mas futura (a
+  // pílula cinza que ensina o que o vermelho quer dizer), e — a quinta — data no
+  // MEIO da frase, que é o caso em que o app não move nada. Esta última está aqui
+  // de propósito: é a regra que o README leva três parágrafos para explicar, e no
+  // espécime ela se explica ao lado do caso oposto.
+  ...texto.tarefas.slice(0, 6).map((title, i) => tarefa({ id: String(i + 1), title, created_at: ms(i + 2) })),
+  // Concluída, para o espécime mostrar o risco no texto e o rodapé com o contador
+  // e o "Limpar concluídas". `created_at` bem à frente porque a ordem de exibição
   // manda as concluídas para o fim.
-  { id: "7", title: "atualizar o cask do Homebrew", done: true, created_at: ms(20), tab_id: "trabalho" },
-  // A segunda aba não aparece na foto, mas precisa ter conteúdo: uma aba vazia
-  // mudaria o estado da faixa se alguém trocar de aba para tirar outra foto.
-  { id: "8", title: "trocar a resistência do chuveiro", done: false, created_at: ms(8), tab_id: "casa" },
+  tarefa({ id: "7", title: texto.tarefas[6], done: true, created_at: ms(20) }),
+  // A segunda aba não aparece no espécime, mas precisa ter conteúdo: uma aba vazia
+  // mudaria o estado da faixa se alguém trocar de aba para olhar outra coisa.
+  tarefa({ id: "8", title: texto.outraAba, created_at: ms(8), tab_id: "casa" }),
 ];
 
 let ativa = "trabalho";
@@ -79,8 +146,10 @@ const COMANDOS = {
   // Nenhum arquivo foi resgatado: a faixa de erro vermelha não pode aparecer na
   // foto de divulgação do app.
   get_startup_rescue: () => null,
-  // Dia antes de mês, como o `HOJE` acima é montado.
-  date_day_first: () => true,
+  // A mesma ordem que `escrever` acima usou para montar `HOJE` e `FUTURO`. No app
+  // ela vem do sistema operacional; aqui acompanha a língua, que é o que faz o
+  // espécime inglês não mostrar 24/08 para quem lê month-first.
+  date_day_first: () => DIA_PRIMEIRO,
   get_shortcut: () => ({
     accelerator: "control+alt+KeyT",
     label: "⌃⌥T",
@@ -90,7 +159,7 @@ const COMANDOS = {
   }),
   list_todos: ({ tabId }) => tarefas.filter((t) => t.tab_id === tabId),
   add_todo: ({ title, tabId }) => {
-    const novo = { id: String(tarefas.length + 1), title, done: false, created_at: ms(90), tab_id: tabId };
+    const novo = tarefa({ id: String(tarefas.length + 1), title, created_at: ms(90), tab_id: tabId });
     tarefas.push(novo);
     return novo;
   },
@@ -110,13 +179,96 @@ const COMANDOS = {
     fora.forEach((t) => tarefas.splice(tarefas.indexOf(t), 1));
     return fora;
   },
+  // O desfazer devolve as tarefas como estavam, e o backend as regrava inteiras.
+  restore_todos: ({ todos }) => {
+    todos.forEach((t) => { if (!acha(t.id)) tarefas.push({ ...t }); });
+    return todos;
+  },
+
+  // --------------------------------------------------------------- Adendo 13
+  //
+  // Estes seis existem porque o app os CHAMA, e não porque a foto os mostra.
+  // `list_pending_counts` e `list_recurring` rodam na montagem; sem eles o
+  // `invoke` devolvia `undefined`, e um `undefined` onde o App espera lista é a
+  // mesma classe de falha que o `repeat` ausente lá em cima.
+  set_repeat: ({ id, repeat }) => {
+    const t = acha(id);
+    t.repeat = repeat;
+    return t;
+  },
+  move_todo: ({ id, tabId }) => {
+    const t = acha(id);
+    t.tab_id = tabId;
+    return t;
+  },
+  /** Nenhuma tarefa da vitrine repete, então nada vence e nada é revivido. */
+  list_recurring: () => tarefas.filter((t) => t.repeat !== "none"),
+  revive_todos: ({ ids }) => {
+    const voltam = ids.map(acha).filter(Boolean);
+    voltam.forEach((t) => { t.done = false; });
+    return voltam;
+  },
+  list_pending_counts: () =>
+    abas.map((a) => ({
+      tab_id: a.id,
+      pending: tarefas.filter((t) => t.tab_id === a.id && !t.done).length,
+    })),
+  // Exportar e importar mexem no disco, que numa aba de navegador não existe.
+  // Resolvem calados e sem efeito — a alternativa seria a faixa de erro
+  // vermelha, que é o único estado que a vitrine não pode mostrar.
+  export_data: () => undefined,
+  import_data: () => ({ tabs: 0, todos: 0 }),
+
+  // ------------------------------------------------------------------ as abas
+  create_tab: ({ name }) => {
+    const nova = { id: `aba-${abas.length + 1}`, name, created_at: ms(50 + abas.length) };
+    abas.push(nova);
+    return nova;
+  },
+  rename_tab: ({ id, name }) => {
+    const a = abas.find((x) => x.id === id);
+    a.name = name;
+    return a;
+  },
+  close_tab: ({ id }) => {
+    const a = abas.find((x) => x.id === id);
+    const dentro = tarefas.filter((t) => t.tab_id === id);
+    abas.splice(abas.indexOf(a), 1);
+    dentro.forEach((t) => tarefas.splice(tarefas.indexOf(t), 1));
+    if (ativa === id) ativa = abas[0].id;
+    return { tab: a, todos: dentro };
+  },
+  restore_tab: ({ tab, todos }) => {
+    abas.push(tab);
+    todos.forEach((t) => tarefas.push({ ...t }));
+    return abas;
+  },
+
+  // ------------------------------------------------------------ o atalho e o app
+  set_shortcut: ({ accelerator }) => ({
+    accelerator,
+    label: "⌃⌥T",
+    default_accelerator: "control+alt+KeyT",
+    active: true,
+    remembered: true,
+  }),
+  pause_shortcut: ({ paused }) => ({
+    accelerator: "control+alt+KeyT",
+    label: "⌃⌥T",
+    default_accelerator: "control+alt+KeyT",
+    active: !paused,
+    remembered: true,
+  }),
   // Sem versão nova: o painel da engrenagem não aparece na foto, e uma
   // verificação de rede numa vitrine offline só teria como resultado um erro.
   check_update: () => null,
-  // A versao instalada. Aparece SO no painel da engrenagem, que a foto nao mostra
-  // -- vale manter em dia de todo modo, para a vitrine nao ser o unico lugar do
-  // repositorio que diz um numero de versao antigo.
-  "plugin:app|version": () => "0.3.0",
+  install_update: () => undefined,
+  hide_window: () => undefined,
+  // A versão instalada. Aparece SÓ no painel da engrenagem, que o espécime não
+  // mostra — e vem do `package.json` em vez de escrita à mão, para a vitrine não
+  // ser o único lugar do repositório que diz um número de versão antigo. Era o
+  // que estava acontecendo: aqui dizia 0.3.0 com o projeto na 0.4.0.
+  "plugin:app|version": () => VERSAO,
 };
 
 window.__TAURI_INTERNALS__ = {

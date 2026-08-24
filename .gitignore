@@ -39,7 +39,6 @@ dist-ssr
 # no repositório duas vezes -- as fontes vêm de `node_modules` e as imagens de
 # `assets/`, e a CI regenera antes de publicar.
 site/fontes/
-site/telas/
 site/marca/
 site/favicon-*.png
 site/.nojekyll

@@ -274,12 +274,17 @@ npm test               # testes do frontend (node --test, sem dependência extra
 cd src-tauri && cargo test   # testes do backend
 
 npm run marca          # regera os ícones a partir de assets/marca/nocom.svg
-npm run vitrine        # regera as fotos da interface em assets/telas/
+npm run vitrine        # regera as fotos (assets/telas/) e o espécime (assets/especime/)
 ```
 
 Os dois últimos existem para que nenhuma imagem do projeto seja um arquivo órfão:
 mudou a interface, `npm run vitrine` refaz as fotos deste README nos dois temas,
-com dados de exemplo e a data de hoje calculada na hora. Ele precisa de um
+com dados de exemplo e a data de hoje calculada na hora — e refaz também o
+**espécime** que a [landing page](https://zheonatan.github.io/nocom) mostra, que
+não é foto nenhuma: é o DOM montado do app, extraído com o CSS dele e com as
+regiões das chamadas medidas, para a página desenhar a janela em vetor em vez de
+em pixel. O raster fica porque o GitHub não renderiza mais que isso; a página, que
+pode, deixou de usá-lo. O porquê está no cabeçalho de `scripts/vitrine/captura.mjs`. Ele precisa de um
 navegador baseado em Chromium — se o seu não estiver no lugar de sempre, aponte
 com `CHROME=/caminho/para/chrome npm run vitrine`.
 

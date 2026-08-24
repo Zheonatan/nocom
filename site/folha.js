@@ -135,19 +135,42 @@
      Escolher uma chamada faz tres coisas de uma vez: realca a regiao na janela,
      acende o balao correspondente, e recorta o detalhe 2:1.
 
-     O RECORTE E CALCULADO, e nao escrito a mao. `data-regiao` esta em px da janela;
-     a imagem tem 30px CSS de margem transparente por lado e foi capturada a 2x,
-     entao a regiao em coordenadas da imagem e (px + 30) * 2. E a mesma fonte de
-     verdade que posiciona o realce no SVG -- se as duas divergirem, o detalhe
-     mostra uma parte e a seta aponta outra. */
+     O RECORTE E CALCULADO, e nao escrito a mao. `data-regiao` esta em px da janela
+     -- as mesmas coordenadas que o realce usa no SVG, e ambas vem medidas do DOM
+     real por `npm run vitrine`. Se as duas divergirem, o detalhe mostra uma parte e
+     a seta aponta outra.
+
+     E O DETALHE E O PROPRIO ESPECIME, CLONADO. Antes era um recorte do PNG por
+     `background-position`, o que amarrava a nitidez a resolucao do raster: 2:1
+     sobre uma imagem 2x gasta toda a resolucao que existe. Um clone do DOM ampliado
+     por `transform: scale(2)` amplia TEXTO, e e nitido em qualquer escala. */
 
   var ESCALA_DETALHE = 2; /* 2:1, e o rotulo do detalhe diz isso por escrito. */
-  var MARGEM_CAPTURA = 30;
 
   var JANELA_LARGURA = 360;
   var JANELA_ALTURA = 480;
 
-  function recortar(vidro, regiao) {
+  /* O clone vive dentro da vidraca. A shadow root nao vem no `cloneNode`, entao ela
+     e recriada e recebe o mesmo conteudo -- inclusive o `<style>` do app, que ja
+     esta parseado e nao custa uma requisicao.
+
+     Clonar em vez de embutir um segundo especime no HTML economiza os 28 kB de
+     marcacao que a duplicata custaria, e nao tira nada de ninguem: a vidraca ja era
+     so-com-JavaScript antes disto (ver `.sem-js .detalhe` no CSS). */
+  function clonarEspecime(vidro) {
+    var fonte = doc.querySelector(".palco .especime");
+    if (!fonte || !fonte.shadowRoot || !vidro) return null;
+    var clone = doc.createElement("div");
+    clone.className = "especime";
+    /* Sem `role`/`aria-label`: a vidraca inteira e `aria-hidden`, e o desenho
+       ampliado nao e uma segunda coisa a anunciar. Um estado, uma voz. */
+    clone.attachShadow({ mode: "open" }).innerHTML = fonte.shadowRoot.innerHTML;
+    vidro.appendChild(clone);
+    return clone;
+  }
+
+  function recortar(vidro, clone, regiao) {
+    if (!clone) return;
     var partes = regiao.split(",").map(Number);
     var x = partes[0], y = partes[1], largura = partes[2], altura = partes[3];
 
@@ -157,9 +180,9 @@
     var cabeY = caixa.height / ESCALA_DETALHE;
 
     /* Centraliza na regiao e depois PRENDE dentro da janela: sem isso o recorte
-       passa da aresta e mostra a margem transparente da captura, que aparece como
-       um bloco de outra cor -- foi exatamente o que aconteceu com a data, que fica
-       a 18px da borda direita. */
+       passa da aresta e mostra a pelicula da folha atras do especime, que aparece
+       como um bloco de outra cor -- foi exatamente o que aconteceu com a data, que
+       fica a 18px da borda direita. */
     var prender = function (inicio, tamanho, cabe, limite) {
       /* Regiao mais larga que a vidraca alinha pelo COMECO, e nao pelo centro:
          centralizar um campo de texto corta o inicio dele, que e onde a leitura
@@ -170,10 +193,9 @@
     var esq = prender(x, largura, cabeX, JANELA_LARGURA);
     var topo = prender(y, altura, cabeY, JANELA_ALTURA);
 
-    var desvioX = (esq + MARGEM_CAPTURA) * ESCALA_DETALHE;
-    var desvioY = (topo + MARGEM_CAPTURA) * ESCALA_DETALHE;
-
-    vidro.style.backgroundPosition = -desvioX + "px " + -desvioY + "px";
+    /* `transform-origin: 0 0` com `scale(2)`, entao o desvio e em px JA ampliados. */
+    clone.style.left = -(esq * ESCALA_DETALHE) + "px";
+    clone.style.top = -(topo * ESCALA_DETALHE) + "px";
   }
 
   function ligarChamadas() {
@@ -181,6 +203,7 @@
     if (!lista) return;
 
     var vidro = doc.querySelector(".detalhe-vidro");
+    var clone = clonarEspecime(vidro);
     var botoes = lista.querySelectorAll("button[data-chamada]");
     if (!botoes.length) return;
 
@@ -196,7 +219,7 @@
       Array.prototype.forEach.call(doc.querySelectorAll(".realce"), function (r) {
         r.classList.toggle("acesa", r.getAttribute("data-realce") === chave);
       });
-      if (vidro && regiao) recortar(vidro, regiao);
+      if (vidro && regiao) recortar(vidro, clone, regiao);
 
       /* A frase visivel vem da copia sr-only do proprio botao: uma fonte de texto,
          nao duas. `innerHTML` e nao `textContent` porque ela carrega <code>. */
@@ -225,7 +248,7 @@
        dela: recalcula no redimensionamento, sem observar nada mais que isso. */
     window.addEventListener("resize", function () {
       var ativo = lista.querySelector('button[aria-pressed="true"]');
-      if (ativo && vidro) recortar(vidro, ativo.getAttribute("data-regiao"));
+      if (ativo && vidro) recortar(vidro, clone, ativo.getAttribute("data-regiao"));
     });
   }
 
@@ -308,7 +331,63 @@
     });
   }
 
+  /* ------------------------------------------------------------ 6. a data de hoje
+     O ESPECIME NAO PODE ENVELHECER, e ate a 0.4.0 ele envelhecia.
+
+     A chamada 3 promete "vermelha no dia". A data vermelha, porem, era escrita por
+     `scripts/vitrine/stub.js` no momento da extracao e congelava ali: um dia depois
+     de gerar a folha, a pagina publicada marcava ONTEM em vermelho enquanto a frase
+     ao lado prometia hoje. Nao havia como consertar num raster -- a data era pixel.
+
+     Agora ela e texto, e este trecho reescreve os dois numeros no navegador de quem
+     visita. A pilula vermelha volta a dizer a verdade em qualquer dia, sem
+     republicar nada.
+
+     O QUE ELE NAO FAZ, de proposito: nao recalcula qual pilula acende. Quem acende
+     e a classe `bg-today`, que a extracao ja conferiu estar no lugar (ver
+     `conferirHoje` em `captura.mjs`) -- este trecho troca o NUMERO da pilula que ja
+     e a de hoje, e o da futura. Decidir aqui qual data e hoje seria uma segunda
+     copia da regra que mora em `src/lib/dates.ts`.
+
+     E A LARGURA NAO MUDA. O formato tem sempre cinco caracteres e a pilula usa
+     `tabular-nums`, entao a caixa medida em `cotas.json` continua valendo para
+     qualquer dia do ano -- se nao fosse assim, o realce da chamada 3 sairia de
+     lugar a cada virada de mes. */
+
+  function escreverData(marca, data, ordem) {
+    if (!marca) return;
+    var d = String(data.getDate());
+    var m = String(data.getMonth() + 1);
+    if (d.length < 2) d = "0" + d;
+    if (m.length < 2) m = "0" + m;
+    /* So o primeiro no de texto: a pilula de hoje carrega depois dele um
+       `<span class="sr-only"> (hoje)</span>`, que e a palavra que o leitor de tela
+       le no lugar da tinta vermelha. Reescrever `textContent` apagaria ela. */
+    var alvo = marca.firstChild;
+    if (alvo && alvo.nodeType === 3) alvo.nodeValue = ordem === "mes" ? m + "/" + d : d + "/" + m;
+  }
+
+  function atualizarDatas() {
+    var host = doc.querySelector(".palco .especime");
+    if (!host || !host.shadowRoot) return;
+    var raiz = host.shadowRoot;
+    var ordem = host.getAttribute("data-ordem") === "mes" ? "mes" : "dia";
+    var hoje = new Date();
+    escreverData(raiz.querySelector("mark[data-especime-hoje]"), hoje, ordem);
+    /* Tres dias a frente, como o `stub.js` escolheu: a pilula cinza ao lado da
+       vermelha e a comparacao que ensina que o vermelho quer dizer "e hoje" e nao
+       "tem data". */
+    escreverData(
+      raiz.querySelector("mark[data-especime-futuro]"),
+      new Date(hoje.getTime() + 3 * 86400000),
+      ordem
+    );
+  }
+
   ligarSeletor();
+  /* As datas ANTES das chamadas: `ligarChamadas` clona o especime para a vidraca do
+     detalhe, e o clone precisa nascer com a data ja corrigida. */
+  atualizarDatas();
   ligarChamadas();
   ligarCopia();
   prepararCotas();

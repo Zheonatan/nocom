@@ -9,8 +9,14 @@
  * de `scripts/marca.mjs`: um lugar com os numeros, e o resto derivado dele.
  *
  * O QUE ELE COPIA. As fontes vem de `node_modules` (auto-hospedadas: a pagina nao
- * faz uma unica requisicao de terceiro), as capturas de `assets/telas`, a marca de
- * `assets/marca` e os favicons de `public`. Nada e baixado em tempo de build.
+ * faz uma unica requisicao de terceiro), a marca de `assets/marca` e os favicons de
+ * `public`. Nada e baixado em tempo de build.
+ *
+ * O QUE ELE EMBUTE. O especime da janela -- o DOM montado do app, o CSS dele e as
+ * cotas medidas -- vem de `assets/especime/`, gerado por `npm run vitrine`. Ele e
+ * INLINE e nao copiado, porque entra numa shadow root declarativa: ver
+ * `especime` abaixo e o cabecalho de `scripts/vitrine/captura.mjs`, que
+ * explica por que a folha deixou de mostrar um PNG.
  *
  * COMO RODAR:
  *   node scripts/site.mjs           gera `site/`
@@ -22,6 +28,11 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  ARQUIVO_IMPRESSAO,
+  impressaoDaFonte,
+} from "./vitrine/impressao.mjs";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, "..");
@@ -45,9 +56,14 @@ const COPIAS = [
   ["node_modules/@fontsource/spectral/files/spectral-latin-400-normal.woff2", "fontes/spectral-latin-400-normal.woff2"],
   ["node_modules/@fontsource/spectral/files/spectral-latin-400-italic.woff2", "fontes/spectral-latin-400-italic.woff2"],
   ["node_modules/@fontsource/spectral/files/spectral-latin-500-normal.woff2", "fontes/spectral-latin-500-normal.woff2"],
-  // As duas capturas reais da janela, uma por tema. 840x1080, fundo transparente.
-  ["assets/telas/janela-escura.png", "telas/janela-escura.png"],
-  ["assets/telas/janela-clara.png", "telas/janela-clara.png"],
+  /* A QUARTA FAMILIA, e ela nao e escolha de gosto: e a tipografia do APP.
+     Enquanto o especime era um PNG, a Geist viajava como pixel dentro dele. Agora
+     que ele e DOM, a folha precisa da fonte de verdade -- sem ela o desenho da
+     janela sai na fallback do sistema, com outras metricas, e deixa de ser fiel
+     ao que a pessoa vai instalar. Os dois subconjuntos com `unicode-range`, como
+     `src/index.css` declara: o navegador baixa so o que o texto pede. */
+  ["node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2", "fontes/geist-latin-wght-normal.woff2"],
+  ["node_modules/@fontsource-variable/geist/files/geist-latin-ext-wght-normal.woff2", "fontes/geist-latin-ext-wght-normal.woff2"],
   // A marca e o card social que o Slack, o GitHub e o Twitter mostram.
   ["assets/marca/nocom.svg", "marca/nocom.svg"],
   ["assets/marca/card-social.png", "marca/card-social.png"],
@@ -248,7 +264,7 @@ const en = {
 
   especime_h2: "The window",
   especime_alt:
-    "The NoCom window: the tabs Trabalho and Casa, a new-task field and seven tasks. Two carry a date in a right-hand column, today's is highlighted in red, and the last one is done and struck through.",
+    "The NoCom window: the tabs Work and Home, a new-task field and seven tasks. Two carry a date in a right-hand column, today's is highlighted in red, and the last one is done and struck through.",
   cota_lembrar: "remember",
   cota_anotado: "written",
   legenda_titulo: "Scale 1:1",
@@ -425,49 +441,145 @@ function conferirDicionario(canonico, traducao, caminho = "") {
    canto superior esquerdo dela). Dessa unica fonte saem: o retangulo de realce no
    palco largo (soma 130, 30), o do palco estreito (soma 0, 0), a posicao do balao,
    a linha de chamada, e o recorte 2:1 do detalhe -- que o JavaScript calcula em
-   coordenadas 2x da imagem. Mexer numa coordenada aqui move as cinco coisas
+   coordenadas do proprio especime. Mexer numa coordenada aqui move as cinco coisas
    juntas; e por isso que elas nao podem divergir.
 
    A ORDEM E A DA HISTORIA, e nao a espacial: atalho, aba, data, concluir, esconder.
    Numero de chamada em desenho segue a sequencia de uso, nao a de cima para baixo.
 
-   AS REGIOES DEPENDEM DO CONTEUDO DA CAPTURA, e nao so do tamanho dela.
-   `conferirCaptura` pega mudanca de dimensao; nao pega mudanca de lista. Se a
-   captura for regerada com outras tarefas, outra ordem, ou uma data de largura
-   diferente, estes retangulos precisam ser reconferidos a mao -- e a copy nao pode
-   citar o que esta escrito nela, porque a captura carrega o "hoje" do dia em que
-   foi tirada e envelhece sozinha.
+   AS REGIOES SAO MEDIDAS, E NAO ESCRITAS. Ate a 0.4.0 elas eram cinco retangulos
+   digitados a olho sobre o PNG, e este comentario avisava, por escrito, que regerar
+   a captura pedia reconferir os cinco a mao -- sem nada quebrar se ninguem
+   reconferisse: a folha so passava a apontar para o lugar errado. Agora
+   `npm run vitrine` mede cada regiao no DOM real (por SELETOR, ver `CHAMADAS` em
+   `scripts/vitrine/captura.mjs`) e grava `assets/especime/cotas.json`. O que sobra
+   aqui e a decisao de composicao que nenhuma medicao toma: de que LADO o balao
+   fica, e se o detalhe mostra um pedaco menor que a regiao realcada.
 
-   PALCO LARGO -- 600 x 520. A imagem de 840x1080 entra a 420x540 na posicao
-   (100, 0) e carrega 30px CSS de margem transparente em cada lado, entao a JANELA
-   ocupa (130, 30) a (490, 510). `conferirCaptura` transforma essa dependencia em
-   teste: se a captura mudar de recuo, o realce aponta para o lugar errado e nada
-   quebra sozinho.
+   E elas sao POR LINGUA: o titulo riscado da concluida tem 180px em portugues e
+   164px em ingles, e o realce encosta no fim do risco nas duas.
 
-   PALCO ESTREITO -- 360 x 480, com viewBox proprio, e a margem transparente
-   recortada nos dois eixos: a janela ocupa 0..360 x 0..480 do palco. Ali nao ha
-   goteira para balao nenhum, entao o estreito fica so com o realce, e a lista de
-   chamadas e o unico controle. */
+   PALCO LARGO -- 600 x 520. O especime tem exatamente 360x480 (sem margem: ele
+   nao e mais um raster com folga para sombra) e entra na posicao (130, 30), entao a
+   JANELA ocupa (130, 30) a (490, 510) -- as mesmas coordenadas de antes, para a
+   geometria dos baloes nao precisar de uma segunda revisao.
+
+   PALCO ESTREITO -- 360 x 480, com viewBox proprio: o especime entra em (0, 0) e
+   ocupa o palco inteiro. Ali nao ha goteira para balao nenhum, entao o estreito
+   fica so com o realce, e a lista de chamadas e o unico controle. */
 
 const JANELA = { esq: 130, topo: 30 };
 
+const COTAS = JSON.parse(readFileSync(join(RAIZ, "assets", "especime", "cotas.json"), "utf8"));
+
+/* O CSS do app, purgado ao que o especime usa. Lido uma vez: ele e o mesmo nas
+   duas linguas -- `npm run vitrine` purga contra os dois DOMs de proposito. */
+const ESPECIME_CSS = readFileSync(join(RAIZ, "assets", "especime", "janela.css"), "utf8").trim();
+
+/* Os `@property` do Tailwind, que vao para o `<head>` e nao para dentro do
+   especime. O motivo esta no comentario do `<style>` que os recebe. */
+const ESPECIME_PROPRIEDADES = readFileSync(
+  join(RAIZ, "assets", "especime", "janela.propriedades.css"),
+  "utf8"
+).trim();
+
+/* ==========================================================================
+   O ESPECIME: A JANELA DE VERDADE, E NAO UMA FOTO DELA
+   ==========================================================================
+
+   O que entra na pagina e o DOM montado do app dentro de uma SHADOW ROOT
+   DECLARATIVA. Nenhum JavaScript participa: o parser do navegador ve
+   `<template shadowrootmode="open">` e prende a shadow root ali, com o CSS do app
+   dentro dela.
+
+   POR QUE SHADOW ROOT, e nao um `<div>` com o CSS reescrito. O CSS do app e
+   Tailwind v4, que emite `:root,:host` justamente para funcionar dentro de uma
+   shadow root -- ele entra verbatim, sem reescrever um seletor, sem parser de CSS
+   e sem risco de errar um. E o isolamento vale nos DOIS sentidos: o reset `*` do
+   app nao vaza para a folha (ele reescreveria a pagina inteira), e a tipografia da
+   folha nao vaza para dentro da janela.
+
+   POR QUE O CSS VAI INLINE, e nao num arquivo com `<link>`. Uma folha ligada de
+   dentro da shadow root nao bloqueia a pintura do documento: o especime apareceria
+   sem estilo por um instante, na primeira dobra, que e o pior lugar da pagina para
+   um lampejo. 24 kB (5 kB comprimidos) e o preco de nao ter esse lampejo -- e ainda
+   assim o conjunto pesa menos que o PNG que ele substituiu.
+
+   O TEMA E O DO VISITANTE, PELO MESMO MECANISMO DO APP. `@media
+   (prefers-color-scheme: dark)` e do documento e atravessa a shadow root, entao a
+   janela troca de tema como o app troca no sistema. Foi assim que os dois PNGs e o
+   `<picture>` que escolhia entre eles sairam da pagina.
+
+   ACESSIBILIDADE: `role="img"` com uma etiqueta so. Sem isso, o leitor de tela
+   leria as sete tarefas, os dois nomes de aba e cinco botoes de remover -- o
+   especime e um DESENHO da janela, e se anuncia como um. `inert` faria o mesmo pelo
+   foco, mas apagaria tambem o `aria-label`, deixando o desenho sem nome: quem
+   cuida do foco e o `tabindex="-1"` que a extracao poe em cada controle. */
+function especime(d, lang) {
+  const marcacao = readFileSync(
+    join(RAIZ, "assets", "especime", "janela-" + lang + ".html"),
+    "utf8"
+  ).trim();
+  /* `data-ordem` diz a `folha.js` como escrever a data que ele reescreve no
+     navegador: dia antes de mes em portugues, mes antes de dia em ingles -- a
+     mesma ordem que `stub.js` usou para montar o especime. */
+  return `          <div class="especime" role="img" aria-label="${d.especime_alt}"
+               data-ordem="${lang === "en" ? "mes" : "dia"}">
+            <template shadowrootmode="open">
+              <style>${ESPECIME_CSS}</style>
+              ${marcacao}
+            </template>
+            <!-- O DESENHO NAO RENDERIZADO, para o navegador que nao prende shadow
+                 root declarativa. O template acima e inerte nele, e sem isto a
+                 primeira dobra teria uma caixa vazia de 360x480 onde vive o
+                 argumento inteiro da pagina.
+
+                 Ele nao custa uma requisicao nem uma condicao: um shadow host SEM
+                 <slot> nao renderiza os filhos de luz, entao quem prende a shadow
+                 root nunca ve esta linha, e quem nao prende ve so ela. E a mesma
+                 descricao que o aria-label ja carrega -- uma fonte de texto, nao
+                 duas.
+
+                 Shadow DOM declarativa e baseline desde o inicio de 2024 (Chrome e
+                 Safari em 2023, Firefox 123). A exposicao e pequena; a falha, se
+                 acontecesse, seria no pior lugar. -->
+            <p class="especime-ausente">${d.especime_alt}</p>
+          </div>`;
+}
+
 const CHAMADAS = [
-  /* `regiao` realca a funcionalidade inteira. `detalhe`, quando existe, e o pedaco
-     que cabe ampliado 2:1 na vidraca de 560px -- o campo tem 336px de largura e a
-     2:1 daria 672, entao o detalhe mostra a parte que interessa. Realcar so o
-     pedaco recortado fazia o retangulo cobrir meio campo, o que parece defeito. */
-  { chave: "campo", regiao: [12, 76, 336, 32], detalhe: [12, 76, 256, 32], lado: "esq" },
-  /* A faixa inteira, e nao so os dois chips: a copy diz "criados e nomeados no
-     mesmo gesto", e o "+" que cria ficava fora do realce. */
-  { chave: "abas", regiao: [12, 41, 336, 26], detalhe: [12, 41, 240, 26], lado: "esq" },
-  /* Medido no palco ampliado 2x: o chip ocupa 268..316, e nao 288..342. */
-  { chave: "data", regiao: [266, 175, 52, 23], lado: "dir" },
-  /* Encurtado para encostar no fim do titulo riscado, em vez de parar num ponto
-     arbitrario 32px depois dele. */
-  { chave: "concluida", regiao: [12, 377, 216, 28], lado: "esq" },
-  /* Centrado no glifo (333,5 / 22,5) e no tamanho do botao, que tem 24px. */
-  { chave: "sair", regiao: [321, 10, 25, 25], lado: "dir" },
+  /* `detalhe`, quando existe, e o pedaco que cabe ampliado 2:1 na vidraca de
+     560px -- o campo tem 334px de largura e a 2:1 daria 668, entao o detalhe
+     mostra a parte que interessa. Realcar so o pedaco recortado fazia o retangulo
+     cobrir meio campo, o que parece defeito. */
+  { chave: "campo", detalhe: [13, 77, 256, 32], lado: "esq" },
+  { chave: "abas", detalhe: [13, 41, 240, 28], lado: "esq" },
+  { chave: "data", lado: "dir" },
+  { chave: "concluida", lado: "esq" },
+  { chave: "sair", lado: "dir" },
 ];
+
+/* As chamadas desta lingua, com a regiao medida acoplada. */
+function chamadasDe(lang) {
+  const medidas = COTAS[lang];
+  if (!medidas) {
+    console.error(
+      "assets/especime/cotas.json não tem a língua `" + lang + "`.\n" +
+        "Rode `npm run vitrine` para regerar o espécime e as cotas."
+    );
+    process.exit(1);
+  }
+  return CHAMADAS.map((c) => {
+    if (!medidas[c.chave]) {
+      console.error(
+        "assets/especime/cotas.json não tem a chamada `" + c.chave + "` em " + lang + ".\n" +
+          "Acerte `CHAMADAS` em scripts/vitrine/captura.mjs e rode `npm run vitrine`."
+      );
+      process.exit(1);
+    }
+    return { ...c, regiao: medidas[c.chave] };
+  });
+}
 
 function balao(chamada, i) {
   const [x, y, largura, altura] = chamada.regiao;
@@ -492,8 +604,8 @@ function balao(chamada, i) {
             </g>`;
 }
 
-function chamadasLargas() {
-  const realces = CHAMADAS.map(
+function chamadasLargas(chamadas) {
+  const realces = chamadas.map(
     (c) =>
       `            <rect class="realce" data-realce="${c.chave}" x="${JANELA.esq + c.regiao[0]}" y="${
         JANELA.topo + c.regiao[1]
@@ -501,13 +613,13 @@ function chamadasLargas() {
   ).join("\n");
 
   return `          <svg class="cotas cotas-largas" viewBox="0 0 600 520" width="600" height="520" aria-hidden="true">
-${CHAMADAS.map(balao).join("\n")}
+${chamadas.map(balao).join("\n")}
 ${realces}
           </svg>`;
 }
 
-function chamadasEstreitas() {
-  const realces = CHAMADAS.map(
+function chamadasEstreitas(chamadas) {
+  const realces = chamadas.map(
     (c) =>
       `            <rect class="realce" data-realce="${c.chave}" x="${c.regiao[0]}" y="${c.regiao[1]}" width="${c.regiao[2]}" height="${c.regiao[3]}" />`
   ).join("\n");
@@ -517,8 +629,8 @@ ${realces}
           </svg>`;
 }
 
-function listaDeChamadas(d) {
-  return CHAMADAS.map((c, i) => {
+function listaDeChamadas(d, chamadas) {
+  return chamadas.map((c, i) => {
     const texto = d.chamadas[c.chave];
     return `          <li>
             <button type="button" data-chamada="${c.chave}"
@@ -596,6 +708,7 @@ function comando(id, linhas, d) {
 }
 
 function pagina(d, { base, canonico, linkOutraLingua }) {
+  const chamadas = chamadasDe(d.lang);
   const calibre = d.calibre
     .map(
       ([carac, valor, obs]) => `            <tr>
@@ -672,6 +785,14 @@ ${n.comando ? comando("cmd-liberar-" + chave, [n.comando], d) + "\n" : ""}${
 <link rel="preload" href="${base}fontes/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${base}fontes/azeret-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${base}folha.css">
+<!-- OS @property DO TAILWIND, E ELES PRECISAM ESTAR AQUI E NAO NO ESPECIME.
+     A regra @property e do DOCUMENTO: dentro de uma shadow root ela e ignorada. O
+     Tailwind v4 registra ali cada --tw-* com o initial-value de que as utilidades
+     dependem, e sem esse registro "border-style: var(--tw-border-style)" fica sem
+     valor -- o campo do especime aparecia literalmente sem borda no Chromium, sem
+     um erro no console. Registrar estes nomes no documento nao pinta nada: nenhuma
+     regra da folha le uma variavel --tw-*. -->
+<style>${ESPECIME_PROPRIEDADES}</style>
 <script>document.documentElement.className = "js";</script>
 </head>
 <body>
@@ -745,13 +866,9 @@ ${d.sistemas
         <h2 id="h-especime">${d.especime_h2}</h2>
         <div class="palco-caixa">
           <div class="palco">
-            <picture>
-              <source media="(prefers-color-scheme: dark)" srcset="${base}telas/janela-escura.png">
-              <img class="tela" src="${base}telas/janela-clara.png" width="420" height="540"
-                   alt="${d.especime_alt}">
-            </picture>
-${chamadasLargas()}
-${chamadasEstreitas()}
+${especime(d, d.lang)}
+${chamadasLargas(chamadas)}
+${chamadasEstreitas(chamadas)}
           </div>
         </div>
         <p class="legenda-palco">
@@ -763,13 +880,20 @@ ${chamadasEstreitas()}
              legiveis como lista numerada, e o detalhe desaparece em vez de ficar
              parado numa regiao que ninguem escolheu. -->
         <ol class="chamadas">
-${listaDeChamadas(d)}
+${listaDeChamadas(d, chamadas)}
         </ol>
 
         <!-- A frase da chamada escolhida. Marcada aria-hidden porque ela ja e
              anunciada pelo proprio botao: um estado, uma voz. -->
         <p class="chamada-explicacao" aria-hidden="true"></p>
 
+        <!-- O detalhe amplia 2:1 uma REGIAO DO ESPECIME, e a vidraca chega
+             vazia: folha.js clona o especime aqui dentro e o escala. Ela e
+             aria-hidden porque a chamada escolhida ja se anuncia pelo proprio
+             botao (um estado, uma voz), e ja era so-com-JavaScript antes disto
+             (ver .sem-js .detalhe no CSS), entao o clone nao tira nada de
+             ninguem. Clonar em vez de embutir um segundo especime economiza os
+             28 kB de marcacao que a duplicata custaria. -->
         <figure class="detalhe" aria-hidden="true">
           <figcaption>${d.detalhe_rotulo}</figcaption>
           <div class="detalhe-vidro"></div>
@@ -878,32 +1002,54 @@ function entregar(caminhoRelativo, conteudo) {
   console.log("  site/" + caminhoRelativo);
 }
 
-/* A GEOMETRIA DAS COTAS DEPENDE DA CAPTURA, e essa dependencia e invisivel.
+/* O ESPECIME PRECISA ESTAR NO AR, E ATUAL.
  *
- * O palco largo posiciona a imagem em (100, 0) a 420x540 e crava o realce das
- * chamadas em (130, 30)-(490, 510), que e a janela: a captura tem 840x1080 (2x) com
- * 30px CSS de margem transparente em cada lado. Se `scripts/vitrine/captura.mjs` mudar esse
- * recuo, as cotas apontam para o lugar errado e NADA quebra -- a folha so passa a
- * mentir. Este teste transforma isso em falha de build.
+ * Ele nao e um arquivo copiado: e embutido na pagina, entao `--check` nao pega a
+ * falta dele como pega a de um raster ausente. E ele tem uma data dentro -- o
+ * numero que `stub.js` escreveu no dia da extracao. `folha.js` reescreve esse
+ * numero no navegador de quem visita, e e por isso que o especime nao envelhece
+ * mais; ainda assim, um especime de meses atras carrega a interface de meses atras.
  *
- * O tamanho e lido do IHDR do PNG (largura e altura em big-endian nos bytes 16 a
- * 23), sem dependencia nenhuma. */
-function conferirCaptura(caminho) {
-  const cabecalho = readFileSync(caminho).subarray(0, 24);
-  const largura = cabecalho.readUInt32BE(16);
-  const altura = cabecalho.readUInt32BE(20);
-  if (largura !== 840 || altura !== 1080) {
+ * Este teste cobre as duas coisas: os arquivos existem, e nenhum deles e mais
+ * antigo que o codigo do app que eles retratam. Antes ele era `conferirCaptura`, e
+ * conferia a DIMENSAO do PNG (840x1080) porque as cotas eram coordenadas escritas
+ * a mao contra aquela geometria. As cotas agora sao medidas, e essa classe de erro
+ * deixou de existir -- o que sobrou para conferir e a frescura. */
+const ESPECIME_ARQUIVOS = [
+  "cotas.json", "janela.css", "janela.propriedades.css",
+  "janela-pt-BR.html", "janela-en.html", ARQUIVO_IMPRESSAO,
+];
+
+function conferirEspecime() {
+  const dir = join(RAIZ, "assets", "especime");
+  const faltando = ESPECIME_ARQUIVOS.filter((a) => !existsSync(join(dir, a)));
+  if (faltando.length) {
     console.error(
-      "A captura " + caminho + " tem " + largura + "x" + altura + ", e não 840x1080.\n" +
-        "O realce das chamadas está cravado nessa geometria (janela de 720x960 centrada,\n" +
-        "30px CSS de margem transparente por lado). Se a captura mudou de recuo, acerte as\n" +
-        "coordenadas em `JANELA`/`CHAMADAS` e o `.palco` no CSS antes de publicar."
+      "assets/especime/ está incompleto: falta " + faltando.join(", ") + ".\n" +
+        "Rode `npm run vitrine` para extrair o espécime da janela."
+    );
+    process.exit(1);
+  }
+
+  /* A fonte da verdade e o codigo da interface: `src/` e o que o especime retrata.
+     A impressao gravada na extracao responde a pergunta certa -- nao "o que e mais
+     novo", mas "este especime foi extraido DESTE codigo". Ver `impressao.mjs`: a
+     primeira versao disto comparava `mtime` e era uma moeda ao ar na CI, que e
+     exatamente onde `site.yml` publica a pagina. */
+  const gravada = readFileSync(join(dir, ARQUIVO_IMPRESSAO), "utf8").trim();
+  const agora = impressaoDaFonte(RAIZ);
+  if (gravada !== agora) {
+    console.error(
+      "assets/especime/ nao retrata o src/ atual: o desenho da janela na folha nao e\n" +
+        "a janela que o codigo monta hoje (" + gravada + " != " + agora + ").\n" +
+        "Rode `npm run vitrine` antes de publicar."
     );
     process.exit(1);
   }
 }
 
 conferirDicionario(pt, en);
+conferirEspecime();
 
 const html = {
   "index.html": pagina(pt, {
@@ -929,7 +1075,6 @@ if (!CONFERIR) {
       console.error("faltando: " + origem);
       process.exit(1);
     }
-    if (destino.startsWith("telas/")) conferirCaptura(de);
     const para = join(SAIDA, destino);
     mkdirSync(dirname(para), { recursive: true });
     copyFileSync(de, para);

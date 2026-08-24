@@ -267,7 +267,12 @@ const COMANDOS = {
   // A versão instalada. Aparece SÓ no painel da engrenagem, que o espécime não
   // mostra — e vem do `package.json` em vez de escrita à mão, para a vitrine não
   // ser o único lugar do repositório que diz um número de versão antigo. Era o
-  // que estava acontecendo: aqui dizia 0.3.0 com o projeto na 0.4.0.
+  // que estava acontecendo, com a vitrine uma versão atrás do projeto.
+  //
+  // O texto acima não cita nenhum número de propósito: o `publicar.mjs` faz uma
+  // troca GLOBAL da versão neste arquivo, então um número escrito aqui para
+  // ilustrar o problema antigo seria reescrito junto, e a frase passaria a
+  // descrever algo que nunca aconteceu.
   "plugin:app|version": () => VERSAO,
 };
 

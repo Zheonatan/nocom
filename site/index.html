@@ -71,7 +71,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <nav class="idioma"><a href="en/" hreflang="en">English</a></nav>
     </div>
     <dl class="bt-campos">
-      <div><dt>versão</dt><dd>0.3.0</dd></div>
+      <div><dt>versão</dt><dd>0.4.0</dd></div>
       <div><dt>licença</dt><dd>MIT</dd></div>
     </dl>
   </header>
@@ -368,7 +368,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="marca-copiado">copiado</span>
             </button>
           </div>
-          <p class="alternativa">Ou baixe o <code>.dmg</code>: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_aarch64.dmg">Apple&nbsp;Silicon</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64.dmg">Intel</a>.</p>
+          <p class="alternativa">Ou baixe o <code>.dmg</code>: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_aarch64.dmg">Apple&nbsp;Silicon</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64.dmg">Intel</a>.</p>
           <p class="ref-nota">Antes da primeira abertura: <a href="#nota-1">nota 1</a>.</p>
         </li>
         <li data-sistema="windows">
@@ -396,7 +396,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="marca-copiado">copiado</span>
             </button>
           </div>
-          <p class="alternativa">Ou baixe o <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe">.exe</a>. Pelo <code>winget</code> não aparece aviso nenhum.</p>
+          <p class="alternativa">Ou baixe o <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64-setup.exe">.exe</a>. Pelo <code>winget</code> não aparece aviso nenhum.</p>
           <p class="ref-nota">Antes da primeira abertura: <a href="#nota-1">nota 1</a>.</p>
         </li>
         <li data-sistema="linux">
@@ -405,12 +405,12 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <span class="via">pacote direto</span>
           </div>
           <div class="comando">
-            <code id="cmd-linux-0">sudo dpkg -i NoCom_0.3.0_amd64.deb</code>
+            <code id="cmd-linux-0">sudo dpkg -i NoCom_0.4.0_amd64.deb</code>
             <button type="button" class="copiar" data-para="cmd-linux-0"
                     data-anuncio="Comando copiado."
                     data-anuncio-falhou="Não foi possível copiar. Selecione a linha e copie à mão."
                     data-anuncio-selecionado="Comando selecionado. Copie com o atalho do seu sistema."
-                    aria-label="copiar: sudo dpkg -i NoCom_0.3.0_amd64.deb">
+                    aria-label="copiar: sudo dpkg -i NoCom_0.4.0_amd64.deb">
               <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
                    stroke="currentColor" stroke-width="1">
                 <rect x="0.5" y="2.5" width="7" height="9" />
@@ -424,7 +424,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="marca-copiado">copiado</span>
             </button>
           </div>
-          <p class="alternativa">Baixe primeiro: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.deb">.deb</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom-0.3.0-1.x86_64.rpm">.rpm</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.AppImage">AppImage</a>.</p>
+          <p class="alternativa">Baixe primeiro: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.deb">.deb</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom-0.4.0-1.x86_64.rpm">.rpm</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.AppImage">AppImage</a>.</p>
         </li>
           </ol>
         </section>
@@ -499,10 +499,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <h3>Primeira abertura</h3>
           <div data-sistema="macos">
             <blockquote class="sistema">
-              “NoCom” está danificado e não pode ser aberto. Você deve movê-lo para o Lixo.
+              Não foi possível abrir o “NoCom” — a Apple não consegue verificar se ele está livre de malware.
               <cite>o que o macOS mostra</cite>
             </blockquote>
-            <p>Clique em <strong>Cancelar</strong> — nunca em “Mover para o Lixo”. O app não está danificado: ele ainda não é assinado pela Apple. Para liberar:</p>
+            <p><strong>Nunca clique em “Mover para o Lixo”</strong> — esse botão apaga o app. O NoCom é assinado, mas com uma assinatura ad-hoc, sem certificado pago e sem notarização da Apple: o sistema bloqueia a primeira abertura. Versões anteriores dizem que o app “está danificado” — não está, e o comando é o mesmo. Para liberar:</p>
           <div class="comando">
             <code id="cmd-liberar-macos-0">xattr -dr com.apple.quarantine "/Applications/NoCom.app"</code>
             <button type="button" class="copiar" data-para="cmd-liberar-macos-0"
@@ -557,7 +557,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <footer class="carimbo">
     <div>
       <h3>Estado do projeto</h3>
-      <p>Versão <strong>0.3.0</strong>, em uso diário. Ainda não assinado pela Apple nem pela Microsoft. Encontrou algo estranho? <a href="https://github.com/Zheonatan/nocom/issues">Abra uma issue</a>.</p>
+      <p>Versão <strong>0.4.0</strong>, em uso diário. Ainda não assinado pela Apple nem pela Microsoft. Encontrou algo estranho? <a href="https://github.com/Zheonatan/nocom/issues">Abra uma issue</a>.</p>
     </div>
     <div>
       <h3>Apoiar</h3>

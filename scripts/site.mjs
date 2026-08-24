@@ -42,7 +42,12 @@ const CONFERIR = process.argv.includes("--check");
 
 const URL_SITE = "https://zheonatan.github.io/nocom";
 const REPO = "https://github.com/Zheonatan/nocom";
-const VERSAO = "0.3.0";
+/* A versao sai do package.json, e nao de uma constante escrita aqui. O
+   `publicar.mjs` sobe o numero em seis arquivos, mas NAO conhece este -- entao
+   uma constante fixa fica para tras a cada release, e o sintoma e a landing
+   page oferecendo o download de uma versao que nao e mais a atual. Sem erro
+   nenhum na geracao, que e o que torna a coisa dificil de notar. */
+const VERSAO = JSON.parse(readFileSync(join(RAIZ, "package.json"), "utf8")).version;
 const BAIXAR = REPO + "/releases/download/v" + VERSAO + "/";
 
 /* ==========================================================================
@@ -196,10 +201,11 @@ const pt = {
   nota1_titulo: "Primeira abertura",
   nota1: {
     macos: {
-      citacao: "“NoCom” está danificado e não pode ser aberto. Você deve movê-lo para o Lixo.",
+      citacao:
+        "Não foi possível abrir o “NoCom” — a Apple não consegue verificar se ele está livre de malware.",
       fonte: "o que o macOS mostra",
       corpo:
-        "Clique em <strong>Cancelar</strong> — nunca em “Mover para o Lixo”. O app não está danificado: ele ainda não é assinado pela Apple. Para liberar:",
+        "<strong>Nunca clique em “Mover para o Lixo”</strong> — esse botão apaga o app. O NoCom é assinado, mas com uma assinatura ad-hoc, sem certificado pago e sem notarização da Apple: o sistema bloqueia a primeira abertura. Versões anteriores dizem que o app “está danificado” — não está, e o comando é o mesmo. Para liberar:",
       comando: 'xattr -dr com.apple.quarantine "/Applications/NoCom.app"',
       depois: "Instalando pelo Homebrew, repita a cada <code>brew upgrade</code>.",
     },
@@ -349,10 +355,11 @@ const en = {
   nota1_titulo: "First launch",
   nota1: {
     macos: {
-      citacao: "“NoCom” is damaged and can't be opened. You should move it to the Trash.",
+      citacao:
+        "“NoCom” can't be opened because Apple cannot check it for malicious software.",
       fonte: "what macOS shows",
       corpo:
-        "Click <strong>Cancel</strong> — never “Move to Trash”. The app is not damaged: it is not signed by Apple yet. To clear the flag:",
+        "<strong>Never click “Move to Trash”</strong> — that button deletes the app. NoCom is signed, but with an ad-hoc signature: no paid certificate, no notarisation by Apple, so the system blocks the first launch. Earlier versions say the app “is damaged” — it isn't, and the command is the same. To clear the flag:",
       comando: 'xattr -dr com.apple.quarantine "/Applications/NoCom.app"',
       depois: "Installing through Homebrew, repeat after every <code>brew upgrade</code>.",
     },

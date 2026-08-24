@@ -5,11 +5,11 @@
 //   npm run publicar -- 0.4.0 --sem-push  para antes de empurrar, para conferir
 //
 // **Por que um script, e não `git tag && git push`.** O número da versão vive em
-// seis arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`,
-// os seis links de download do README e o IPC falso da vitrine. Esquecer um não
-// quebra o build — quebra em silêncio, semanas depois: o README oferecendo um
-// arquivo que a release nova não tem, ou o painel de atualização anunciando a
-// versão anterior. Aqui ou todos sobem, ou o comando falha sem tocar em nada.
+// cinco arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`
+// e os seis links de download do README. Esquecer um não quebra o build —
+// quebra em silêncio, semanas depois: o README oferecendo um arquivo que a
+// release nova não tem. Aqui ou todos sobem, ou o comando falha sem tocar em
+// nada.
 //
 // **Cada arquivo tem sua própria regra de busca, de propósito.** Trocar todo
 // `0.3.0` do `Cargo.lock` acertaria duas dependências que por acaso estão nessa
@@ -59,17 +59,17 @@ function regras(antiga) {
       busca: solta,
       vezes: null,
     },
-    {
-      arquivo: 'scripts/vitrine/stub.js',
-      // A versão que o IPC falso responde, e a tarefa de exemplo que a cita.
-      busca: solta,
-      vezes: null,
-    },
+    // **A vitrine e a landing page não entram aqui, e não é esquecimento.**
+    // `scripts/vitrine/stub.js` e `scripts/site.mjs` leem a versão do
+    // `package.json` em tempo de execução, então não há número para trocar —
+    // e uma regra para eles falharia com "não achei a versão", que é o que
+    // acontecia quando a única menção restante no `stub.js` era um número
+    // dentro de um comentário.
   ]
 }
 
 /** Arquivos onde NENHUMA menção à versão antiga pode sobrar depois da troca. */
-const SEM_SOBRA = ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'README.md', 'scripts/vitrine/stub.js']
+const SEM_SOBRA = ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'README.md']
 
 const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 

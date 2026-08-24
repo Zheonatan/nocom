@@ -56,9 +56,9 @@ brew install --cask nocom
 Atualizar depois é só `brew upgrade --cask nocom`.
 
 **Uma ressalva antes de instalar:** o `brew` carimba quarentena em tudo que
-instala, então na primeira abertura o macOS vai dizer que o NoCom *"está
-danificado"* e oferecer "Mover para o Lixo". Ele não está, e não clique nesse
-botão — a explicação e o comando de uma linha que resolve estão em
+instala, então na primeira abertura o macOS vai bloquear o NoCom e oferecer
+"Mover para o Lixo". Não clique nesse botão — a explicação e o comando de uma
+linha que resolve estão em
 [Primeira execução](#primeira-execução-o-aviso-do-sistema).
 
 **Por que o `brew trust`?** Sem ele o `brew` recusa a instalação com
@@ -87,40 +87,52 @@ sempre: o instalador ainda não é assinado. Veja
 
 | Sistema | Arquivo |
 | --- | --- |
-| **macOS** (Apple Silicon) | [NoCom_0.3.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_aarch64.dmg) |
-| **macOS** (Intel) | [NoCom_0.3.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64.dmg) |
-| **Windows** | [NoCom_0.3.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe) |
-| **Linux** (.deb) | [NoCom_0.3.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.deb) |
-| **Linux** (.rpm) | [NoCom-0.3.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom-0.3.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [NoCom_0.3.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.4.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.4.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64.dmg) |
+| **Windows** | [NoCom_0.4.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.4.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.4.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom-0.4.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.4.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.AppImage) |
 
 Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
 
 ### Primeira execução: o aviso do sistema
 
-O app ainda **não é assinado digitalmente**, então seu sistema vai avisar que
-não conhece o programa. É esperado. No Windows acontece uma vez só; no macOS,
-uma vez por instalação pelo `brew` — o porquê está logo abaixo.
+O app **não é assinado com um certificado de desenvolvedor pago**, e no macOS
+também não é notarizado pela Apple, então seu sistema vai avisar que não
+conhece o programa. É esperado. No Windows acontece uma vez só; no macOS, uma
+vez por instalação pelo `brew` — o porquê está logo abaixo.
 
 <details>
-<summary><b>macOS</b> — "o NoCom está danificado"</summary>
+<summary><b>macOS</b> — o sistema bloqueia a primeira abertura</summary>
 
+> **Não foi possível abrir o "NoCom" — a Apple não consegue verificar se ele
+> está livre de malware.**
+>
+> ou, nas versões anteriores:
+>
 > **"NoCom" está danificado e não pode ser aberto. Você deve movê-lo para o
 > Lixo.**
 
-**Clique em Cancelar. Nunca em "Mover para o Lixo"** — que é o botão de cima, e
-apaga o app.
+**Nunca clique em "Mover para o Lixo"** — esse botão apaga o app.
 
-O arquivo não está danificado. Essa é a frase que o macOS usa quando o app tem
-a marca de quarentena e **nenhuma assinatura da Apple** para conferir contra —
-o NoCom sai do build com assinatura *ad-hoc*, que basta para executar mas não
-para o Gatekeeper avaliar. Para tirar a marca:
+O NoCom sai do build com uma assinatura *ad-hoc*: ela é válida e sela o pacote,
+mas não tem um certificado de desenvolvedor por trás, e o app não é notarizado
+pela Apple. O Gatekeeper então bloqueia a primeira abertura. Um comando resolve,
+tirando a marca de quarentena que o download deixou:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/NoCom.app"
 ```
 
-Depois disso ele abre normalmente.
+Depois disso ele abre normalmente. Sem terminal também dá: em **Ajustes do
+Sistema › Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo
+Assim** no aviso sobre o NoCom, uma vez por instalação.
+
+**Sobre a segunda mensagem:** o app não estava danificado, nem o download vinha
+corrompido. O build saía com uma assinatura incompleta, que o Gatekeeper
+reprovava antes mesmo de avaliar a política — e "danificado" é a frase que o
+macOS usa nesse caso. O `xattr` acima resolve os dois.
 
 **Instalando pelo Homebrew, repita esse comando a cada `brew upgrade`.** Quem
 carimba a quarentena é o próprio `brew`, em toda instalação, e desde o Homebrew
@@ -169,9 +181,8 @@ Duas ressalvas honestas:
   anterior até o próximo `brew upgrade --cask nocom`, que apenas reinstala a
   mesma versão. Nada quebra, e suas tarefas não estão em `/Applications`. Só
   que **todo `brew upgrade` recarimba a quarentena**, e aí o macOS volta a
-  dizer que o app está danificado até você repetir o
-  `xattr -dr com.apple.quarantine`. Pelo botão de dentro do app isso não
-  acontece.
+  bloquear o app até você repetir o `xattr -dr com.apple.quarantine`. Pelo
+  botão de dentro do app isso não acontece.
 - **Pelo winget vale o mesmo.** Atualizar de dentro do app deixa o
   `winget upgrade` achando que há uma versão nova por instalar até você rodá-lo
   uma vez. Ele reinstala a mesma versão, e nada se perde.
@@ -343,7 +354,7 @@ abaixo:
 precisa que o pacote já exista. Com o `.exe` de uma release publicada:
 
 ```powershell
-wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.3.0/NoCom_0.3.0_x64-setup.exe
+wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64-setup.exe
 ```
 
 Responda `Zheonatan.NoCom` como identificador — é o que o job procura. Da
@@ -361,7 +372,7 @@ mundo a reinstalar na mão uma última vez.
 
 ## Estado do projeto
 
-Versão 0.3.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
+Versão 0.4.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).
 

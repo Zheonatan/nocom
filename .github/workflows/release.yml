@@ -91,6 +91,35 @@ jobs:
           # reportando meses depois.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # **Assinatura ad-hoc do macOS — outra coisa, apesar do nome parecido.**
+          # A de cima assina o pacote de ATUALIZAÇÃO; esta assina o `.app`, e é o
+          # Gatekeeper quem confere.
+          #
+          # Sem ela o bundle sai apenas *linker-signed*: a assinatura que o próprio
+          # linker embute no binário, e que não sela os recursos do bundle. O efeito
+          # é que `codesign --verify` REPROVA (`code has no resources but signature
+          # indicates they must be present`), e o Gatekeeper para no erro de
+          # assinatura antes de chegar a avaliar a política. Quando isso acontece o
+          # macOS não diz "desenvolvedor não identificado" — diz que o app **"está
+          # danificado e deve ser movido para o Lixo"**, que é a mesma frase de um
+          # download corrompido e leva o usuário a apagar o app.
+          #
+          # `-` é a identidade ad-hoc: assina sem certificado nenhum, de graça. Com
+          # ela a assinatura fecha (`valid on disk`, recursos selados) e o Gatekeeper
+          # passa a avaliar a política de verdade, caindo no aviso normal de app não
+          # notarizado — que tem saída pela interface, ao contrário do "danificado".
+          #
+          # **Não substitui notarização.** O app continua bloqueado no primeiro
+          # clique; o que muda é a mensagem e o fato de existir um caminho de volta.
+          # Sair disso de vez pede um certificado Developer ID (US$ 99/ano) em
+          # `APPLE_CERTIFICATE` + notarização via `APPLE_ID`/`APPLE_TEAM_ID`.
+          #
+          # Isto liga o hardened runtime junto (padrão do bundler ao assinar). O
+          # WebView do Tauri roda sem entitlements extras — conferido na 0.4.0.
+          #
+          # Vazio fora do macOS: os bundlers de Windows e Linux não leem esta
+          # variável, e deixar explícito evita a dúvida de quem lê o workflow.
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && '-' || '' }}
         with:
           args: --target ${{ matrix.target }}
           tagName: v__VERSION__

@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { t } from "@/lib/i18n";
+import type { Repeat } from "@/lib/recurrence";
+
+// O tipo nasce em `recurrence.ts` (que não pode importar daqui — ver o
+// cabeçalho de lá) e é reexportado porque quem fala de `Todo` fala daqui.
+export type { Repeat };
 
 /**
  * Limite de título do contrato (Adendo 1). O backend valida de novo — aqui o
@@ -34,6 +39,16 @@ export function isMac(): boolean {
 }
 
 /**
+ * Se o app está rodando em Linux. Existe por uma decisão só: o padrão de fábrica
+ * do atalho é outro lá (Adendo 12 — `Ctrl+Alt+T` é o atalho canônico de terminal
+ * em GNOME/KDE/Ubuntu), e o `DEFAULT_SHORTCUT_LABEL` precisa acompanhar o
+ * `PADRAO` de `atalho.rs` antes de o backend responder a primeira vez.
+ */
+export function isLinux(): boolean {
+  return !isMac() && /Linux/i.test(navigator.userAgent);
+}
+
+/**
  * O modificador de comando de aplicativo, escrito na convenção do sistema —
  * `⌘` no Mac, `Ctrl+` fora dele. Mesma decisão do `isMac` acima, mesmo lugar.
  *
@@ -60,11 +75,67 @@ export function tabShortcut(posicao: number): string {
 }
 
 /**
+ * `⌘W` / `Ctrl+W`, para os olhos: fecha a aba ativa (Adendo 13). O quarto
+ * idioma de navegador da faixa — `⌘T`, `⌘1–9` e `Ctrl+Tab` já existiam, e este
+ * é o que faltava. Fica descobrível no `title` do `×` da aba ativa.
+ */
+export const CLOSE_TAB_SHORTCUT: string = `${MOD_LABEL}W`;
+
+/**
  * Quantas abas a faixa alcança por tecla. Nove porque `{MOD}0` não segue de `9`
  * em convenção nenhuma, e uma décima tecla sem nome seria um atalho que só quem
  * escreveu conhece. Da décima aba em diante o caminho é `Ctrl+Tab` ou o clique.
  */
 export const TAB_SHORTCUT_LIMIT = 9;
+
+/**
+ * `⌘Z` / `Ctrl+Z`, para os olhos: o desfazer pelo teclado, que vale enquanto a
+ * oferta está na faixa (Adendo 12). Vive no `title` do botão "Desfazer" — o
+ * mesmo lugar onde os outros atalhos da janela ficam descobríveis.
+ */
+export const UNDO_SHORTCUT: string = `${MOD_LABEL}Z`;
+
+/**
+ * O mesmo modificador de comando na grafia do `aria-keyshortcuts` — a spec pede
+ * nomes de tecla (`Meta`, `Control`), não os glifos do letreiro. O `title` era o
+ * único canal dos atalhos de aba, e `title` é mouse-only: leitor de tela não o
+ * anuncia como atalho, e o Adendo 12 fecha esse buraco por aqui.
+ */
+const ARIA_MOD: string = isMac() ? "Meta" : "Control";
+
+/** `Meta+T` / `Control+T`, para o botão de nova aba. */
+export const NEW_TAB_ARIA_SHORTCUT: string = `${ARIA_MOD}+T`;
+
+/** `Meta+W` / `Control+W`, para o `×` da aba ativa — a grafia da ARIA. */
+export const CLOSE_TAB_ARIA_SHORTCUT: string = `${ARIA_MOD}+W`;
+
+/** `Meta+1` / `Control+1`, … — o salto direto, na grafia da ARIA. */
+export function tabAriaShortcut(posicao: number): string {
+  return `${ARIA_MOD}+${posicao}`;
+}
+
+/**
+ * Corta um texto em `max` **pontos de código** — a mesma régua do
+ * `chars().count()` que o backend usa no limite de 200 (Adendo 12).
+ *
+ * O `maxLength` nativo conta unidades UTF-16: um emoji vale 2, o campo parava de
+ * aceitar antes do limite do contrato, e o contador "restam N" mentia por fator 2
+ * para quem pensa em caracteres. Devolve quanto foi cortado, porque colar além do
+ * limite deixou de ser truncamento silencioso — quem chama avisa quando `cut > 1`.
+ */
+export function clampLength(
+  text: string,
+  max: number,
+): { text: string; cut: number } {
+  const pontos = Array.from(text);
+  if (pontos.length <= max) return { text, cut: 0 };
+  return { text: pontos.slice(0, max).join(""), cut: pontos.length - max };
+}
+
+/** O comprimento na régua do contrato: pontos de código, não unidades UTF-16. */
+export function lengthOf(text: string): number {
+  return Array.from(text).length;
+}
 
 /**
  * O modificador de comando de aplicativo apertado, para os atalhos com a janela
@@ -114,6 +185,13 @@ export type Todo = {
   created_at: number;
   /** Adendo 5: toda tarefa pertence a exatamente uma aba existente. */
   tab_id: string;
+  /** Adendo 13: a recorrência escolhida no menu de contexto. `none` é o normal. */
+  repeat: Repeat;
+  /**
+   * Quando foi concluída (epoch millis), ou null. Carimbado pelo backend no
+   * toggle; é a base de cálculo do "volta a pendente" — ver `lib/recurrence.ts`.
+   */
+  done_at: number | null;
 };
 
 /** Espelha o struct `Tab` do Rust. Uma aba é um escopo de lista (Adendo 5). */
@@ -160,6 +238,22 @@ export type ClosedTab = {
   todos: Todo[];
 };
 
+/** Espelha o struct `ContagemAba` (Adendo 13): pendentes de cada aba, para o chip. */
+export type TabCount = {
+  tab_id: string;
+  pending: number;
+};
+
+/**
+ * Espelha o struct `Importado` (Adendo 13): quantos ENTRARAM na importação. O
+ * que já existia foi pulado por id, e nada foi removido — é com estes números
+ * que o painel conta o desfecho.
+ */
+export type ImportSummary = {
+  tabs: number;
+  todos: number;
+};
+
 /**
  * Único ponto de contato com o backend. Todos os comandos que podem falhar
  * devolvem `Result<T, String>` no Rust, o que chega aqui como uma Promise
@@ -201,6 +295,68 @@ export function deleteTodo(id: string): Promise<void> {
 
 export function clearCompleted(tabId: string): Promise<Todo[]> {
   return invoke<Todo[]>("clear_completed", { tabId });
+}
+
+/**
+ * Troca a recorrência (Adendo 13). O retorno é a tarefa como ficou — inclusive
+ * o `done_at` que o backend carimba quando a tarefa já estava concluída sem
+ * carimbo (concluída antes desta versão).
+ */
+export function setRepeat(id: string, repeat: Repeat): Promise<Todo> {
+  return invoke<Todo>("set_repeat", { id, repeat });
+}
+
+/**
+ * Move a tarefa para outra aba (Adendo 13), preservando `created_at`: ela entra
+ * na lista nova pela idade real. O desfazer é o mesmo comando na direção
+ * contrária — mover de volta.
+ */
+export function moveTodo(id: string, tabId: string): Promise<Todo> {
+  return invoke<Todo>("move_todo", { id, tabId });
+}
+
+/**
+ * Toda tarefa com recorrência, de TODAS as abas (Adendo 13). Lida na carga e na
+ * meia-noite; quem decide o que venceu é `lib/recurrence.ts`, e quem executa é
+ * `reviveTodos`.
+ */
+export function listRecurring(): Promise<Todo[]> {
+  return invoke<Todo[]>("list_recurring");
+}
+
+/**
+ * Devolve a pendente as tarefas cujo período venceu. Tudo-ou-nada como
+ * `restore_todos`; **não chame com lote vazio** — o backend rejeita, porque um
+ * lote vazio aqui é bug de quem calculou (o chamador checa antes).
+ */
+export function reviveTodos(ids: string[]): Promise<Todo[]> {
+  return invoke<Todo[]>("revive_todos", { ids });
+}
+
+/**
+ * Pendentes por aba (Adendo 13), para o `title` do chip. Releitura barata: uma
+ * varredura em memória do outro lado do IPC.
+ */
+export function listPendingCounts(): Promise<TabCount[]> {
+  return invoke<TabCount[]>("list_pending_counts");
+}
+
+/**
+ * Grava o estado inteiro no caminho escolhido no diálogo de salvar (Adendo 13).
+ * O arquivo é um `todos.json` válido por construção — é o que a outra máquina
+ * importa.
+ */
+export function exportData(path: string): Promise<void> {
+  return invoke<void>("export_data", { path });
+}
+
+/**
+ * Importa um arquivo exportado (ou um `todos.json` de qualquer versão),
+ * MESCLANDO: id que já existe é pulado, e nenhum caminho daqui remove nada. O
+ * retorno diz quantos entraram.
+ */
+export function importData(path: string): Promise<ImportSummary> {
+  return invoke<ImportSummary>("import_data", { path });
 }
 
 export function listTabs(): Promise<Tab[]> {

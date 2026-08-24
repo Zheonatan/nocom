@@ -1,5 +1,13 @@
 import { t } from "@/lib/i18n";
-import { TRAY_PLACE } from "@/lib/todos";
+import { isLinux, TRAY_PLACE } from "@/lib/todos";
+
+/**
+ * No Linux, a via de volta que o sistema garante é a barra de tarefas (Adendo
+ * 12: `skipTaskbar: false` lá) — a bandeja pode nem existir (GNOME sem a
+ * extensão AppIndicator). As três frases de volta trocam de chave por
+ * plataforma, resolvido uma vez na carga do módulo como `TRAY_PLACE` faz.
+ */
+const LINUX = isLinux();
 
 /**
  * A lista vazia — o único lugar da janela com espaço de sobra, e o único que pode
@@ -16,6 +24,13 @@ import { TRAY_PLACE } from "@/lib/todos";
  *   repetir "escreva acima e aperte Enter" seria explicar o óbvio. Fica só o
  *   atalho, que é a única coisa que ainda vale ser lembrada.
  *
+ * **E cada um tem uma segunda forma, para quando o atalho está morto (Adendo
+ * 12).** `shortcutActive: false` significa que o sistema recusou a combinação —
+ * outro aplicativo a tomou, ou a sessão não registra atalho global. Ensinar a
+ * tecla em tinta e peso 500 nesse estado seria ensinar exatamente a instrução
+ * que falha no primeiro Escape. A hierarquia inverte: a via em tinta passa a ser
+ * o ícone da bandeja, e a frase em névoa diz o que houve e aponta a engrenagem.
+ *
  * **Nada aqui ocupa altura permanente.** O bloco inteiro desaparece na primeira
  * tarefa, e é essa a razão de o ensino da volta continuar na faixa de aviso
  * (`onboarding.roundTrip`): a instrução tem que sobreviver ao instante em que
@@ -31,20 +46,27 @@ import { TRAY_PLACE } from "@/lib/todos";
  * escolha do usuário desde o Adendo 9, e quem a conhece é o `App` (que a pediu ao
  * backend na carga inicial). Uma constante aqui voltaria a prometer `⌃⌥T` a quem
  * trocou a tecla — e é justamente esta a tela que ensina a via de volta.
+ * `shortcutActive` vem da mesma leitura, pela mesma razão.
  */
 export function EmptyList({
   firstRun,
   shortcut,
+  shortcutActive,
 }: {
   firstRun: boolean;
   shortcut: string;
+  shortcutActive: boolean;
 }) {
   if (!firstRun) {
     return (
       <p className="arrive px-2 py-6 text-center text-xs text-muted-foreground">
         {t("empty.title")}
         <span className="mt-1.5 block">
-          {t("empty.hint", { shortcut })}
+          {shortcutActive
+            ? t("empty.hint", { shortcut })
+            : t(LINUX ? "empty.hintInactiveLinux" : "empty.hintInactive", {
+                place: TRAY_PLACE,
+              })}
         </span>
       </p>
     );
@@ -64,19 +86,37 @@ export function EmptyList({
       {/* Os 24px do estado vazio, e o único lugar do app que os gasta. Não é
           espaçamento: é o corte entre "o que fazer agora" e "como voltar
           depois", que são dois assuntos e não uma lista de três dicas. */}
-      <p className="mt-6 text-xs font-medium text-foreground">
-        {t("empty.wayBackShortcut", { shortcut })}
-      </p>
-
       {/* A hierarquia se faz com peso e com cinza, e não com um quarto tamanho:
           a linha de cima é tinta em peso 500 porque é a que decide se o app
-          sobrevive ao primeiro Escape; esta é a rede de segurança, em névoa.
-          O ícone da bandeja é a via GARANTIDA — `montar_tray` falhando derruba a
-          abertura do app, enquanto o atalho global pode perder a combinação para
-          outro aplicativo e o app sobe sem ele. */}
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        {t("empty.wayBackTray", { place: TRAY_PLACE })}
-      </p>
+          sobrevive ao primeiro Escape; a segunda é a rede de segurança, em névoa.
+          Com o atalho morto, os papéis trocam de frase: a bandeja é a única via
+          que existe e sobe para a tinta, e a névoa explica e aponta a engrenagem
+          — nunca as duas vias em tinta, porque duas linhas de peso 500 são
+          nenhuma. */}
+      {shortcutActive ? (
+        <>
+          <p className="mt-6 text-xs font-medium text-foreground">
+            {t("empty.wayBackShortcut", { shortcut })}
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {t(LINUX ? "empty.wayBackTrayLinux" : "empty.wayBackTray", {
+              place: TRAY_PLACE,
+            })}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-6 text-xs font-medium text-foreground">
+            {t(
+              LINUX ? "empty.wayBackTrayPrimaryLinux" : "empty.wayBackTrayPrimary",
+              { place: TRAY_PLACE },
+            )}
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {t("empty.shortcutTaken", { shortcut })}
+          </p>
+        </>
+      )}
     </div>
   );
 }

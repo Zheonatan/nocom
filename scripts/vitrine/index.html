@@ -14,8 +14,8 @@
     <style>
       /* `src/index.css` põe `#root` em `height: 100%` porque no app ele É a
          janela. Aqui o `#root` precisa ter o TAMANHO da janela (360x480, como
-         declarado em `src-tauri/tauri.conf.json`) dentro de um viewport maior,
-         para a sombra e o canto arredondado do cartão não saírem cortados na
+         declarado em `src-tauri/tauri.conf.json`) dentro de um viewport maior, para
+         a sombra abaixo e o canto arredondado do cartão não saírem cortados na
          captura.
 
          O seletor é `html body #root` e não `#root` para vencer por
@@ -28,6 +28,29 @@
       html body {
         display: grid;
         place-items: center;
+      }
+
+      /* A SOMBRA DA JANELA MORA AQUI, e não no app.
+
+         Ela é moldura do sistema operacional, não interface: no app quem a desenha é
+         o macOS (a partir do alfa da janela) e o DWM no Windows. O cartão do app
+         preenche exatamente os 360x480 de um `#root` com `overflow: hidden`, então
+         uma sombra declarada lá seria recortada antes de chegar à tela — foi o que
+         aconteceu com o `shadow-lg` que morava no `Card` até agora, e o que fazia
+         estas fotos mostrarem uma separação que o app não desenhava.
+
+         Aqui ela é legítima e necessária: um navegador de cabeça vazia não tem
+         moldura de sistema nenhuma, e sem esta linha o PNG sai um retângulo de
+         beirada dura, que é menos fiel ao app de verdade do que a sombra. É a mesma
+         ressalva que o cabeçalho de `captura.mjs` já declara — o que se simula aqui
+         é a moldura, e só ela.
+
+         Os valores são os do `shadow-lg` do Tailwind, que é o que estas fotos vinham
+         usando; mantê-los faz as capturas novas ficarem iguais às publicadas. */
+      html body #root > * {
+        box-shadow:
+          0 10px 15px -3px rgb(0 0 0 / 0.1),
+          0 4px 6px -4px rgb(0 0 0 / 0.1);
       }
     </style>
   </head>

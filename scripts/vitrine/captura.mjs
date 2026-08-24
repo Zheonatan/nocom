@@ -14,8 +14,9 @@
 // máquina dele, e não se repete igual duas vezes. Aqui o mesmo comando produz o
 // mesmo par de imagens em qualquer máquina, com dados de exemplo escolhidos, nos
 // dois temas, com fundo transparente e em 2x. O que se perde é a moldura do
-// sistema (sombra e transparência da janela do Tauri) — e é pouco, porque a
-// janela do NoCom desenha os próprios cantos e a própria borda.
+// sistema: os cantos e a borda são do app e saem fiéis, e a sombra da janela — que
+// no app é desenhada pelo SO a partir do alfa — é simulada pelo `index.html` daqui
+// ao lado, porque um navegador de cabeça vazia não tem moldura nenhuma.
 //
 // **Por que não `chrome --screenshot`.** Aquele atira no evento `load`, antes de
 // o React montar, e grava uma folha branca. Além disso o tema viria do sistema de
@@ -33,10 +34,13 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 /** Tamanho da janela, como declarado em `src-tauri/tauri.conf.json`. */
 const JANELA = { largura: 360, altura: 480 }
 /**
- * Folga em volta da janela, em cada lado. A borda arredondada e a `shadow-lg` do
- * cartão raiz sangram alguns pixels para fora dos 360x480; sem folga a captura
- * corta a sombra num quadrado, que é exatamente o defeito que o fundo
- * transparente existe para evitar.
+ * Folga em volta da janela, em cada lado. A sombra que `index.html` declara ao
+ * lado sangra alguns pixels para fora dos 360x480; sem folga a captura corta a
+ * sombra num quadrado, que é exatamente o defeito que o fundo transparente existe
+ * para evitar.
+ *
+ * A sombra mora lá e não no app de propósito: ela é moldura do sistema, e no app
+ * seria recortada pelo `overflow: hidden` do `#root`. Ver o comentário dela.
  */
 const FOLGA = 30
 /** Retina. O README mostra a imagem em 420px de largura, então 2x é o nítido. */

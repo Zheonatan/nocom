@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { clampLength } from "@/lib/todos";
 import { cn } from "@/lib/utils";
 
 type InlineEditProps = {
@@ -72,7 +73,23 @@ export function InlineEdit({
     <Input
       ref={inputRef}
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      // O corte em pontos de código, e não o atributo `maxLength` (Adendo 12): o
+      // atributo conta unidades UTF-16 e o backend conta `chars()` — a mesma
+      // régua do campo de nova tarefa, pela mesma razão. Sem aviso de colagem
+      // aqui: o texto editado já existia dentro do limite, e a faixa pertence à
+      // lista, não a um editor que vive dentro dela.
+      onChange={(e) => {
+        if ((e.nativeEvent as InputEvent).isComposing) {
+          setValue(e.target.value);
+          return;
+        }
+        setValue(clampLength(e.target.value, maxLength).text);
+      }}
+      onCompositionEnd={(e) =>
+        setValue(clampLength(e.currentTarget.value, maxLength).text)
+      }
+      // Texto do usuário: renderiza na direção dele (árabe, hebraico).
+      dir="auto"
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -87,7 +104,6 @@ export function InlineEdit({
         }
       }}
       onBlur={() => finish(true)}
-      maxLength={maxLength}
       aria-label={label}
       // Duas correções de forma, as duas pela mesma razão: **um editor que
       // substitui algo no lugar não pode ocupar mais espaço nem ter forma

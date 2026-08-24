@@ -1,0 +1,78 @@
+name: CI
+
+# Roda os quatro comandos da Definição de Pronto (`npm test`, `npm run build`,
+# `cargo check`, `cargo test`) nos TRÊS sistemas, a cada push — é a metade da
+# dívida dos Adendos 11 e 12 que dava para fechar sem uma máquina real de cada
+# plataforma: um erro de COMPILAÇÃO num `cfg` de Windows ou Linux aparece aqui,
+# num push, e não no build de release de uma tag. Um erro de VALOR (a ordem de
+# data lida errada do sistema) continua só aparecendo com o app rodando lá.
+#
+# Não empacota nada: instalador é assunto do `release.yml`. Por isso não há
+# tauri-action, não há assinatura, e os jobs correm em paralelo — o `max-parallel`
+# do release existe por causa do `latest.json`, que aqui nem é gerado.
+on:
+  push:
+  pull_request:
+
+jobs:
+  verificar:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            rotulo: macOS
+          - platform: ubuntu-22.04
+            rotulo: Linux
+          - platform: windows-latest
+            rotulo: Windows
+
+    name: ${{ matrix.rotulo }}
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # As mesmas dependências do release.yml, sem as de empacotar (patchelf,
+      # file, wget): aqui só se compila e testa.
+      - name: Dependências do sistema (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            build-essential
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Instalar dependências do front
+        run: npm ci
+
+      - name: Testes do front
+        run: npm test
+
+      # Antes do cargo de propósito: `tauri::generate_context!` embute o
+      # `frontendDist` (../dist) no binário, e sem `dist/` o cargo nem compila.
+      - name: Build do front
+        run: npm run build
+
+      - name: cargo check
+        working-directory: src-tauri
+        run: cargo check
+
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test

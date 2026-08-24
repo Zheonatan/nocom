@@ -4,18 +4,37 @@ import { InlineEdit } from "@/components/InlineEdit";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 import {
+  CLOSE_TAB_ARIA_SHORTCUT,
+  CLOSE_TAB_SHORTCUT,
+  NEW_TAB_ARIA_SHORTCUT,
   NEW_TAB_SHORTCUT,
   TAB_NAME_MAX_LENGTH,
   TAB_SHORTCUT_LIMIT,
+  tabAriaShortcut,
   tabShortcut,
   type Tab,
 } from "@/lib/todos";
 
 type TabStripProps = {
   tabs: Tab[];
+  /**
+   * Pendentes por aba (Adendo 13), para o `title` do chip: "Casa (⌘2) — 3
+   * pendentes" responde sem trocar de aba a pergunta que fazia trocar. Pode
+   * estar vazio (a leitura chega depois das abas, ou falhou): o chip então diz
+   * só o nome, que é o que ele sempre disse — contagem é carona, não requisito.
+   */
+  counts: Record<string, number>;
   activeTabId: string | null;
   /** Id da aba em edição de nome, ou null. Vive no App: criar já entra em edição. */
   editingTabId: string | null;
+  /**
+   * A vista da lista saiu de cena (painel do atalho aberto): a faixa sai do
+   * alcance junto. A Regra da Vista que Troca desligava só as TECLAS de aba, e o
+   * mouse continuava criando e fechando abas com a lista fora da tela — undo e
+   * aviso sobre conteúdo que ninguém estava vendo. A faixa não é região de
+   * arrasto, então o `inert` não custa nada de mover a janela.
+   */
+  inert?: boolean;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onClose: (id: string) => void;
@@ -36,8 +55,10 @@ type TabStripProps = {
  */
 export function TabStrip({
   tabs,
+  counts,
   activeTabId,
   editingTabId,
+  inert,
   onSelect,
   onCreate,
   onClose,
@@ -111,7 +132,7 @@ export function TabStrip({
   }, [activeTabId, editingTabId, tabs.length, measure]);
 
   return (
-    <div className="flex h-7 shrink-0 items-center gap-1 px-3">
+    <div inert={inert} className="flex h-7 shrink-0 items-center gap-1 px-3">
       {/* `no-scrollbar`: rola sem barra visível — uma barra numa faixa de 28px
           roubaria a altura do texto do chip; a rolagem acontece por gesto de
           trackpad ou pelo `scrollIntoView` acima.
@@ -143,6 +164,19 @@ export function TabStrip({
           // atalho que só quem escreveu conhece.
           const shortcut =
             index < TAB_SHORTCUT_LIMIT ? tabShortcut(index + 1) : null;
+          // O `title` do chip por inteiro: nome (com a tecla, nas nove
+          // primeiras) e a contagem de pendentes quando ela já chegou. O
+          // travessão é composição de código, como o `\n\n` da faixa de erro —
+          // as duas metades continuam sendo frases do dicionário.
+          const base =
+            shortcut === null
+              ? tab.name
+              : t("tabs.withShortcut", { name: tab.name, shortcut });
+          const pendentes = counts[tab.id];
+          const chipTitle =
+            pendentes === undefined
+              ? base
+              : `${base} — ${t("pending.count", { n: pendentes })}`;
 
           return (
             // `data-tab-id` também no ramo de edição: é a âncora do
@@ -195,16 +229,18 @@ export function TabStrip({
                     }}
                     // Nome inteiro no `title`: o chip trunca com reticências, e
                     // sem isto um nome de 40 caracteres ficaria ilegível. O atalho
-                    // pega carona no mesmo lugar — o `title` já tinha que existir,
-                    // e é onde alguém procura quando quer saber o que é um chip.
-                    title={
-                      shortcut === null
-                        ? tab.name
-                        : t("tabs.withShortcut", {
-                            name: tab.name,
-                            shortcut,
-                          })
+                    // e a contagem de pendentes (Adendo 13) pegam carona no mesmo
+                    // lugar — o `title` já tinha que existir, e é onde alguém
+                    // procura quando quer saber o que é um chip.
+                    title={chipTitle}
+                    // O `title` acima é mouse-only; isto é o mesmo atalho na
+                    // grafia da ARIA (`Meta+1`/`Control+1`), que o leitor de
+                    // tela anuncia sem soletrar glifo (Adendo 12).
+                    aria-keyshortcuts={
+                      shortcut === null ? undefined : tabAriaShortcut(index + 1)
                     }
+                    // Nome de aba é texto do usuário: renderiza na direção dele.
+                    dir="auto"
                     // `h-full`: o botão ocupa a altura inteira do chip. Antes
                     // ele media só a altura do texto (16px) dentro de um chip de
                     // 24px, e os 4px de cima e de baixo eram zona morta — clicar
@@ -220,7 +256,20 @@ export function TabStrip({
                     <button
                       type="button"
                       aria-label={t("tabs.close", { name: tab.name })}
-                      title={t("tabs.close", { name: tab.name })}
+                      // A aba ATIVA anuncia o `⌘W` (Adendo 13): é ela que a tecla
+                      // fecha. Nas outras, a tecla não vale — anunciá-la ali
+                      // ensinaria um atalho que faria outra coisa.
+                      title={
+                        active
+                          ? t("tabs.closeHint", {
+                              name: tab.name,
+                              shortcut: CLOSE_TAB_SHORTCUT,
+                            })
+                          : t("tabs.close", { name: tab.name })
+                      }
+                      aria-keyshortcuts={
+                        active ? CLOSE_TAB_ARIA_SHORTCUT : undefined
+                      }
                       onClick={() => onClose(tab.id)}
                       className={[
                         // 16px DESENHADOS, 24px de alvo pelo pseudo-elemento —
@@ -233,7 +282,27 @@ export function TabStrip({
                         // invisível consome à esquerda. Com 2px, ele avançaria
                         // 2px sobre o botão do nome, e clicar na beirada direita
                         // do nome fecharia a aba em vez de selecioná-la.
-                        "relative ml-1 flex size-4 shrink-0 items-center justify-center rounded outline-none transition-opacity after:absolute after:-inset-1 hover:bg-background/60 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
+                        //
+                        // O hover pintava o token `background` a 60%, e trocou para
+                        // `foreground/10`: o `background` não é a superfície onde este
+                        // botão mora — ela é o `card` —, e os dois só são a mesma cor
+                        // no tema claro. No escuro o `background` é MAIS escuro que o
+                        // cartão, então o mesmo hover clareava num tema e escurecia no
+                        // outro. Este
+                        // `×` vive dentro de um chip que já é `muted`, que é o caso
+                        // exato da Regra do Destaque que Sobrevive ao Fundo: a saída
+                        // é densidade, e `foreground/10` é o valor que ela indica.
+                        //
+                        // `rounded-[4px]` e não `rounded-md`: é o raio do CHECKBOX, e
+                        // é ele que vale aqui porque o desenho tem os mesmos 16px.
+                        // Os 8px que a Regra do Raio Decrescente dá a "botões
+                        // pequenos e ícones" são dimensionados para os 24px do
+                        // `icon-xs`; em 16px eles consomem metade da caixa e o `×`
+                        // passa a se ler como círculo — o mesmo motivo pelo qual o
+                        // checkbox não usa um raio maior. Escrito com o valor à
+                        // mostra, e não como o `rounded` pelado do Tailwind, que
+                        // acerta os 4px por coincidência do padrão dele.
+                        "relative ml-1 flex size-4 shrink-0 items-center justify-center rounded-[4px] outline-none transition-opacity after:absolute after:-inset-1 hover:bg-foreground/10 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
                         active
                           ? "opacity-70 hover:opacity-100"
                           : "opacity-0 group-hover/tab:opacity-70 group-hover/tab:hover:opacity-100",
@@ -258,6 +327,8 @@ export function TabStrip({
         // tela soletrar "⌘T" a cada passada de foco pelo botão.
         aria-label={t("tabs.new")}
         title={t("tabs.newHint", { shortcut: NEW_TAB_SHORTCUT })}
+        // A grafia da ARIA para o mesmo atalho do `title` — ver o chip acima.
+        aria-keyshortcuts={NEW_TAB_ARIA_SHORTCUT}
         onClick={onCreate}
         className="shrink-0"
       >

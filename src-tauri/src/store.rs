@@ -42,6 +42,22 @@ pub struct Tab {
     pub created_at: i64,
 }
 
+/// A recorrência de uma tarefa (Adendo 13). No fio ela viaja como
+/// `"none" | "daily" | "weekly" | "monthly"` — o formato que o contrato fixa e
+/// que o TypeScript espelha; os nomes em português são só deste lado.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Recorrencia {
+    #[default]
+    #[serde(rename = "none")]
+    Nenhuma,
+    #[serde(rename = "daily")]
+    Diaria,
+    #[serde(rename = "weekly")]
+    Semanal,
+    #[serde(rename = "monthly")]
+    Mensal,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Todo {
     pub id: String,
@@ -49,6 +65,15 @@ pub struct Todo {
     pub done: bool,
     pub created_at: i64,
     pub tab_id: String,
+    /// `default` para o arquivo de qualquer versão anterior ler como sempre leu:
+    /// campo faltando é `none`, que é o comportamento antigo (Adendo 13).
+    #[serde(default)]
+    pub repeat: Recorrencia,
+    /// Quando foi concluída (epoch millis), ou `None`. Carimbado no toggle para
+    /// done e limpo na volta — é a base de cálculo do "volta a pendente" da
+    /// recorrência, e quem calcula o vencimento é o frontend (Adendo 13).
+    #[serde(default)]
+    pub done_at: Option<i64>,
 }
 
 /// O que `close_tab` devolve: a aba e as tarefas que saíram com ela.
@@ -62,6 +87,22 @@ pub struct Todo {
 pub struct AbaFechada {
     pub tab: Tab,
     pub todos: Vec<Todo>,
+}
+
+/// O que `list_pending_counts` devolve por aba (Adendo 13): a contagem que o
+/// `title` do chip mostra sem ninguém precisar trocar de aba para olhar.
+#[derive(Serialize, Clone, Debug)]
+pub struct ContagemAba {
+    pub tab_id: String,
+    pub pending: usize,
+}
+
+/// O resumo de `import_data` (Adendo 13): quantos entraram. O que já existia foi
+/// pulado, e nada foi removido — o painel mostra estes números ao usuário.
+#[derive(Serialize, Clone, Copy, Debug)]
+pub struct Importado {
+    pub tabs: usize,
+    pub todos: usize,
 }
 
 /// O que fica no `todos.json` a partir das abas.
@@ -163,8 +204,8 @@ impl Store {
                 }
                 // Nenhum dos dois formatos. O arquivo sai do caminho ANTES de a
                 // primeira mutação poder gravar por cima dele.
-                let resgate = persistencia::preservar(arquivo)
-                    .map(|caminho| caminho.display().to_string());
+                let resgate =
+                    persistencia::preservar(arquivo).map(|caminho| caminho.display().to_string());
                 (Estado::default(), resgate)
             }
         }
@@ -407,6 +448,8 @@ impl Store {
                 done: false,
                 created_at: agora_em_millis(),
                 tab_id,
+                repeat: Recorrencia::Nenhuma,
+                done_at: None,
             };
             let novo_para_devolver = novo.clone();
             estado.todos.push(novo);
@@ -500,9 +543,8 @@ impl Store {
         }
 
         self.transacao(move |estado| {
-            exigir_aba(estado, &aba).map_err(|_| {
-                format!("A aba {aba} não existe mais; nada foi restaurado.")
-            })?;
+            exigir_aba(estado, &aba)
+                .map_err(|_| format!("A aba {aba} não existe mais; nada foi restaurado."))?;
             for restaurada in restauradas {
                 // Pega tanto o id que ainda está na lista quanto o id repetido
                 // dentro do próprio lote, porque a comparação é contra a cópia
@@ -534,7 +576,12 @@ impl Store {
     /// Conta sem clonar a lista, porque isto é lido a cada mutação só para
     /// redesenhar um tooltip.
     pub fn pendentes(&self) -> Result<usize, String> {
-        Ok(self.travar()?.todos.iter().filter(|todo| !todo.done).count())
+        Ok(self
+            .travar()?
+            .todos
+            .iter()
+            .filter(|todo| !todo.done)
+            .count())
     }
 
     pub fn alternar(&self, id: &str) -> Result<Todo, String> {
@@ -545,7 +592,187 @@ impl Store {
                 .find(|todo| todo.id == id)
                 .ok_or_else(|| format!("Tarefa {id} não existe."))?;
             alvo.done = !alvo.done;
+            // O carimbo de conclusão (Adendo 13). Para TODA tarefa, e não só as
+            // recorrentes: quando alguém liga a recorrência numa tarefa que já
+            // estava concluída, é este carimbo que dá a base de cálculo — e
+            // condicionar a escrita ao `repeat` criaria justamente o caso sem base.
+            alvo.done_at = if alvo.done {
+                Some(agora_em_millis())
+            } else {
+                None
+            };
             Ok(alvo.clone())
+        })
+    }
+
+    /// Troca a recorrência de uma tarefa (Adendo 13). `done` e `created_at` ficam
+    /// intactos: escolher "todo dia" não conclui nem move nada.
+    ///
+    /// **Concluída sem carimbo ganha o carimbo agora.** Uma tarefa concluída antes
+    /// desta versão tem `done_at: None`; ligar a recorrência nela sem carimbar
+    /// deixaria a volta sem base de cálculo — ela nunca voltaria, e a recorrência
+    /// pareceria simplesmente não funcionar.
+    pub fn definir_recorrencia(&self, id: &str, repeat: Recorrencia) -> Result<Todo, String> {
+        self.transacao(|estado| {
+            let alvo = estado
+                .todos
+                .iter_mut()
+                .find(|todo| todo.id == id)
+                .ok_or_else(|| format!("Tarefa {id} não existe."))?;
+            alvo.repeat = repeat;
+            if alvo.done && alvo.done_at.is_none() {
+                alvo.done_at = Some(agora_em_millis());
+            }
+            Ok(alvo.clone())
+        })
+    }
+
+    /// Move a tarefa para outra aba (Adendo 13), **preservando `created_at`**: ela
+    /// entra na lista nova pela idade real, e não no fim como se fosse recém-criada.
+    /// A aba de destino precisa existir — mover para uma aba fechada criaria a órfã
+    /// que o invariante proíbe. Mover para a própria aba é no-op aceito: recusar
+    /// criaria um caminho de erro sem ganho.
+    pub fn mover(&self, id: &str, tab_id: &str) -> Result<Todo, String> {
+        let tab_id = tab_id.to_owned();
+        self.transacao(move |estado| {
+            exigir_aba(estado, &tab_id)?;
+            let alvo = estado
+                .todos
+                .iter_mut()
+                .find(|todo| todo.id == id)
+                .ok_or_else(|| format!("Tarefa {id} não existe."))?;
+            alvo.tab_id = tab_id;
+            Ok(alvo.clone())
+        })
+    }
+
+    /// Toda tarefa com recorrência, de todas as abas (Adendo 13). É a leitura que o
+    /// frontend faz na carga e na meia-noite para calcular quais concluídas
+    /// venceram o período — o cálculo é dele, porque o calendário local mora lá.
+    pub fn listar_recorrentes(&self) -> Result<Vec<Todo>, String> {
+        Ok(self
+            .travar()?
+            .todos
+            .iter()
+            .filter(|todo| todo.repeat != Recorrencia::Nenhuma)
+            .cloned()
+            .collect())
+    }
+
+    /// Devolve a pendente as tarefas cujo período venceu: `done = false`,
+    /// `done_at = None`. **Tudo ou nada**, como `restore_todos` e pela mesma razão:
+    /// os ids vêm de `listar_recorrentes` no mesmo ciclo, então um id que não
+    /// existe é bug de quem chamou, e bug faz barulho em vez de aplicar metade.
+    /// Lote vazio é `Err` (Esclarecimento 5.3): não é gesto que a interface produza.
+    pub fn reativar(&self, ids: &[String]) -> Result<Vec<Todo>, String> {
+        if ids.is_empty() {
+            return Err("Não há nenhuma tarefa para reativar; o lote chegou vazio.".to_owned());
+        }
+        let ids = ids.to_vec();
+        self.transacao(move |estado| {
+            for id in ids.iter() {
+                if !estado.todos.iter().any(|todo| todo.id == *id) {
+                    return Err(format!("Tarefa {id} não existe; nada foi reativado."));
+                }
+            }
+            let mut reativadas = Vec::with_capacity(ids.len());
+            for todo in estado.todos.iter_mut() {
+                if ids.contains(&todo.id) {
+                    todo.done = false;
+                    todo.done_at = None;
+                    reativadas.push(todo.clone());
+                }
+            }
+            Ok(reativadas)
+        })
+    }
+
+    /// Pendentes de cada aba, na ordem canônica das abas (Adendo 13). Alimenta o
+    /// `title` do chip — a leitura é uma varredura em memória, barata de propósito,
+    /// porque o frontend a repete depois de cada mutação que muda contagem.
+    pub fn pendentes_por_aba(&self) -> Result<Vec<ContagemAba>, String> {
+        let estado = self.travar()?;
+        Ok(estado
+            .tabs
+            .iter()
+            .map(|aba| ContagemAba {
+                tab_id: aba.id.clone(),
+                pending: estado
+                    .todos
+                    .iter()
+                    .filter(|todo| todo.tab_id == aba.id && !todo.done)
+                    .count(),
+            })
+            .collect())
+    }
+
+    /// Grava o estado inteiro no caminho escolhido pelo usuário (Adendo 13), no
+    /// formato exato do `todos.json` e pela mesma gravação atômica: um arquivo
+    /// exportado é um `todos.json` válido por construção — inclusive para a
+    /// importação da outra máquina.
+    pub fn exportar_para(&self, caminho: &Path) -> Result<(), String> {
+        let copia = self.travar()?.clone();
+        persistencia::gravar(caminho, &copia)
+    }
+
+    /// Importa um arquivo exportado (ou um `todos.json` de qualquer versão),
+    /// **mesclando e nunca substituindo** (Adendo 13): aba ou tarefa cujo id já
+    /// existe é pulada, o resto entra. Nenhum caminho daqui remove nada — a regra
+    /// inaceitável do PRODUCT.md valendo também para a porta nova.
+    ///
+    /// O formato antigo (array sem abas) é aceito pela mesma leitura da migração:
+    /// ele entra como uma aba "Tarefas" nova. Tarefa importada apontando para uma
+    /// aba que não veio no arquivo é adotada pela primeira aba — a mesma regra do
+    /// `normalizar`, que roda sobre o estado mesclado antes de gravar.
+    pub fn importar_de(&self, caminho: &Path) -> Result<Importado, String> {
+        let lido = match persistencia::ler::<Estado>(caminho) {
+            persistencia::Leitura::Lido(estado) => estado,
+            persistencia::Leitura::Ausente => {
+                return Err(format!(
+                    "O arquivo {} não existe ou está vazio; nada foi importado.",
+                    caminho.display()
+                ));
+            }
+            persistencia::Leitura::Ilegivel => {
+                match persistencia::ler::<Vec<TodoAntigo>>(caminho) {
+                    persistencia::Leitura::Lido(antigos) => migrar(antigos),
+                    _ => {
+                        return Err(format!(
+                            "O arquivo {} não está num formato que o app entende; nada foi \
+                             importado.",
+                            caminho.display()
+                        ));
+                    }
+                }
+            }
+        };
+
+        self.transacao(move |estado| {
+            // Título e nome NÃO são validados aqui, pela mesma razão da migração:
+            // é a lista de alguém, e recusar na leitura seria descartá-la. O que o
+            // limite protege é a digitação, e digitação não passa por esta porta.
+            let abas_existentes: HashSet<String> =
+                estado.tabs.iter().map(|aba| aba.id.clone()).collect();
+            let tarefas_existentes: HashSet<String> =
+                estado.todos.iter().map(|todo| todo.id.clone()).collect();
+
+            let mut resumo = Importado { tabs: 0, todos: 0 };
+            for aba in lido.tabs {
+                if !abas_existentes.contains(&aba.id) {
+                    estado.tabs.push(aba);
+                    resumo.tabs += 1;
+                }
+            }
+            for todo in lido.todos {
+                if !tarefas_existentes.contains(&todo.id) {
+                    estado.todos.push(todo);
+                    resumo.todos += 1;
+                }
+            }
+            // Reordena, adota órfãs e mantém a aba ativa válida — os mesmos
+            // reparos da abertura, sobre o estado mesclado.
+            normalizar(estado);
+            Ok(resumo)
         })
     }
 
@@ -565,13 +792,19 @@ impl Store {
     /// O escopo é a aba porque o gesto está dentro dela: o botão fica no pé da
     /// lista que o usuário está vendo, e apagar as concluídas das outras abas
     /// seria destruir o que não está na tela.
+    ///
+    /// **As recorrentes ficam** (Adendo 13): uma recorrente concluída não está
+    /// encerrada — está esperando o período para voltar a pendente, e levá-la
+    /// junto cancelaria em silêncio uma recorrência configurada de propósito.
+    /// Remover uma recorrente continua possível pelo `×` da linha, que é gesto
+    /// explícito sobre ela.
     pub fn limpar_concluidas(&self, tab_id: &str) -> Result<Vec<Todo>, String> {
         let tab_id = tab_id.to_owned();
         self.transacao(move |estado| {
             exigir_aba(estado, &tab_id)?;
-            estado
-                .todos
-                .retain(|todo| todo.tab_id != tab_id || !todo.done);
+            estado.todos.retain(|todo| {
+                todo.tab_id != tab_id || !todo.done || todo.repeat != Recorrencia::Nenhuma
+            });
             Ok(estado
                 .todos
                 .iter()
@@ -635,6 +868,9 @@ fn migrar(antigos: Vec<TodoAntigo>) -> Estado {
             done: antigo.done,
             created_at: antigo.created_at,
             tab_id: padrao.id.clone(),
+            // O formato antigo não tinha recorrência: `none` É o valor fiel.
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
         })
         .collect();
     Estado {
@@ -770,8 +1006,7 @@ mod auxiliares {
 
     /// Uma store limpa num diretório só dela, para os testes não se atropelarem.
     pub fn store_limpa(nome: &str) -> (Store, PathBuf) {
-        let diretorio =
-            std::env::temp_dir().join(format!("nocom-{nome}-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-{nome}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let _ = fs::remove_file(&diretorio);
         (Store::abrir(diretorio.join("todos.json")), diretorio)
@@ -1088,6 +1323,8 @@ mod tests_ordem {
             done: false,
             created_at,
             tab_id: "aba".to_owned(),
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
         }
     }
 
@@ -1152,10 +1389,7 @@ mod tests_ordem {
         ];
         ordenar_abas(&mut abas);
         let ids: Vec<&str> = abas.iter().map(|aba| aba.id.as_str()).collect();
-        assert_eq!(
-            ids,
-            vec!["empatada-primeiro", "empatada-depois", "nova"]
-        );
+        assert_eq!(ids, vec!["empatada-primeiro", "empatada-depois", "nova"]);
     }
 }
 
@@ -1176,6 +1410,8 @@ mod tests_restaurar {
             done: false,
             created_at,
             tab_id: tab_id.to_owned(),
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
         }
     }
 
@@ -1431,7 +1667,9 @@ mod tests_restaurar {
 
         store.acrescentar("fica aqui", &aqui).expect("acrescentar");
         store.acrescentar("mora ali", &ali.id).expect("acrescentar");
-        let removida = store.acrescentar("volta ali", &ali.id).expect("acrescentar");
+        let removida = store
+            .acrescentar("volta ali", &ali.id)
+            .expect("acrescentar");
         store.remover(&removida.id).expect("remover");
 
         let devolvida = store.restaurar(vec![removida.clone()]).expect("restaurar");
@@ -1468,7 +1706,10 @@ mod tests_restaurar {
         let erro = store
             .restaurar(vec![daqui.clone(), dali.clone()])
             .expect_err("um lote de duas abas deveria ser recusado");
-        assert!(erro.contains(&dali.id), "a mensagem não diz qual tarefa: {erro}");
+        assert!(
+            erro.contains(&dali.id),
+            "a mensagem não diz qual tarefa: {erro}"
+        );
 
         assert!(
             store.listar_tudo().expect("listar tudo").is_empty(),
@@ -1867,12 +2108,17 @@ mod tests_abas {
             done: false,
             created_at: 1_000,
             tab_id: viva.id.clone(),
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
         };
 
         let erro = store
             .restaurar_aba(clone_da_viva, vec![intrusa])
             .expect_err("a aba já está aberta");
-        assert!(erro.contains(&viva.id), "a mensagem não diz qual aba: {erro}");
+        assert!(
+            erro.contains(&viva.id),
+            "a mensagem não diz qual aba: {erro}"
+        );
 
         assert_eq!(store.listar_abas().expect("listar abas").len(), 2);
         let tarefas = store.listar(&viva.id).expect("listar");
@@ -1913,7 +2159,10 @@ mod tests_abas {
         let erro = store
             .restaurar_aba(fechada.tab.clone(), fechada.todos.clone())
             .expect_err("o id repetido deveria reprovar o lote inteiro");
-        assert!(erro.contains(&uma.id), "a mensagem não diz qual tarefa: {erro}");
+        assert!(
+            erro.contains(&uma.id),
+            "a mensagem não diz qual tarefa: {erro}"
+        );
 
         assert_eq!(
             store.listar_abas().expect("listar abas").len(),
@@ -1969,6 +2218,8 @@ mod tests_abas {
             done: false,
             created_at: 1_000,
             tab_id: outra.clone(),
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
         });
 
         assert!(store.restaurar_aba(fechada.tab, lote).is_err());
@@ -2017,7 +2268,9 @@ mod tests_abas {
             let store = Store::abrir(arquivo.clone());
             let _ = aba_de(&store);
             let sai = store.criar_aba("Volta").expect("criar aba");
-            let tarefa = store.acrescentar("volta junto", &sai.id).expect("acrescentar");
+            let tarefa = store
+                .acrescentar("volta junto", &sai.id)
+                .expect("acrescentar");
             sai_id = sai.id.clone();
             tarefa_id = tarefa.id.clone();
             let fechada = store.fechar_aba(&sai.id).expect("fechar aba");
@@ -2039,8 +2292,7 @@ mod tests_abas {
 
     #[test]
     fn a_aba_ativa_persiste_entre_execucoes() {
-        let diretorio =
-            std::env::temp_dir().join(format!("nocom-ativa-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-ativa-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
 
@@ -2310,7 +2562,10 @@ mod tests_abas {
         store.alternar(&dali.id).expect("alternar");
 
         let restantes = store.limpar_concluidas(&aqui).expect("limpar");
-        assert!(restantes.is_empty(), "a aba desta chamada devia ficar vazia");
+        assert!(
+            restantes.is_empty(),
+            "a aba desta chamada devia ficar vazia"
+        );
 
         let sobrou_ali = store.listar(&ali.id).expect("listar");
         assert_eq!(
@@ -2468,7 +2723,9 @@ mod tests_migracao {
             let store = Store::abrir(arquivo.clone());
             let aba = store.listar_abas().expect("listar abas")[0].id.clone();
             // Uma mutação qualquer para o novo formato chegar ao disco.
-            store.acrescentar("depois da migração", &aba).expect("acrescentar");
+            store
+                .acrescentar("depois da migração", &aba)
+                .expect("acrescentar");
             aba
         };
 
@@ -2508,7 +2765,11 @@ mod tests_migracao {
         let store = Store::abrir(arquivo);
         let aba = store.listar_abas().expect("listar abas")[0].id.clone();
         let tarefas = store.listar(&aba).expect("listar");
-        assert_eq!(tarefas.len(), 2, "a migração descartou tarefa por validação");
+        assert_eq!(
+            tarefas.len(),
+            2,
+            "a migração descartou tarefa por validação"
+        );
         let ids: Vec<&str> = tarefas.iter().map(|todo| todo.id.as_str()).collect();
         assert_eq!(ids, vec!["vazia", "longa"]);
 
@@ -2744,7 +3005,9 @@ mod tests_resgate {
         // A primeira mutação de verdade grava um arquivo novo — e não toca no
         // backup, que é o único lugar onde a lista antiga ainda existe.
         let aba = store.listar_abas().expect("listar abas")[0].id.clone();
-        store.acrescentar("a primeira depois do estrago", &aba).expect("acrescentar");
+        store
+            .acrescentar("a primeira depois do estrago", &aba)
+            .expect("acrescentar");
         assert!(arquivo.exists(), "a mutação grava um todos.json novo");
         assert_eq!(
             fs::read_to_string(&backup).expect("ler o backup"),
@@ -2762,7 +3025,9 @@ mod tests_resgate {
         fs::write(&arquivo, TRUNCADO).expect("gravar o arquivo torto");
 
         let store = Store::abrir(arquivo);
-        let resgate = store.resgate().expect("a abertura ilegível precisa relatar");
+        let resgate = store
+            .resgate()
+            .expect("a abertura ilegível precisa relatar");
         assert!(
             resgate.ends_with("todos.corrupt.json"),
             "o resgate precisa apontar para o backup de verdade, e não para uma \
@@ -2864,8 +3129,7 @@ mod tests_gravacao {
 
     #[test]
     fn a_gravacao_nao_deixa_temporario_para_tras() {
-        let diretorio =
-            std::env::temp_dir().join(format!("nocom-tmp-{}", std::process::id()));
+        let diretorio = std::env::temp_dir().join(format!("nocom-tmp-{}", std::process::id()));
         let _ = fs::remove_dir_all(&diretorio);
         let arquivo = diretorio.join("todos.json");
         let store = Store::abrir(arquivo.clone());
@@ -2880,8 +3144,396 @@ mod tests_gravacao {
         );
         // E o que ficou no disco é lido de volta inteiro.
         let relido = Store::abrir(arquivo);
-        assert!(relido.resgate().is_none(), "o que gravamos tem que ser legível");
+        assert!(
+            relido.resgate().is_none(),
+            "o que gravamos tem que ser legível"
+        );
         assert_eq!(relido.listar_tudo().expect("listar").len(), 1);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+}
+
+#[cfg(test)]
+mod tests_adendo13 {
+    use super::auxiliares::*;
+    use super::*;
+    use std::fs;
+
+    // --- recorrência ---
+
+    /// O contrato do Adendo 13: escolher a recorrência não conclui, não move e
+    /// não recarimba nada — só o `repeat` muda.
+    #[test]
+    fn definir_recorrencia_troca_so_o_repeat() {
+        let (store, diretorio) = store_limpa("rec-definir");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("regar as plantas", &aba).expect("acrescentar");
+        assert_eq!(criada.repeat, Recorrencia::Nenhuma, "o padrão é none");
+
+        let diaria = store
+            .definir_recorrencia(&criada.id, Recorrencia::Diaria)
+            .expect("definir");
+        assert_eq!(diaria.repeat, Recorrencia::Diaria);
+        assert!(!diaria.done);
+        assert_eq!(diaria.created_at, criada.created_at);
+        assert_eq!(diaria.done_at, None, "pendente não ganha carimbo");
+
+        assert!(store
+            .definir_recorrencia("nao-existe", Recorrencia::Diaria)
+            .is_err());
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Concluir carimba `done_at`; desmarcar limpa. É a base de cálculo da volta,
+    /// e vale para toda tarefa — ver o comentário no `alternar`.
+    #[test]
+    fn alternar_carimba_e_limpa_o_done_at() {
+        let (store, diretorio) = store_limpa("rec-carimbo");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("lavar louça", &aba).expect("acrescentar");
+
+        let concluida = store.alternar(&criada.id).expect("alternar");
+        assert!(concluida.done_at.is_some(), "concluir tem que carimbar");
+
+        let devolvida = store.alternar(&criada.id).expect("alternar de volta");
+        assert_eq!(devolvida.done_at, None, "desmarcar tem que limpar o carimbo");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// O caso da tarefa concluída ANTES desta versão: `done: true` sem carimbo.
+    /// Ligar a recorrência nela precisa carimbar agora, senão a volta nunca tem
+    /// base de cálculo e a recorrência parece não funcionar.
+    #[test]
+    fn definir_recorrencia_em_concluida_sem_carimbo_carimba_agora() {
+        let (store, diretorio) = store_limpa("rec-legado");
+        let aba = aba_de(&store);
+        let legado = Todo {
+            id: "concluida-antiga".to_owned(),
+            title: "tarefa de versão antiga".to_owned(),
+            done: true,
+            created_at: 1_000,
+            tab_id: aba.clone(),
+            repeat: Recorrencia::Nenhuma,
+            done_at: None,
+        };
+        store.restaurar(vec![legado]).expect("semear");
+
+        let com_recorrencia = store
+            .definir_recorrencia("concluida-antiga", Recorrencia::Semanal)
+            .expect("definir");
+        assert!(com_recorrencia.done, "definir não pode desmarcar");
+        assert!(
+            com_recorrencia.done_at.is_some(),
+            "concluída sem carimbo tem que ganhar um agora"
+        );
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// "Limpar concluídas" preserva as recorrentes: elas não estão encerradas,
+    /// estão esperando o período. As sem recorrência saem como sempre saíram.
+    #[test]
+    fn limpar_concluidas_preserva_as_recorrentes() {
+        let (store, diretorio) = store_limpa("rec-limpar");
+        let aba = aba_de(&store);
+        let comum = store.acrescentar("comum", &aba).expect("acrescentar");
+        let rotina = store.acrescentar("rotina", &aba).expect("acrescentar");
+        store
+            .definir_recorrencia(&rotina.id, Recorrencia::Diaria)
+            .expect("definir");
+        store.alternar(&comum.id).expect("concluir a comum");
+        store.alternar(&rotina.id).expect("concluir a rotina");
+
+        let restantes = store.limpar_concluidas(&aba).expect("limpar");
+        let ids: Vec<&str> = restantes.iter().map(|todo| todo.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            vec![rotina.id.as_str()],
+            "a recorrente concluída tinha que ficar, e só ela"
+        );
+        assert!(restantes[0].done, "limpar não desmarca a recorrente");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Reativar é o braço do backend na volta: `done = false`, carimbo limpo,
+    /// tudo-ou-nada, e lote vazio é bug de quem chamou.
+    #[test]
+    fn reativar_devolve_a_pendente_e_e_tudo_ou_nada() {
+        let (store, diretorio) = store_limpa("rec-reativar");
+        let aba = aba_de(&store);
+        let rotina = store.acrescentar("rotina", &aba).expect("acrescentar");
+        store
+            .definir_recorrencia(&rotina.id, Recorrencia::Diaria)
+            .expect("definir");
+        store.alternar(&rotina.id).expect("concluir");
+
+        assert!(store.reativar(&[]).is_err(), "lote vazio é Err");
+        assert!(
+            store
+                .reativar(&[rotina.id.clone(), "nao-existe".to_owned()])
+                .is_err(),
+            "um id inexistente reprova o lote inteiro"
+        );
+        let ainda = store.listar(&aba).expect("listar");
+        assert!(ainda[0].done, "o lote reprovado não pode ter aplicado metade");
+
+        let reativadas = store.reativar(&[rotina.id.clone()]).expect("reativar");
+        assert_eq!(reativadas.len(), 1);
+        assert!(!reativadas[0].done);
+        assert_eq!(reativadas[0].done_at, None);
+        assert_eq!(reativadas[0].repeat, Recorrencia::Diaria, "a recorrência fica");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// `listar_recorrentes` atravessa as abas: é a leitura da meia-noite, e uma
+    /// rotina numa aba de fundo tem que voltar mesmo sem ninguém abrir a aba.
+    #[test]
+    fn listar_recorrentes_atravessa_as_abas() {
+        let (store, diretorio) = store_limpa("rec-listar");
+        let primeira = aba_de(&store);
+        let segunda = store.criar_aba("Segunda").expect("criar aba");
+        let na_primeira = store.acrescentar("aqui", &primeira).expect("acrescentar");
+        let na_segunda = store.acrescentar("lá", &segunda.id).expect("acrescentar");
+        store.acrescentar("sem recorrência", &primeira).expect("acrescentar");
+        store
+            .definir_recorrencia(&na_primeira.id, Recorrencia::Diaria)
+            .expect("definir");
+        store
+            .definir_recorrencia(&na_segunda.id, Recorrencia::Mensal)
+            .expect("definir");
+
+        let recorrentes = store.listar_recorrentes().expect("listar");
+        let ids: Vec<&str> = recorrentes.iter().map(|todo| todo.id.as_str()).collect();
+        assert_eq!(ids, vec![na_primeira.id.as_str(), na_segunda.id.as_str()]);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    // --- mover entre abas ---
+
+    /// O ponto do comando: a tarefa muda de aba **pela idade real** — `created_at`
+    /// intacto —, e não como se fosse recém-criada no fim da lista.
+    #[test]
+    fn mover_preserva_o_carimbo_e_entra_na_ordem_da_aba_nova() {
+        let (store, diretorio) = store_limpa("mover");
+        let origem = aba_de(&store);
+        let destino = store.criar_aba("Destino").expect("criar aba");
+        // Semeia por `restaurar` para controlar os carimbos (ver tests_restaurar).
+        store
+            .restaurar(vec![Todo {
+                id: "antiga-no-destino".to_owned(),
+                title: "antiga".to_owned(),
+                done: false,
+                created_at: 1_000,
+                tab_id: destino.id.clone(),
+                repeat: Recorrencia::Nenhuma,
+                done_at: None,
+            }])
+            .expect("semear o destino");
+        store
+            .restaurar(vec![Todo {
+                id: "do-meio".to_owned(),
+                title: "movida".to_owned(),
+                done: false,
+                created_at: 500,
+                tab_id: origem.clone(),
+                repeat: Recorrencia::Nenhuma,
+                done_at: None,
+            }])
+            .expect("semear a origem");
+
+        let movida = store.mover("do-meio", &destino.id).expect("mover");
+        assert_eq!(movida.tab_id, destino.id);
+        assert_eq!(movida.created_at, 500, "mover não pode recarimbar");
+
+        let origem_depois = store.listar(&origem).expect("listar origem");
+        assert!(origem_depois.iter().all(|todo| todo.id != "do-meio"));
+        let destino_depois = store.listar(&destino.id).expect("listar destino");
+        let ids: Vec<&str> = destino_depois.iter().map(|todo| todo.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            vec!["do-meio", "antiga-no-destino"],
+            "a movida entra pela idade, não no fim"
+        );
+
+        assert!(store.mover("do-meio", "aba-inexistente").is_err());
+        assert!(store.mover("nao-existe", &destino.id).is_err());
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    // --- contagem por aba ---
+
+    #[test]
+    fn pendentes_por_aba_conta_cada_aba_na_ordem_canonica() {
+        let (store, diretorio) = store_limpa("contagem");
+        let primeira = aba_de(&store);
+        let segunda = store.criar_aba("Segunda").expect("criar aba");
+        store.acrescentar("um", &primeira).expect("acrescentar");
+        store.acrescentar("dois", &primeira).expect("acrescentar");
+        let feita = store.acrescentar("três", &segunda.id).expect("acrescentar");
+        store.acrescentar("quatro", &segunda.id).expect("acrescentar");
+        store.alternar(&feita.id).expect("concluir");
+
+        let contagens = store.pendentes_por_aba().expect("contar");
+        assert_eq!(contagens.len(), 2);
+        assert_eq!(contagens[0].tab_id, primeira);
+        assert_eq!(contagens[0].pending, 2);
+        assert_eq!(contagens[1].tab_id, segunda.id);
+        assert_eq!(contagens[1].pending, 1);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    // --- exportar e importar ---
+
+    /// A ida e volta inteira: exportar de uma máquina, importar na outra. O
+    /// arquivo exportado é um `todos.json` válido, e a importação num app vazio
+    /// traz tudo — menos a aba padrão da instalação nova, que já existia lá.
+    #[test]
+    fn exportar_e_importar_levam_tudo_para_a_outra_maquina() {
+        let (origem, dir_origem) = store_limpa("exp-origem");
+        let aba = aba_de(&origem);
+        let tarefa = origem.acrescentar("levar comigo", &aba).expect("acrescentar");
+        origem
+            .definir_recorrencia(&tarefa.id, Recorrencia::Semanal)
+            .expect("definir");
+        let extra = origem.criar_aba("Projetos").expect("criar aba");
+        origem
+            .acrescentar("na outra aba", &extra.id)
+            .expect("acrescentar");
+
+        let arquivo = dir_origem.join("export.json");
+        origem.exportar_para(&arquivo).expect("exportar");
+
+        let (destino, dir_destino) = store_limpa("exp-destino");
+        let resumo = destino.importar_de(&arquivo).expect("importar");
+        assert_eq!(resumo.tabs, 2, "as duas abas exportadas entram");
+        assert_eq!(resumo.todos, 2);
+
+        // A recorrência atravessa o arquivo.
+        let recorrentes = destino.listar_recorrentes().expect("listar");
+        assert_eq!(recorrentes.len(), 1);
+        assert_eq!(recorrentes[0].repeat, Recorrencia::Semanal);
+
+        // A aba padrão do destino continua lá: importar nunca remove.
+        assert_eq!(destino.listar_abas().expect("abas").len(), 3);
+
+        let _ = fs::remove_dir_all(&dir_origem);
+        let _ = fs::remove_dir_all(&dir_destino);
+    }
+
+    /// Importar o próprio export em cima de si mesmo é no-op contado: tudo já
+    /// existe por id, nada entra e nada sai.
+    #[test]
+    fn importar_o_proprio_export_nao_muda_nada() {
+        let (store, diretorio) = store_limpa("exp-si-mesmo");
+        let aba = aba_de(&store);
+        store.acrescentar("já estou aqui", &aba).expect("acrescentar");
+
+        let arquivo = diretorio.join("export.json");
+        store.exportar_para(&arquivo).expect("exportar");
+
+        let resumo = store.importar_de(&arquivo).expect("importar");
+        assert_eq!(resumo.tabs, 0);
+        assert_eq!(resumo.todos, 0);
+        assert_eq!(store.listar(&aba).expect("listar").len(), 1);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// O formato antigo (array sem abas) entra pela mesma leitura da migração:
+    /// vira uma aba "Tarefas" nova, sem tocar no que já existe.
+    #[test]
+    fn importar_o_formato_antigo_cria_a_aba_da_migracao() {
+        let (store, diretorio) = store_limpa("exp-antigo");
+        let aba = aba_de(&store);
+        store.acrescentar("minha", &aba).expect("acrescentar");
+
+        let arquivo = diretorio.join("antigo.json");
+        fs::write(
+            &arquivo,
+            r#"[{"id":"antiga-1","title":"do formato antigo","done":false,"created_at":1000}]"#,
+        )
+        .expect("escrever o arquivo antigo");
+
+        let resumo = store.importar_de(&arquivo).expect("importar");
+        assert_eq!(resumo.tabs, 1, "a aba 'Tarefas' da migração");
+        assert_eq!(resumo.todos, 1);
+        assert_eq!(store.listar(&aba).expect("listar").len(), 1, "nada foi removido");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Arquivo que não é JSON nenhum: `Err` dizendo que nada mudou, e nada muda.
+    #[test]
+    fn importar_arquivo_ilegivel_falha_sem_tocar_em_nada() {
+        let (store, diretorio) = store_limpa("exp-ilegivel");
+        let aba = aba_de(&store);
+        store.acrescentar("intacta", &aba).expect("acrescentar");
+
+        let arquivo = diretorio.join("lixo.json");
+        fs::write(&arquivo, b"isto nao e json").expect("escrever lixo");
+
+        assert!(store.importar_de(&arquivo).is_err());
+        assert!(store.importar_de(&diretorio.join("nao-existe.json")).is_err());
+        assert_eq!(store.listar(&aba).expect("listar").len(), 1);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Tarefa importada apontando para uma aba que não veio no arquivo é adotada
+    /// pela primeira aba — a regra do `normalizar`, valendo na porta nova.
+    #[test]
+    fn importar_orfa_adota_na_primeira_aba() {
+        let (store, diretorio) = store_limpa("exp-orfa");
+        let aba = aba_de(&store);
+
+        // A store só cria o diretório na primeira gravação, e este teste importa
+        // antes de qualquer mutação.
+        fs::create_dir_all(&diretorio).expect("criar diretório");
+        let arquivo = diretorio.join("orfa.json");
+        fs::write(
+            &arquivo,
+            r#"{"tabs":[],"todos":[{"id":"orfa-1","title":"órfã","done":false,"created_at":1000,"tab_id":"aba-que-nao-veio"}],"active_tab":""}"#,
+        )
+        .expect("escrever o arquivo");
+
+        let resumo = store.importar_de(&arquivo).expect("importar");
+        assert_eq!(resumo.todos, 1);
+        let lista = store.listar(&aba).expect("listar");
+        assert_eq!(lista.len(), 1, "a órfã tem que aparecer em alguma lista");
+        assert_eq!(lista[0].id, "orfa-1");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Um `todos.json` de versão anterior — sem `repeat` nem `done_at` — abre
+    /// exatamente como antes: campo faltando é `none`/`null`, nunca leitura
+    /// recusada. É a garantia de que a atualização não perde nada.
+    #[test]
+    fn arquivo_de_versao_anterior_le_com_repeat_none() {
+        let diretorio =
+            std::env::temp_dir().join(format!("nocom-rec-anterior-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&diretorio);
+        fs::create_dir_all(&diretorio).expect("criar diretório");
+        fs::write(
+            diretorio.join("todos.json"),
+            r#"{"tabs":[{"id":"t1","name":"Tarefas","created_at":1}],"todos":[{"id":"a","title":"antiga","done":true,"created_at":2,"tab_id":"t1"}],"active_tab":"t1"}"#,
+        )
+        .expect("escrever o arquivo antigo");
+
+        let store = Store::abrir(diretorio.join("todos.json"));
+        let lista = store.listar("t1").expect("listar");
+        assert_eq!(lista.len(), 1);
+        assert_eq!(lista[0].repeat, Recorrencia::Nenhuma);
+        assert_eq!(lista[0].done_at, None);
+        assert!(store.resgate().is_none(), "o arquivo não pode ler como ilegível");
 
         let _ = fs::remove_dir_all(&diretorio);
     }

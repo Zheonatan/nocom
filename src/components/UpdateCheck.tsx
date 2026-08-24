@@ -37,7 +37,16 @@ export function UpdateCheck() {
   /** A versão instalada. `null` só até a leitura chegar, no primeiro quadro. */
   const [versao, setVersao] = useState<string | null>(null);
   const [fase, setFase] = useState<
-    "parado" | "verificando" | "atual" | "disponivel" | "instalando" | "falhou"
+    | "parado"
+    | "verificando"
+    | "atual"
+    | "disponivel"
+    | "instalando"
+    | "falhou"
+    // `.deb`/`.rpm`: não há canal de atualização, e é permanente (Adendo 12).
+    // Fase própria porque não é `falhou` — nada deu errado, e a frase é névoa,
+    // não vermelho.
+    | "semCanal"
   >("parado");
   const [nova, setNova] = useState<Update | null>(null);
   const [erro, setErro] = useState<{ text: string; detail: string } | null>(null);
@@ -80,10 +89,19 @@ export function UpdateCheck() {
       })
       .catch((err: unknown) => {
         if (!vivo.current) return;
+        const detail = errorDetail(err);
+        // A marca estável do backend (Adendo 12): instalação sem canal de
+        // atualização — `.deb`/`.rpm`. Condição permanente, não falha: a frase
+        // aponta o gerenciador de pacotes e o botão desliga, em vez de um erro
+        // com cara de rede convidando a tentar de novo para sempre.
+        if (detail.includes("sem-canal-de-atualizacao")) {
+          setFase("semCanal");
+          return;
+        }
         // Sem rede, endpoint fora, ou `latest.json` sem entrada para esta
-        // plataforma — o caso do `.deb` e do `.rpm`, onde o updater não atua. A
-        // frase é a mesma nos três porque a consequência é a mesma: nada mudou.
-        setErro({ text: t("error.updateCheck"), detail: errorDetail(err) });
+        // plataforma. A frase é a mesma porque a consequência é a mesma: nada
+        // mudou.
+        setErro({ text: t("error.updateCheck"), detail });
         setFase("falhou");
       });
   }, []);
@@ -109,7 +127,9 @@ export function UpdateCheck() {
   }, [versao]);
 
   const instalando = fase === "instalando";
-  const ocupado = fase === "verificando" || instalando;
+  // `semCanal` desliga o botão de vez: a condição é permanente, e um botão que
+  // repete a mesma resposta para sempre é o convite errado.
+  const ocupado = fase === "verificando" || instalando || fase === "semCanal";
   /** O botão só oferece instalar enquanto existe uma atualização já verificada. */
   const oferecerInstalar = nova !== null;
 
@@ -122,6 +142,7 @@ export function UpdateCheck() {
   const situacao = (() => {
     if (fase === "verificando") return t("update.checking");
     if (instalando) return t("update.installing");
+    if (fase === "semCanal") return t("update.noChannel");
     if (fase === "falhou") return erro?.text ?? "";
     if (fase === "atual") return t("update.upToDate");
     if (fase === "disponivel" && nova !== null) {
@@ -145,7 +166,7 @@ export function UpdateCheck() {
         aria-live="polite"
         title={erro !== null && erro.detail !== "" ? erro.detail : undefined}
         className={[
-          "mt-1.5 min-h-[1.25rem] text-micro wrap-anywhere",
+          "mt-1.5 linha-de-status text-micro wrap-anywhere",
           fase === "falhou" ? "text-destructive" : "text-muted-foreground",
         ].join(" ")}
       >

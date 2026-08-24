@@ -1,14 +1,42 @@
 import { memo } from "react";
-import { X } from "lucide-react";
+import { Repeat as RepeatIcon, X } from "lucide-react";
 import { InlineEdit } from "@/components/InlineEdit";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { splitTitle } from "@/lib/dates";
-import { t } from "@/lib/i18n";
-import { TITLE_MAX_LENGTH, type Todo } from "@/lib/todos";
+import { t, type MessageKey } from "@/lib/i18n";
+import { TITLE_MAX_LENGTH, type Repeat, type Tab, type Todo } from "@/lib/todos";
+
+/**
+ * A frase de cada período, para o `title` e o `aria-label` do glifo: a tinta
+ * sozinha diz "repete", mas não diz quando.
+ */
+const REPEAT_TITLE: Record<Exclude<Repeat, "none">, MessageKey> = {
+  daily: "task.repeatsDaily",
+  weekly: "task.repeatsWeekly",
+  monthly: "task.repeatsMonthly",
+};
 
 type TodoRowProps = {
   todo: Todo;
+  /**
+   * Todas as abas, para o "Mover para" do menu de contexto (Adendo 13). A linha
+   * filtra as outras — a própria aba num menu de mover seria um item que não
+   * move nada. Identidade estável entre teclas digitadas (o estado `tabs` do App
+   * só muda em mutação de aba), então o `memo` continua valendo.
+   */
+  tabs: Tab[];
   /**
    * O dia de hoje (`2026-08-19`), para achar no título a data que é hoje. Vem de
    * cima, do `useToday`, e não de um `new Date()` aqui: um relógio por linha
@@ -31,6 +59,9 @@ type TodoRowProps = {
   onStartEdit: (id: string) => void;
   onCancelEdit: () => void;
   onRename: (id: string, title: string) => void;
+  /** Adendo 13: os dois gestos do menu de contexto. */
+  onMove: (id: string, tabId: string) => void;
+  onSetRepeat: (id: string, repeat: Repeat) => void;
 };
 
 /**
@@ -101,6 +132,7 @@ function DatePill({
 
 export const TodoRow = memo(function TodoRow({
   todo,
+  tabs,
   today,
   dayFirst,
   pending,
@@ -110,7 +142,12 @@ export const TodoRow = memo(function TodoRow({
   onStartEdit,
   onCancelEdit,
   onRename,
+  onMove,
+  onSetRepeat,
 }: TodoRowProps) {
+  // As abas para onde esta tarefa PODE ir. A própria fica de fora: um item de
+  // "mover" que não move nada só ensinaria desconfiança do menu.
+  const outrasAbas = tabs.filter((tab) => tab.id !== todo.tab_id);
   // As datas escritas no título: as que ficam inline e a que vai para a direita
   // — ver `splitTitle`. `segments` vazio é o caso normal, e é o sinal para o
   // título sair como sempre saiu: um nó de texto, sem elemento nenhum em volta.
@@ -126,8 +163,17 @@ export const TodoRow = memo(function TodoRow({
     : splitTitle(todo.title, today, dayFirst);
 
   return (
-    // `data-todo-id` é a âncora do FLIP em `useFlipRows`: é por ele que a
-    // animação sabe de onde para onde esta linha andou.
+    // O menu de contexto (Adendo 13) envolve a linha SEM tocar no DOM dela: o
+    // Root do Radix não renderiza nó nenhum e o Trigger com `asChild` é a
+    // própria `li` — a `ul` continua tendo `li` como filhas diretas, e o FLIP
+    // continua achando a linha pelo `data-todo-id` de sempre. Pelo teclado, o
+    // gesto é o nativo do navegador (`Shift+F10` / tecla de menu) com o foco em
+    // qualquer parada da linha. Linha otimista não abre menu: não dá para mover
+    // nem repetir o que o backend ainda não confirmou.
+    <ContextMenu>
+    <ContextMenuTrigger asChild disabled={pending}>
+    {/* `data-todo-id` é a âncora do FLIP em `useFlipRows`: é por ele que a
+        animação sabe de onde para onde esta linha andou. */}
     <li
       data-todo-id={todo.id}
       // F2 é o duplo clique do teclado, e o handler fica na LINHA, não no
@@ -196,7 +242,18 @@ export const TodoRow = memo(function TodoRow({
           label={t("task.edit")}
           onCommit={(title) => onRename(todo.id, title)}
           onCancel={onCancelEdit}
-          className="h-6 min-w-0 flex-1 px-1.5 text-body"
+          // `-my-0.5` é o que impede a linha de mudar de altura ao entrar em edição.
+          // O título mede 20px (`leading-5`) e o editor mede 24px, então ele crescia
+          // a linha em 4px e empurrava tudo abaixo dela no instante do duplo clique.
+          // Os 2px negativos de cada lado fazem a caixa EXTERNA do editor medir os
+          // mesmos 20px do texto que ele substitui — a Regra do Editor que Cabe pede
+          // "mesma altura", e é a altura ocupada que conta, não a desenhada. Sobra
+          // padding de linha de sobra (8px) para os 2px avançarem sem encostar em nada.
+          //
+          // Subir a altura do título para 24px também resolveria, e custaria 4px em
+          // TODA linha da lista — cerca de uma linha inteira das oito que caibem. Numa
+          // janela onde a altura é o orçamento, é o lado errado da troca.
+          className="-my-0.5 h-6 min-w-0 flex-1 px-1.5 text-body"
         />
       ) : (
         // Era uma `label` com `htmlFor` para o checkbox, e isso brigava com o
@@ -209,6 +266,10 @@ export const TodoRow = memo(function TodoRow({
         // editar é gesto do título, como o contrato divide.
         <span
           id={`todo-title-${todo.id}`}
+          // Título é texto do usuário: um em árabe ou hebraico renderiza na
+          // direção dele, em vez de embaralhar números e pontuação na direção
+          // da interface (Adendo 12).
+          dir="auto"
           onDoubleClick={() => {
             if (pending) return;
             onStartEdit(todo.id);
@@ -233,13 +294,39 @@ export const TodoRow = memo(function TodoRow({
         >
           {partes.segments.length === 0
             ? partes.rest
-            : partes.segments.map((segment, i) =>
+            : // **`key` por índice, e aqui ele é identidade de verdade.** É a única
+              // `key` do arquivo que não é um id, num arquivo escrito com identidade
+              // de nó de propósito (ver a Regra da Chegada que Sobrevive à Troca de
+              // Id), então ela merece a justificativa em vez da suspeita: estes nós
+              // são derivados **sincronamente** do título por `splitTitle`, não
+              // guardam estado nenhum, não recebem foco, não animam, e não são
+              // reordenados nem inseridos no meio — o título muda e a lista inteira
+              // de segmentos é recalculada junto. Nesse arranjo o índice é estável
+              // por construção, e compor uma chave a partir do deslocamento no texto
+              // custaria código para dizer exatamente a mesma coisa.
+              partes.segments.map((segment, i) =>
                 segment.date ? (
                   <DatePill key={i} text={segment.text} today={segment.today} />
                 ) : (
                   segment.text
                 ),
               )}
+        </span>
+      )}
+      {/* O glifo de repetição (Adendo 13): a única marca permanente de que esta
+          tarefa volta sozinha. Em névoa e com 12px — é metadado, não alarme — e
+          fica visível também na concluída, porque é justamente ali que ele
+          responde a pergunta que a linha riscada levanta ("acabou?": não, volta).
+          A frase do período vai no `title` e no `aria-label`; some na edição,
+          como a data, para devolver a largura ao campo. */}
+      {todo.repeat !== "none" && !editing && (
+        <span
+          role="img"
+          title={t(REPEAT_TITLE[todo.repeat])}
+          aria-label={t(REPEAT_TITLE[todo.repeat])}
+          className="shrink-0 text-muted-foreground"
+        >
+          <RepeatIcon className="size-3" />
         </span>
       )}
       {/* A data que saiu do fim do título, alinhada à direita.
@@ -274,5 +361,52 @@ export const TodoRow = memo(function TodoRow({
         <X />
       </Button>
     </li>
+    </ContextMenuTrigger>
+    <ContextMenuContent>
+      {/* "Mover para" desabilita com uma aba só, em vez de sumir: o menu que
+          muda de tamanho conforme o estado ensina a procurar opções que não
+          estão lá. O submenu limita a largura e trunca o nome — a Regra do
+          Texto que Não Vaza vale também na superfície nova. */}
+      <ContextMenuSub>
+        <ContextMenuSubTrigger disabled={outrasAbas.length === 0}>
+          {t("menu.moveTo")}
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="max-w-[10rem]">
+          {outrasAbas.map((tab) => (
+            <ContextMenuItem key={tab.id} onSelect={() => onMove(todo.id, tab.id)}>
+              {/* Nome de aba é texto do usuário: direção dele, truncado. */}
+              <span dir="auto" className="min-w-0 truncate">
+                {tab.name}
+              </span>
+            </ContextMenuItem>
+          ))}
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>{t("menu.repeat")}</ContextMenuSubTrigger>
+        <ContextMenuSubContent>
+          {/* Escolha única com o estado atual marcado: o menu também é onde se
+              CONFERE a recorrência, não só onde se escolhe. */}
+          <ContextMenuRadioGroup
+            value={todo.repeat}
+            onValueChange={(valor) => onSetRepeat(todo.id, valor as Repeat)}
+          >
+            <ContextMenuRadioItem value="none">
+              {t("menu.repeatNone")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="daily">
+              {t("menu.repeatDaily")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="weekly">
+              {t("menu.repeatWeekly")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="monthly">
+              {t("menu.repeatMonthly")}
+            </ContextMenuRadioItem>
+          </ContextMenuRadioGroup>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+    </ContextMenuContent>
+    </ContextMenu>
   );
 });

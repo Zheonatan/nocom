@@ -135,7 +135,9 @@ pub fn posicao_visivel(
     };
     // O monitor de maior sobreposição, e não o primeiro que encosta: com a janela
     // a cavalo entre duas telas, ela pertence à que mostra mais dela.
-    let melhor = areas.iter().max_by_key(|area| sobreposicao(&janela, area))?;
+    let melhor = areas
+        .iter()
+        .max_by_key(|area| sobreposicao(&janela, area))?;
     if sobreposicao(&janela, melhor) == 0 {
         return None;
     }

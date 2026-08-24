@@ -1,5 +1,5 @@
 import { t } from "@/lib/i18n";
-import { isMac } from "@/lib/todos";
+import { isLinux, isMac } from "@/lib/todos";
 
 /**
  * A captura de teclas do painel de atalho (Adendo 9): transforma a combinação que
@@ -126,8 +126,12 @@ export const MODIFIER_RULE: string = isMac()
  * valor cobre é o erro que aparece ANTES disso — uma falha de IPC na abertura, cuja
  * mensagem também ensina a via de volta e não pode dizer "{shortcut}".
  *
- * Precisa continuar de acordo com `PADRAO`, em `atalho.rs`.
+ * Precisa continuar de acordo com `PADRAO`, em `atalho.rs` — que desde o Adendo 12
+ * é por plataforma: no Linux `Ctrl+Alt+T` é o atalho canônico de terminal, e o
+ * padrão de lá é `Ctrl+Alt+Space`.
  */
 export const DEFAULT_SHORTCUT_LABEL: string = isMac()
   ? "⌃⌥T"
-  : "Ctrl+Alt+T";
+  : isLinux()
+    ? "Ctrl+Alt+Space"
+    : "Ctrl+Alt+T";

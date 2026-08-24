@@ -28,7 +28,14 @@ function Checkbox({
         // Sem geometria nenhuma o pseudo-elemento colapsa em zero, o que é o
         // desfecho certo para um esquecimento: o alvo volta a ser o desenho de
         // 16px, e não um retângulo invisível de tamanho arbitrário.
-        "peer relative flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-control-border transition-colors duration-75 data-checked:duration-150 outline-none group-has-disabled/field:opacity-50 after:absolute focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary",
+        // **O mesmo fundo de tema escuro que saiu do `Input` saiu daqui** — o token
+        // `input` a 30% —, e pela mesma razão: o DESIGN.md declara o checkbox
+        // desmarcado com fundo transparente ("um checkbox desmarcado é só a sua
+        // borda"). O `data-checked:bg-primary` abaixo continua sendo o único
+        // preenchimento sólido da interface, que é o que faz concluir ser o gesto
+        // mais afirmativo do app; um fundo no estado desmarcado comia parte desse
+        // contraste justamente no estado que serve de referência para ele.
+        "peer relative flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-control-border transition-colors duration-75 data-checked:duration-150 outline-none group-has-disabled/field:opacity-50 after:absolute focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary",
         className
       )}
       {...props}

@@ -39,6 +39,16 @@ use crate::persistencia;
 /// usuário uma função que ele usa o dia inteiro. O que o Adendo 9 acrescenta é
 /// que isso é o argumento para o **padrão**, e não uma proibição para a escolha
 /// de quem está na frente da máquina.
+///
+/// **No Linux o mesmo método dá outro resultado (Adendo 12):** `Ctrl+Alt+T` abre
+/// terminal em GNOME, KDE e Ubuntu há mais de uma década — o padrão de fábrica
+/// chegava garantidamente morto na plataforma inteira, e o estado vazio o ensinava
+/// como se valesse. `Ctrl+Alt+Space` não é reservado por nenhum dos grandes
+/// ambientes. Quem muda esta constante muda junto o `DEFAULT_SHORTCUT_LABEL` de
+/// `lib/shortcut.ts`, que é a mesma decisão do outro lado da fronteira.
+#[cfg(target_os = "linux")]
+pub const PADRAO: &str = "Control+Alt+Space";
+#[cfg(not(target_os = "linux"))]
 pub const PADRAO: &str = "Control+Alt+KeyT";
 
 /// O que vai para o disco. Objeto, e não a string crua: um campo com nome sobrevive
@@ -347,8 +357,18 @@ mod tests {
     /// A constante é lida por um parser, então um erro de digitação nela só
     /// apareceria em execução — e apareceria como "o atalho não faz nada", que é
     /// exatamente o sintoma difícil de diagnosticar.
+    ///
+    /// O padrão é por plataforma desde o Adendo 12: `Ctrl+Alt+T` é o atalho
+    /// canônico de terminal no Linux, e um padrão morto de fábrica lá era o
+    /// defeito que o adendo fechou.
     #[test]
-    fn o_padrao_e_control_option_t() {
+    fn o_padrao_e_o_da_plataforma() {
+        #[cfg(target_os = "linux")]
+        assert_eq!(
+            padrao(),
+            Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::Space)
+        );
+        #[cfg(not(target_os = "linux"))]
         assert_eq!(
             padrao(),
             Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyT)
@@ -402,10 +422,11 @@ mod tests {
     /// rótulo tem que falar da tecla registrada.
     #[test]
     fn a_etiqueta_termina_na_tecla_registrada() {
+        let com_letra = interpretar("control+alt+KeyT").unwrap();
         assert!(
-            etiqueta(&padrao()).ends_with('T'),
+            etiqueta(&com_letra).ends_with('T'),
             "a etiqueta '{}' não termina na tecla registrada",
-            etiqueta(&padrao())
+            etiqueta(&com_letra)
         );
         assert!(etiqueta(&interpretar("control+Digit1").unwrap()).ends_with('1'));
         assert!(!etiqueta(&interpretar("control+ArrowUp").unwrap()).contains("Arrow"));
@@ -413,11 +434,14 @@ mod tests {
 
     /// A convenção de cada sistema, do lado do letreiro. No Mac o modificador é
     /// símbolo; fora dele, palavra — e um `⌃` numa tela de Windows não diz nada.
+    /// O padrão também é por sistema desde o Adendo 12, e o teste prende os dois.
     #[test]
     fn a_etiqueta_segue_a_convencao_do_sistema() {
         let texto = etiqueta(&padrao());
         if cfg!(target_os = "macos") {
             assert_eq!(texto, "\u{2303}\u{2325}T");
+        } else if cfg!(target_os = "linux") {
+            assert_eq!(texto, "Ctrl+Alt+Space");
         } else {
             assert_eq!(texto, "Ctrl+Alt+T");
         }
@@ -468,9 +492,18 @@ mod tests {
         assert!(atalho.situacao().registrada);
 
         atalho.pausar();
-        assert!(!atalho.situacao().registrada, "o registro precisa sair da mão do sistema");
-        assert!(atalho.situacao().valendo, "suspenso não é combinação perdida");
-        assert!(atalho.descrever().active, "a tela não pode avisar nada por causa da pausa");
+        assert!(
+            !atalho.situacao().registrada,
+            "o registro precisa sair da mão do sistema"
+        );
+        assert!(
+            atalho.situacao().valendo,
+            "suspenso não é combinação perdida"
+        );
+        assert!(
+            atalho.descrever().active,
+            "a tela não pode avisar nada por causa da pausa"
+        );
 
         atalho.retomar();
         assert!(atalho.situacao().registrada);

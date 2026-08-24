@@ -136,7 +136,11 @@ mod testes {
         // Meio do traço à direita do centro: 18 + (15 + 12) / 2 = 31,5 -> pixel 31.
         assert_eq!(alfa(&img, 31, 18), 255, "o meio do traço deveria ser opaco");
         // Meio do traço acima do centro: 18 - 13,5 -> pixel 4.
-        assert_eq!(alfa(&img, 18, 4), 255, "o traço deveria fechar em toda a volta");
+        assert_eq!(
+            alfa(&img, 18, 4),
+            255,
+            "o traço deveria fechar em toda a volta"
+        );
     }
 
     /// Nada encosta na borda do quadro. Um desenho que sangra até o limite é

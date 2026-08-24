@@ -221,12 +221,8 @@ mod sistema {
             if locale.is_null() {
                 return None;
             }
-            let formatador = CFDateFormatterCreate(
-                core::ptr::null(),
-                locale,
-                ESTILO_CURTO,
-                SEM_ESTILO,
-            );
+            let formatador =
+                CFDateFormatterCreate(core::ptr::null(), locale, ESTILO_CURTO, SEM_ESTILO);
             CFRelease(locale.cast());
             if formatador.is_null() {
                 return None;
@@ -455,9 +451,17 @@ mod tests {
     /// O fallback é dia-primeiro, e a razão é assimétrica: sob dia-primeiro uma
     /// leitura errada **cala**, sob mês-primeiro ela pode **afirmar**. Este teste
     /// existe para que trocar a constante exija trocar a justificativa junto.
+    ///
+    /// **Asserção de COMPILAÇÃO, e não de execução.** `FALLBACK` é `const`, então o
+    /// valor é conhecido antes de a suíte rodar e um `assert!` comum não estava
+    /// verificando nada em tempo de execução — era o que o clippy apontava em
+    /// `assertions_on_constants`. Dentro de um bloco `const` a mesma linha passa a
+    /// valer mais: trocar a constante deixa de ser um teste vermelho e vira um erro
+    /// de compilação, que é o desfecho certo para uma decisão que não deve mudar
+    /// sozinha.
     #[test]
     fn o_fallback_e_dia_primeiro() {
-        assert!(FALLBACK, "o fallback silencioso é dia-primeiro");
+        const { assert!(FALLBACK, "o fallback silencioso é dia-primeiro") };
     }
 
     /// A leitura do sistema não pode entrar em pânico nem devolver um padrão que
@@ -479,4 +483,3 @@ mod tests {
         assert_eq!(dia_primeiro(), dia_primeiro());
     }
 }
-

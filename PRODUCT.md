@@ -43,6 +43,15 @@ precisar pensar no aplicativo — só na tarefa.
 Não-objetivos explícitos, herdados de todo o `CONTRACT.md`: não é gerenciador de projetos,
 não tem prazos, prioridades, subtarefas, etiquetas, colaboração nem sincronização.
 
+**Onde fica a linha da recorrência** (Adendo 13, pedida pelo usuário nestas palavras —
+"criar uma tarefa com recorrência: diária, semanal, mensal"): uma tarefa concluída com
+"repetir" **volta sozinha a pendente** no período seguinte, e é só isso. O que a mantém do
+lado de cá da linha dos prazos: não notifica, não conta atraso, não ordena por vencimento e
+não marca "atrasada" — a tarefa reaparece pendente como se tivesse sido desmarcada, e a cor
+continua reservada a erro e a hoje. O teste para trabalho futuro é o mesmo da data no
+título: se uma recorrência vencida começar a parecer diferente de uma por vencer, o app
+virou gerenciador de prazo, e isso volta a este documento antes de voltar ao código.
+
 **Onde fica a linha do "sem prazos"** (Adendo 11, e o teste de qualquer trabalho futuro
 nesta área): o app **lê** a data que você escreveu no título, mostra ela numa coluna à
 direita da linha e a marca em vermelho pastel **no dia**. E **não gerencia vencimento**:
@@ -74,7 +83,10 @@ outro produto:
 3. **Abas como contextos.** Escopos separados de lista (projeto, casa, hoje) criados e
    nomeados no mesmo gesto, sem diálogo e sem tela nova (Adendo 5) — separação de contexto
    sem o peso de um gerenciador de projetos.
-4. **Zero peso e zero conta.** Sem login, sem nuvem, sem sync. Um `todos.json` local.
+4. **Zero peso e zero conta.** Sem login, sem nuvem, sem sync. Um `todos.json` local — e,
+   desde o Adendo 13, exportar/importar como o caminho de levar tudo para outra máquina
+   **sem** abrir mão disso: um arquivo local, mesclado sem nunca remover, no lugar de uma
+   conta.
 
 ## Operating Context
 
@@ -99,7 +111,12 @@ duplicata): tarefas com criar/concluir/renomear/remover, "Limpar concluídas", d
 para todo gesto destrutivo (sem caixa de confirmação), abas com criar/renomear/fechar/restaurar,
 aba ativa persistida, **atalho global com a combinação escolhida pelo usuário**, tray com
 contagem, posição de janela persistida, migração do formato antigo de `todos.json`,
-**destaque da data de hoje escrita no título**.
+**destaque da data de hoje escrita no título**. E, do Adendo 13: **menu de contexto na
+tarefa** (clique direito — o lugar canônico de ação sobre a tarefa que não merece botão
+permanente), **recorrência** (diária/semanal/mensal, a tarefa volta a pendente no período),
+**mover tarefa entre abas** (com desfazer), **pendentes por aba no tooltip do chip**,
+**`⌘W` fecha a aba ativa**, **iniciar com o sistema**, e **exportar/importar** (mescla,
+nunca remove).
 
 **Vocabulário do produto:** *tarefa* (não "item"), *aba* (não "lista" nem "projeto"),
 *pendentes* (não "abertas"), *concluídas* (não "feitas"). O nome padrão de aba nova é
@@ -117,12 +134,16 @@ contagem, posição de janela persistida, migração do formato antigo de `todos
   cantos e borda; `html`/`body` não podem pintar fundo.
 - Estado otimista com rollback em erro, sem biblioteca de estado além de `useState`/`useEffect`.
 - Dark mode segue o sistema (`prefers-color-scheme`), sem toggle.
-- **A única configuração do app é o atalho global** (Adendo 9), e ela existe porque é a
-  única decisão que o sistema operacional não pode tomar pelo usuário: um atalho global
-  vence o do aplicativo em foco, e o que já está ocupado depende da máquina dele. Idioma,
-  tema e posição continuam vindo do sistema, sem seletor. Configuração nova precisa passar
-  pelo mesmo teste, e o painel do atalho não é uma "tela de preferências" onde a próxima
-  entra de carona.
+- **O app tem duas configurações, e cada uma pagou a entrada** (Adendos 9 e 13): o atalho
+  global e o iniciar com o sistema. O teste continua o mesmo — só entra a decisão que o
+  sistema operacional não pode tomar pelo usuário: a combinação disputa teclas com a
+  máquina dele, e registrar-se no login sem perguntar seria abuso (não oferecer deixaria a
+  promessa do atalho quebrar em silêncio no primeiro reinício). Idioma, tema e posição
+  continuam vindo do sistema, sem seletor. O painel da engrenagem passou a se chamar
+  "Configurações" porque virou verdade — mas ele não é uma tela onde a próxima entra de
+  carona: configuração nova continua passando pelo mesmo teste, neste documento antes do
+  código. Exportar/importar moram no mesmo painel e **não são configuração**: são dois
+  gestos sobre os dados, sem estado a guardar.
 - shadcn/ui obrigatório para os componentes de base.
 - **Nenhum caminho pode apagar tarefa antiga.** É a única falha declarada inaceitável.
 

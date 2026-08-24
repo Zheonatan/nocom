@@ -1,4 +1,23 @@
-@import "tailwindcss";
+/* A varredura do Tailwind é ESCOPADA a `src/`, e isso não é otimização de gosto.
+   Por padrão o v4 procura nomes de classe em todo arquivo não ignorado do projeto —
+   inclusive `DESIGN.md`, `CONTRACT.md` e `README.md`, que citam classes em prosa o
+   tempo inteiro. Uma frase como "o `shadow-lg` do cartão raiz" fazia a regra
+   `.shadow-lg` ser gravada no bundle, sem elemento nenhum para aplicá-la.
+
+   Medido: 15 regras fantasmas e 3,3KB, todas nascidas de documentação —
+   `.shadow-lg`, `.inset-ring`, `.translate-y-px` pelado, `.backdrop-filter` (que o
+   DESIGN.md cita justamente para PROIBIR), `.ring`, `.transition`. O Tauri empacota
+   `dist/` inteiro no binário, então é o mesmo argumento dos subconjuntos de fonte
+   logo abaixo: aqui é peso que sempre viaja.
+
+   Pior que o peso é a leitura: quem audita o CSS encontra `.shadow-lg` e conclui que
+   o app tem uma sombra. Tem não — ver "Elevation & Depth" no DESIGN.md.
+
+   `./` é `src/`, que é onde vive toda classe do app. O `index.html` da raiz e o da
+   vitrine não têm nenhuma. Se algum dia houver classe fora daqui, ela precisa de um
+   `@source` próprio, ou simplesmente não é gerada. */
+@import "tailwindcss" source(none);
+@source "./";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 /* Geist Variable, SÓ os subconjuntos latinos.
@@ -52,8 +71,16 @@ body,
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  /* "Geist Variable" NA FRENTE, e a razão é um defeito que viveu aqui: esta regra
+     é sem camada e vence o `html { @apply font-sans }` de `@layer base`, então
+     todo texto herdava daqui — e daqui a Geist estava ausente. O app inteiro
+     renderizava em SF Pro/Segoe UI enquanto os dois @font-face acima viajavam no
+     binário sem pintar um glifo, e a tipografia mudava por sistema operacional,
+     que é o oposto do que o DESIGN.md declara. O stack atrás dela continua sendo
+     o fallback real. */
   font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
 }
 
 /* Adendo 3: nada é selecionável por padrão. Não é gosto — a janela é arrastada
@@ -99,6 +126,21 @@ textarea {
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* A linha de resposta de um painel: uma linha de altura, RESERVADA mesmo vazia.
+
+   Existe nos dois blocos do painel da engrenagem — a resposta da troca de atalho e
+   a situação da atualização —, e nos dois pelo mesmo motivo: uma linha que nasce
+   quando a resposta chega empurra o resto do painel para baixo exatamente no
+   instante em que a pessoa está lendo o que aconteceu. Reservar a altura custa
+   20px de uma vista que não gasta altura permanente da lista.
+
+   Utilitária, e não o valor copiado nos dois lugares: era `min-h-[1.25rem]` escrito
+   duas vezes, e valor de sistema duplicado diverge na primeira vez que um dos dois
+   painéis mudar de tamanho de texto. */
+@utility linha-de-status {
+  min-height: 1.25rem;
 }
 
 /* A faixa de abas continua além da vista, e é preciso dizer isso.
@@ -249,35 +291,18 @@ textarea {
   --ease-settle: var(--motion-settle);
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-today: var(--today);
   --color-today-foreground: var(--today-foreground);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-foreground: var(--foreground);
@@ -286,9 +311,6 @@ textarea {
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
@@ -296,8 +318,6 @@ textarea {
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -306,8 +326,6 @@ textarea {
   /* 0.544 e não 0.556: o par mais apertado é texto secundário sobre `muted`
      (a pílula do contador, o aviso de desfazer), que ficava em 4.34:1. */
   --muted-foreground: oklch(0.544 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
   /* 0.529 e não 0.577: a mensagem de erro é `destructive` sobre `destructive/10`,
      e o fundo escurece junto com o texto — ficava em 3.99:1. É a única cor do
      app e a mensagem mais importante dele. */
@@ -332,24 +350,11 @@ textarea {
      Fica em ~6.5:1, bem abaixo dos 17.9:1 do checkbox marcado: foco se vê,
      mas não grita mais alto que o gesto de concluir. */
   --ring: oklch(0.48 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   /* Declarada aqui, e não só no `@theme inline`, porque o CSS escrito à mão
      acima (a chegada, o desenho do check) também precisa dela em runtime —
      `@theme inline` embute o valor nas utilidades e não emite a variável. */
   --motion-settle: cubic-bezier(0.16, 1, 0.3, 1);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
 /* Fonte única dos tokens escuros. Aplicados por media query (e não pela classe
@@ -360,16 +365,12 @@ textarea {
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   /* No escuro a pílula sobe de lightness em vez de descer: a cinza é
      `foreground/10`, ou seja branco sobre quase-preto, e uma pílula vermelha mais
@@ -381,19 +382,6 @@ textarea {
   --input: oklch(1 0 0 / 15%);
   --control-border: oklch(0.545 0 0);
   --ring: oklch(0.72 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
   }
 }
 

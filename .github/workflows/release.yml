@@ -112,6 +112,7 @@ jobs:
           # atualização possível para quem não é administrador da máquina. O NSIS
           # deste projeto instala em modo `currentUser` (o padrão do bundler), que não
           # pede elevação nenhuma.
+          updaterJsonPreferNsis: true
 
   # Publica nos gerenciadores de pacote. Só em tag: num `workflow_dispatch` a
   # partir da main o `if` pula, porque um build de teste não deve mexer no que os

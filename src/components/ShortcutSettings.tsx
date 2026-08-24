@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  disable as disableAutostart,
+  enable as enableAutostart,
+  isEnabled as autostartEnabled,
+} from "@tauri-apps/plugin-autostart";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { UpdateCheck } from "@/components/UpdateCheck";
 import {
@@ -12,11 +19,24 @@ import {
 } from "@/lib/shortcut";
 import {
   errorDetail,
+  exportData,
+  importData,
   isMac,
   pauseShortcut,
   setShortcut,
   type GlobalShortcut,
 } from "@/lib/todos";
+
+/**
+ * A linha de resposta de uma seção do painel: a mesma forma do status do
+ * atalho, agora compartilhada pelas seções novas (Adendo 13). O detalhe cru —
+ * caminho de arquivo, frase do backend — vai no `title`, como sempre.
+ */
+type SectionStatus = {
+  tone: "ok" | "error";
+  text: string;
+  detail?: string;
+} | null;
 
 /**
  * O painel da engrenagem: o atalho global (Adendo 9) e a versão (Adendo 10).
@@ -45,18 +65,37 @@ import {
  * faixa lá em cima — o painel é onde a pessoa está olhando, e a faixa é
  * passageira demais para uma decisão que ela acabou de tomar.
  */
+/**
+ * Quanto tempo uma captura armada PELO TECLADO precisa existir antes de um combo
+ * completo salvar. É o que separa escolha de reflexo (Adendo 12): com o painel
+ * aberto, um `⌘C` de memória muscular chega como `Meta` (que armava a captura) e
+ * `C` uns 50ms depois — e salvava o atalho global na hora. Abaixo deste tempo o
+ * combo é engolido: a captura fica de pé, a prévia mostra os modificadores, e
+ * repetir a tecla com o modificador ainda seguro salva — agora com a espera
+ * cumprida. O clique no capturador não espera nada: clicar é intenção explícita.
+ */
+const ARMED_DELAY_MS = 300;
+
 export function ShortcutSettings({
   shortcut,
   onChange,
+  onImported,
   onClose,
 }: {
   shortcut: GlobalShortcut;
   onChange: (next: GlobalShortcut) => void;
+  /** A importação mudou abas e lista por baixo do painel: o App relê as duas. */
+  onImported: () => void;
   onClose: () => void;
 }) {
   const [capturing, setCapturing] = useState(false);
   /** Os modificadores já apertados, enquanto a tecla principal não chegou. */
   const [held, setHeld] = useState("");
+  /**
+   * Quando a captura foi armada pelo teclado, o instante em que isso aconteceu;
+   * `null` = armada pelo clique no capturador. Ver `ARMED_DELAY_MS`.
+   */
+  const armedByKeyAt = useRef<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{
     tone: "ok" | "error";
@@ -65,6 +104,38 @@ export function ShortcutSettings({
     detail?: string;
   } | null>(null);
   const captureRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * O interruptor de iniciar com o sistema (Adendo 13). `null` é "ainda não
+   * sei": entre a montagem e a resposta do plugin, e depois de uma leitura que
+   * falhou — nos dois casos o controle desabilita, porque um interruptor que
+   * mostra um estado chutado é pior que um que espera.
+   */
+  const [autostart, setAutostart] = useState<boolean | null>(null);
+  const [autostartStatus, setAutostartStatus] = useState<SectionStatus>(null);
+  /** A resposta de exportar/importar, na linha da seção de dados. */
+  const [dataStatus, setDataStatus] = useState<SectionStatus>(null);
+  /** Um gesto de dados por vez: exportar e importar disputam o mesmo estado. */
+  const [dataBusy, setDataBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    autostartEnabled()
+      .then((ligado) => {
+        if (alive) setAutostart(ligado);
+      })
+      .catch((err: unknown) => {
+        if (!alive) return;
+        setAutostartStatus({
+          tone: "error",
+          text: t("error.autostartRead"),
+          detail: errorDetail(err),
+        });
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const isDefault = shortcut.accelerator === shortcut.default_accelerator;
 
@@ -156,6 +227,98 @@ export function ShortcutSettings({
   );
 
   /**
+   * Liga e desliga o início com o sistema (Adendo 13). Otimista como o resto do
+   * app: o quadrado muda no clique e volta se o plugin recusar — com a frase de
+   * erro dizendo que nada mudou.
+   */
+  async function toggleAutostart(ligado: boolean) {
+    const anterior = autostart;
+    setAutostart(ligado);
+    setAutostartStatus(null);
+    try {
+      if (ligado) {
+        await enableAutostart();
+      } else {
+        await disableAutostart();
+      }
+    } catch (err: unknown) {
+      setAutostart(anterior);
+      setAutostartStatus({
+        tone: "error",
+        text: t("error.autostart"),
+        detail: errorDetail(err),
+      });
+    }
+  }
+
+  /**
+   * Exportar (Adendo 13): o diálogo de salvar do sistema escolhe o caminho, o
+   * backend grava — a mesma gravação atômica do `todos.json`. Cancelar o diálogo
+   * é silêncio: a pessoa desistiu, e não falhou nada.
+   */
+  async function exportar() {
+    setDataStatus(null);
+    setDataBusy(true);
+    try {
+      const caminho = await saveDialog({
+        defaultPath: "nocom-tarefas.json",
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+      if (caminho === null) return;
+      await exportData(caminho);
+      // O caminho completo fica no `title` da linha, como todo detalhe cru.
+      setDataStatus({ tone: "ok", text: t("data.exported"), detail: caminho });
+    } catch (err: unknown) {
+      setDataStatus({
+        tone: "error",
+        text: t("error.export"),
+        detail: errorDetail(err),
+      });
+    } finally {
+      setDataBusy(false);
+    }
+  }
+
+  /**
+   * Importar (Adendo 13): mescla sem nunca remover — a frase do desfecho diz
+   * quantos ENTRARAM, porque é a única coisa que mudou. O App relê abas e lista
+   * por `onImported`, já que as duas podem ter crescido por baixo do painel.
+   */
+  async function importar() {
+    setDataStatus(null);
+    setDataBusy(true);
+    try {
+      const escolhido = await openDialog({
+        multiple: false,
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+      if (escolhido === null) return;
+      const caminho = Array.isArray(escolhido) ? escolhido[0] : escolhido;
+      if (caminho === undefined) return;
+      const resumo = await importData(caminho);
+      setDataStatus({
+        tone: "ok",
+        text:
+          resumo.tabs === 0 && resumo.todos === 0
+            ? t("data.importedNothing")
+            : t("data.imported", {
+                todos: t("data.importedTodos", { n: resumo.todos }),
+                tabs: t("data.importedTabs", { n: resumo.tabs }),
+              }),
+      });
+      onImported();
+    } catch (err: unknown) {
+      setDataStatus({
+        tone: "error",
+        text: t("error.import"),
+        detail: errorDetail(err),
+      });
+    } finally {
+      setDataBusy(false);
+    }
+  }
+
+  /**
    * **A captura escuta na JANELA, e não no elemento.** Esta é a correção do defeito
    * que fazia o painel não reconhecer nada: no WebKit do macOS um clique em `button`
    * **não** dá foco de teclado a ele (é o motivo de existir o "acesso completo por
@@ -169,9 +332,9 @@ export function ShortcutSettings({
    *
    * **Tecla sem modificador continua passando.** Só modificador (ou combinação com
    * `⌃`/`⌥`/`⌘`) começa a captura; digitar letras enquanto o painel está aberto
-   * segue chegando ao campo. O preço assumido é que, com o painel aberto, um `⌘A`
-   * vira escolha de atalho em vez de "selecionar tudo" — o painel existe para pegar
-   * teclas, e ele fecha em um `Escape`.
+   * segue chegando ao campo. E um combo que fecha logo depois de a captura se armar
+   * pelo teclado não salva — ver `ARMED_DELAY_MS`: era o `⌘A` de memória muscular
+   * virando atalho global, a única configuração do app trocada por um reflexo.
    */
   useEffect(() => {
     const onKeyDown = (evento: KeyboardEvent) => {
@@ -206,6 +369,10 @@ export function ShortcutSettings({
       if (!capturing) {
         setCapturing(true);
         setStatus(null);
+        // Armada pelo teclado: o relógio do reflexo começa aqui. Não é regravado
+        // nos eventos seguintes de propósito — segurar o modificador acumula o
+        // tempo, que é exatamente o gesto de quem quer salvar de novo.
+        armedByKeyAt.current = performance.now();
       }
 
       // Só modificadores até agora: mostra o que já está apertado e espera a tecla.
@@ -228,6 +395,19 @@ export function ShortcutSettings({
 
       const accelerator = acceleratorFrom(evento);
       if (accelerator === null) return;
+      // **Reflexo não rebinda.** Um combo que fecha a menos de `ARMED_DELAY_MS`
+      // de uma armada por teclado é o `⌘C`/`⌘W` de memória muscular, não uma
+      // escolha: engole, mantém a captura de pé e mostra os modificadores — quem
+      // quis mesmo salvar repete a tecla com o modificador seguro e passa. A
+      // armada por clique (`null`) salva de primeira.
+      const armadaHa =
+        armedByKeyAt.current === null
+          ? Infinity
+          : performance.now() - armedByKeyAt.current;
+      if (armadaHa < ARMED_DELAY_MS) {
+        setHeld(modifiersPreview(evento));
+        return;
+      }
       // Repetir a combinação que já vale não é no-op: se ela não estiver valendo
       // (outro app a tomou na abertura), insistir é o gesto certo — e é o backend
       // quem sabe disso.
@@ -253,7 +433,7 @@ export function ShortcutSettings({
   return (
     // `arrive`: este bloco entra no lugar exato de onde a lista saiu, com a mesma
     // animação de tudo que passa a ocupar a área da lista.
-    <div className="arrive px-2 py-4">
+    <div className="arrive px-2 py-3">
       <p className="text-xs font-medium text-foreground">{t("shortcut.title")}</p>
       <p className="mt-1 text-micro text-muted-foreground">
         {t("shortcut.explain")}
@@ -277,6 +457,9 @@ export function ShortcutSettings({
           setCapturing(true);
           setHeld("");
           setStatus(null);
+          // Armada por clique: intenção explícita, salva de primeira — ver
+          // `ARMED_DELAY_MS`.
+          armedByKeyAt.current = null;
           // O foco é pedido de propósito, e não herdado do clique: no WebKit do macOS
           // clicar num botão não dá foco a ele, e sem foco não haveria anel nenhum
           // dizendo de onde o painel está ouvindo. Quem escuta a tecla é o listener da
@@ -311,7 +494,7 @@ export function ShortcutSettings({
         aria-live="polite"
         title={status?.detail !== undefined && status.detail !== "" ? status.detail : undefined}
         className={[
-          "mt-1.5 min-h-[1.25rem] text-micro wrap-anywhere",
+          "mt-1.5 linha-de-status text-micro wrap-anywhere",
           status?.tone === "error" ? "text-destructive" : "text-muted-foreground",
         ].join(" ")}
       >
@@ -354,15 +537,88 @@ export function ShortcutSettings({
         </div>
       )}
 
-      {/* A linha é o que separa os dois assuntos do painel — e é linha, e não sombra
+      {/* A linha é o que separa os assuntos do painel — e é linha, e não sombra
           nem cartão: profundidade neste app é tom e traço (Regra da Sombra Externa). */}
-      <Separator className="my-4" />
+      <Separator className="my-3" />
+
+      {/* --- Início com o sistema (Adendo 13) --- */}
+      <p className="text-xs font-medium text-foreground">{t("autostart.title")}</p>
+      <p className="mt-1 text-micro text-muted-foreground">
+        {t("autostart.explain")}
+      </p>
+      {/* `label` em volta: o texto inteiro é alvo de clique, não só o quadrado
+          de 16px — a Regra do Alvo Maior que o Desenho, com HTML e sem
+          pseudo-elemento. Desabilita enquanto a leitura não chegou (ou falhou):
+          um interruptor mostrando estado chutado é pior que um que espera. */}
+      <label className="mt-2 flex w-fit items-center gap-2 text-xs text-foreground">
+        <Checkbox
+          checked={autostart === true}
+          disabled={autostart === null}
+          onCheckedChange={(marcado) => void toggleAutostart(marcado === true)}
+        />
+        {t("autostart.label")}
+      </label>
+      {autostartStatus !== null && (
+        <p
+          role="status"
+          aria-live="polite"
+          title={autostartStatus.detail}
+          className="mt-1.5 text-micro wrap-anywhere text-destructive"
+        >
+          {autostartStatus.text}
+        </p>
+      )}
+
+      <Separator className="my-3" />
+
+      {/* --- Seus dados (Adendo 13) --- */}
+      <p className="text-xs font-medium text-foreground">{t("data.title")}</p>
+      <p className="mt-1 text-micro text-muted-foreground">{t("data.explain")}</p>
+      <div className="mt-2 flex gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          disabled={dataBusy}
+          onClick={() => void exportar()}
+          className="text-xs"
+        >
+          {t("data.export")}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          disabled={dataBusy}
+          onClick={() => void importar()}
+          className="text-xs"
+        >
+          {t("data.import")}
+        </Button>
+      </div>
+      {dataStatus !== null && (
+        <p
+          role="status"
+          aria-live="polite"
+          title={dataStatus.detail}
+          className={[
+            "mt-1.5 text-micro wrap-anywhere",
+            dataStatus.tone === "error"
+              ? "text-destructive"
+              : "text-muted-foreground",
+          ].join(" ")}
+        >
+          {dataStatus.text}
+        </p>
+      )}
+
+      <Separator className="my-3" />
 
       <UpdateCheck />
 
       {/* "Concluir" fecha o painel INTEIRO, então é o último e está sozinho: com um
           segundo botão do lado, ele pareceria concluir só o bloco de cima. */}
-      <div className="mt-4 flex justify-end">
+      <div className="mt-3 flex justify-end">
         <Button
           type="button"
           variant="ghost"

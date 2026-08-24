@@ -222,6 +222,21 @@ components:
     rounded: "{rounded.md}"
     padding: "4px 8px"
     typography: "{typography.label}"
+  context-menu:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.lg}"
+    padding: "4px"
+  context-menu-item:
+    backgroundColor: "transparent"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.md}"
+    height: "28px"
+    padding: "0 8px"
+    typography: "{typography.label}"
+  context-menu-item-highlighted:
+    backgroundColor: "{colors.muted}"
+    textColor: "{colors.foreground}"
   folha-prancha:
     backgroundColor: "{colors.folha-prancha}"
     textColor: "{colors.folha-tinta}"
@@ -1264,12 +1279,17 @@ aparência.
 - Nos últimos 20 caracteres do limite, e **só** neles, aparece a conta do que resta:
   `text-micro`, cinza, `tabular-nums`, dentro do campo à direita. Chega a zero exatamente
   quando o campo para de aceitar.
-- **Por que existe:** o `maxLength` truncava em silêncio. Colar um parágrafo punha 200
+- **A régua é ponto de código, não `maxLength` (Adendo 12).** O atributo conta unidades
+  UTF-16 — um emoji valia 2, o campo parava antes do limite do contrato e o contador
+  mentia por fator 2. O corte vive no `onChange` (`clampLength`), com a mesma régua do
+  `chars().count()` do backend, nos dois campos (novo e edição inline).
+- **Por que existe:** o truncamento era em silêncio. Colar um parágrafo punha 200
   caracteres no campo e jogava o resto fora sem sinal nenhum — o usuário só descobria lendo
-  a tarefa depois. Fora dos últimos 20 o contador seria mobília, e mobília não ocupa o campo
-  mais usado do app.
-- `aria-hidden`: o `maxLength` do input já é anunciado por leitor de tela, e um número solto
-  seria a mesma informação dita duas vezes, uma delas sem unidade.
+  a tarefa depois. Um corte de colagem (mais de um caractere) agora avisa na faixa, sem
+  atropelar erro nem desfazer que estejam nela. Fora dos últimos 20 o contador seria
+  mobília, e mobília não ocupa o campo mais usado do app.
+- `aria-hidden`: um número solto seria informação sem unidade para leitor de tela; o corte
+  que importa (colar) é anunciado pela faixa, que é `role="status"`.
 
 ### Chips (abas)
 - **Style:** 24px de altura, raio de 8px, máximo de 8.5rem de largura, texto de 12px,
@@ -1433,6 +1453,14 @@ texto da linha igual ao texto que o editor inline abre no duplo clique.
   da lista, com raio de 8px e texto de 12px. Erro é `destructive` sobre
   `destructive/10`; desfazer e dica são `muted-foreground` sobre `muted`. Todos se
   dispensam sozinhos em 6 segundos e trazem um × de dispensa manual.
+- **O erro traz um botão "Detalhes"** (`aria-expanded`) que abre a frase crua do backend
+  dentro da própria faixa, em `text-micro` com `line-clamp-4` (visual — o texto inteiro
+  fica no DOM para leitor de tela, e continua no `title`). O `title` era o único canal do
+  detalhe, e `title` é mouse-only: teclado e leitor de tela não alcançavam nem o caminho
+  do arquivo resgatado (Adendo 12).
+- **O botão "Desfazer" anuncia `⌘Z`/`Ctrl+Z` no `title`** — a tecla aciona o desfazer
+  enquanto a oferta está na faixa, fora de edição inline e do painel. Passada a oferta,
+  `⌘Z` volta a ser o desfazer de texto de quem tem o foco.
 - **Uma faixa, um ocupante, e a ordem de prioridade é fixa:** um erro nunca é substituído
   por uma dica. Quem chega para ensinar cede a vez a quem chega para avisar que algo
   falhou, e a dica se perde em silêncio — o estado vazio acabou de dizer a mesma coisa
@@ -1461,10 +1489,47 @@ não é cosmética: eles falam com pessoas que sabem coisas diferentes.**
   explicar o óbvio, mas a via de volta continua valendo a repetição — é ela que se perde
   quando a janela se esconde.
 
-### Painel de atalho (a única troca de vista do app)
-A combinação que mostra e esconde a janela é escolha do usuário (Adendo 9), e escolher
-uma tecla precisa de uma superfície onde apertá-la. Ela **entra no lugar da lista**, e
-não por cima dela.
+**E cada um tem uma segunda forma, para o atalho morto (Adendo 12).** Com
+`Descricao.active: false` — o sistema recusou o registro — ensinar a tecla em tinta e
+peso 500 seria ensinar a instrução que falha no primeiro Escape. A hierarquia inverte:
+a via em tinta passa a ser o ícone da bandeja, e a frase em névoa diz que a combinação
+está ocupada e aponta a engrenagem. A faixa da primeira tarefa e o rodapé seguem a
+mesma regra: **nenhuma superfície anuncia uma tecla que não faz nada.** No rodapé vale
+o inverso também — em "Tudo em dia", com o atalho vivo, a frase pendura a combinação
+("Tudo em dia — ⌃⌥T esconde"): o único lugar permanente onde ela fica legível depois
+dos 6 segundos da faixa, a custo zero de altura.
+
+### Menu de contexto da tarefa (a única superfície flutuante do app)
+
+O clique direito numa linha abre um menu (Adendo 13) com os gestos sobre a tarefa que
+não merecem botão permanente: **Mover para** (as outras abas) e **Repetir** (nunca /
+todo dia / toda semana / todo mês) — e é o lugar canônico das opções futuras dessa
+classe. Ele é a **exceção declarada** à Regra da Vista que Troca, com o argumento
+inteiro: aparece sob o cursor por gesto explícito, some ao primeiro clique fora, e
+custa zero de altura permanente — que é exatamente o que a regra protege. Pelo
+teclado, `Shift+F10` (ou a tecla de menu) com o foco na linha abre o mesmo menu, de
+graça, porque é o gesto nativo do navegador.
+
+- **Separação por tom e traço, nunca sombra**: fundo `card`, fio de 1px em `border`,
+  item realçado em `muted` — a mesma lei de profundidade do resto do app.
+- **Escolhido é croma 0.** O check do período escolhido é tinta, não vermelho: estado
+  não é alarme (Regra do Pigmento Único).
+- **"Mover para" desabilita com uma aba só**, em vez de sumir: um menu que muda de
+  tamanho conforme o estado ensina a procurar opções que não estão lá. Os nomes de aba
+  no submenu truncam com o texto inteiro alcançável — a Regra do Texto que Não Vaza
+  vale na superfície nova.
+- **Linha otimista não abre menu**: não dá para mover nem repetir o que o backend
+  ainda não confirmou.
+- **O glifo da recorrência na linha** (↻ de 12px, em névoa) é a única marca permanente
+  de que a tarefa volta sozinha — metadado, não alarme, e por isso névoa e não tinta.
+  Ele fica visível também na concluída, porque é ali que responde a pergunta que a
+  linha riscada levanta ("acabou?" — não: volta). A frase do período vive no `title` e
+  no `aria-label`.
+
+### Painel de configurações (a única troca de vista do app)
+O painel da engrenagem guarda os quatro assuntos que não são sobre a lista (Adendos 9,
+10 e 13): o atalho global, o início com o sistema, os dados (exportar/importar) e a
+versão. Ele **entra no lugar da lista**, e não por cima dela.
 
 - **Não é camada.** Não há modal, popover nem sombra interna neste sistema, e uma janela
   de 360x480 não tem espaço para uma segunda superfície flutuando dentro da primeira. O
@@ -1480,6 +1545,10 @@ não por cima dela.
 - **Prévia dos modificadores enquanto a tecla principal não chega** (`⌃⌥…`). Sem ela o
   campo fica parado dizendo "aperte as teclas" com a mão já em cima do teclado, e a
   dúvida de "ele está me ouvindo?" é o que faz alguém desistir de um capturador.
+- **A captura precisa estar armada para salvar.** Um combo que fecha a menos de 300ms
+  de uma armada pelo teclado é reflexo (`⌘C`, `⌘W`), não escolha: é engolido, a captura
+  fica de pé e repetir a tecla com o modificador seguro salva. O clique no capturador
+  salva de primeira — clicar é intenção explícita.
 - **Uma linha de resposta, reservada.** Aceita, já tomada por outro aplicativo, sem
   modificador, ou "vale agora e não na próxima abertura": as quatro são a mesma linha de
   11px embaixo do campo, `destructive` quando é recusa e névoa quando não é. A altura
@@ -1487,6 +1556,17 @@ não por cima dela.
   baixo no instante em que a pessoa está lendo o que aconteceu.
 - **"Restaurar padrão" só existe quando há o que restaurar.** Um botão que não faz nada
   é mobília, e esta janela não tem espaço para mobília.
+- **As seções novas falam a mesma língua do atalho** (Adendo 13): rótulo de 12px em
+  peso 500, explicação de 11px em névoa, separador de linha entre assuntos, e uma linha
+  de resposta por seção — `destructive` na recusa, névoa no resto, com o detalhe cru
+  (caminho de arquivo, frase do backend) no `title`.
+- **O interruptor de iniciar com o sistema desabilita até a leitura chegar**: um
+  interruptor mostrando estado chutado é pior que um que espera. O `label` envolve o
+  texto inteiro — alvo maior que o desenho, sem pseudo-elemento.
+- **Cancelar um diálogo de arquivo é silêncio.** A pessoa desistiu; não falhou nada, e
+  não há frase a mostrar. A frase do desfecho da importação diz quantos ENTRARAM
+  ("Importado: 3 tarefas novas, 1 aba nova"), porque entrar é a única coisa que uma
+  importação faz — remover, nunca.
 
 ### Named Rules
 
@@ -1508,10 +1588,16 @@ quem já tem o hábito.
 **A Regra da Vista que Troca em Vez de Empilhar.** Uma superfície nova não sobe por cima
 da interface: ela ocupa a área da lista, que é a única elástica, e sai quando termina.
 Modal, popover e sombra interna não existem neste sistema — e o custo de altura de uma
-faixa a mais é o orçamento inteiro. Enquanto uma vista dessas está aberta, ela é a camada
+faixa a mais é o orçamento inteiro. **A exceção declarada é o menu de contexto** (Adendo
+13), e ela não abre a porta para as outras: um menu de contexto aparece sob o cursor por
+gesto explícito, some ao primeiro clique fora e custa zero de altura permanente — os
+três motivos da regra, atendidos por outra forma. Um modal ou um popover ancorado em
+botão continua proibido, porque nenhum dos dois passa nesse teste. Enquanto uma vista dessas está aberta, ela é a camada
 de fora do teclado: o `Escape` é dela, e os atalhos da vista que ela cobriu ficam
 desligados (`⌘T` não pode criar uma aba enquanto a pessoa está dizendo que quer usar
-`⌘T`).
+`⌘T`). **E a regra vale para o mouse tanto quanto para o teclado**: o campo de nova
+tarefa e a faixa de abas ficam `inert` enquanto o painel está aberto — clicar numa aba
+com a lista fora da tela dispararia undo e aviso sobre conteúdo que ninguém está vendo.
 
 **Desligar atalho não basta — o que MUTA fica inerte.** A regra valia pela metade: as teclas
 de aba eram desligadas, mas o campo de nova tarefa continuava alcançável por `Tab` e o
@@ -2112,7 +2198,9 @@ no outro; ver o preâmbulo dos dois mundos.
   app roda em três; imitar um quebra a coerência nos outros dois.
 - **Don't** projetar sombra em nada que esteja dentro da janela.
 - **Don't** resolver uma superfície nova com modal, popover ou camada elevada. Vista nova
-  troca de lugar com a lista e devolve o espaço ao sair — ver a Regra da Vista que Troca
+  troca de lugar com a lista e devolve o espaço ao sair — ver a Regra da Vista que Troca,
+  inclusive a exceção única dela (o menu de contexto do Adendo 13) e por que ela não
+  abre precedente
   em Vez de Empilhar.
 - **Don't** usar botão preenchido ou botão vermelho de destruição. Todo gesto destrutivo
   aqui é reversível, e vermelho prometeria uma gravidade que ele não tem.

@@ -28,7 +28,7 @@ use atalho::Atalho;
 use atualizacao::{Disponivel, Pendente};
 use idioma::Idioma;
 use janela::{Janela, Posicao, Retangulo};
-use store::{AbaFechada, Store, Tab, Todo};
+use store::{AbaFechada, ContagemAba, Importado, Recorrencia, Store, Tab, Todo};
 
 /// Rótulo da única janela, fixado no `tauri.conf.json`. O tray precisa achá-la
 /// pelo nome, e depender do padrão implícito deixaria o ícone virar um botão que
@@ -76,7 +76,11 @@ async fn rename_tab(
 /// várias tarefas de uma vez, e o desfazer curto do Adendo 4 só é possível se o
 /// frontend receber exatamente o que precisa repor.
 #[tauri::command]
-async fn close_tab(id: String, app: AppHandle, store: State<'_, Store>) -> Result<AbaFechada, String> {
+async fn close_tab(
+    id: String,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<AbaFechada, String> {
     mutar(&app, || store.fechar_aba(&id))
 }
 
@@ -352,6 +356,78 @@ async fn restore_todos(
     mutar(&app, || store.restaurar(todos))
 }
 
+/// Troca a recorrência de uma tarefa (Adendo 13). `repeat` chega como
+/// `"none" | "daily" | "weekly" | "monthly"` — valor fora disso é recusado pela
+/// desserialização antes de o comando rodar.
+#[tauri::command]
+async fn set_repeat(
+    id: String,
+    repeat: Recorrencia,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<Todo, String> {
+    mutar(&app, || store.definir_recorrencia(&id, repeat))
+}
+
+/// Move a tarefa para outra aba (Adendo 13), preservando `created_at`. Passa por
+/// `mutar` porque a contagem por aba muda — o tooltip do tray não, mas a regra é
+/// "toda mutação funila por aqui".
+#[tauri::command]
+async fn move_todo(
+    id: String,
+    tab_id: String,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<Todo, String> {
+    mutar(&app, || store.mover(&id, &tab_id))
+}
+
+/// Toda tarefa com recorrência, de todas as abas (Adendo 13). O frontend lê isto
+/// na carga e na meia-noite, calcula quais concluídas venceram o período — o
+/// calendário local é dele — e devolve os ids em `revive_todos`.
+#[tauri::command]
+async fn list_recurring(store: State<'_, Store>) -> Result<Vec<Todo>, String> {
+    store.listar_recorrentes()
+}
+
+/// Devolve a pendente as recorrentes cujo período venceu. Tudo-ou-nada, lote
+/// vazio é `Err` — as mesmas regras de `restore_todos`, pela mesma razão.
+#[tauri::command]
+async fn revive_todos(
+    ids: Vec<String>,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<Vec<Todo>, String> {
+    mutar(&app, || store.reativar(&ids))
+}
+
+/// Pendentes por aba (Adendo 13), para o `title` do chip. Leitura barata de
+/// propósito: o frontend a repete depois de cada mutação que muda contagem.
+#[tauri::command]
+async fn list_pending_counts(store: State<'_, Store>) -> Result<Vec<ContagemAba>, String> {
+    store.pendentes_por_aba()
+}
+
+/// Grava o estado inteiro no caminho que o usuário escolheu no diálogo de salvar
+/// (Adendo 13). O caminho vem do frontend; quem escreve é o backend, pela mesma
+/// gravação atômica do `todos.json`.
+#[tauri::command]
+async fn export_data(path: String, store: State<'_, Store>) -> Result<(), String> {
+    store.exportar_para(std::path::Path::new(&path))
+}
+
+/// Importa um arquivo exportado, mesclando sem nunca remover (Adendo 13). Passa
+/// por `mutar` porque tarefas novas contam no tooltip. O retorno diz quantos
+/// entraram — o que já existia foi pulado.
+#[tauri::command]
+async fn import_data(
+    path: String,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<Importado, String> {
+    mutar(&app, || store.importar_de(std::path::Path::new(&path)))
+}
+
 /// **Ponto único de atualização do tray.** Toda mutação passa por aqui, então o
 /// tooltip não depende de alguém lembrar de acrescentar uma chamada no comando
 /// novo — comando que não funila por `mutar` simplesmente não existe.
@@ -486,9 +562,11 @@ fn restaurar_posicao(janela: &WebviewWindow) {
         })
         .collect();
 
-    if let Some(segura) =
-        janela::posicao_visivel(desejada, (tamanho.width as i32, tamanho.height as i32), &areas)
-    {
+    if let Some(segura) = janela::posicao_visivel(
+        desejada,
+        (tamanho.width as i32, tamanho.height as i32),
+        &areas,
+    ) {
         let _ = janela.set_position(PhysicalPosition::new(segura.x, segura.y));
     }
 }
@@ -719,8 +797,31 @@ fn montar_tray(app: &AppHandle) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // **Primeiro plugin de todos — é onde o single-instance exige ficar.** Relançar
+    // o app pelo launcher é o gesto de quem perdeu a janela (Adendo 12): a segunda
+    // instância não sobe, ela manda esta mostrar e focar. No Linux, onde o atalho
+    // pode não registrar (Wayland) e a bandeja pode nem aparecer (GNOME sem
+    // extensão), este é o caminho de volta que resta junto com a taskbar.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        let Some(janela) = app.get_webview_window(JANELA) else {
+            return;
+        };
+        // A mesma sequência de `alternar_janela` no ramo de mostrar — e nunca o
+        // ramo de esconder: quem relança o app quer vê-lo, mesmo que a janela já
+        // esteja visível em algum canto.
+        if janela.is_minimized().unwrap_or(false) {
+            let _ = janela.unminimize();
+        }
+        let _ = janela.show();
+        let _ = janela.set_focus();
+    }));
+    builder
         .plugin(tauri_plugin_opener::init())
+        // Os diálogos de salvar/abrir do exportar e importar (Adendo 13). O
+        // frontend só pede o caminho; ler e gravar continuam sendo do backend.
+        .plugin(tauri_plugin_dialog::init())
         // O caminho só existe com o `AppHandle` na mão, então o estado nasce aqui
         // e não em `default()`.
         .setup(|app| {
@@ -755,6 +856,20 @@ pub fn run() {
             // ainda sobe com o tray inteiro no lugar.
             #[cfg(desktop)]
             montar_atalho_global(app.handle());
+            // Iniciar com o sistema (Adendo 13). O frontend fala com o plugin
+            // direto (`@tauri-apps/plugin-autostart`) — um comando nosso seria uma
+            // terceira cópia da mesma função. Sem `?`: um plugin que não sobe
+            // custa o interruptor do painel, e não o app inteiro.
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_autostart::MacosLauncher;
+                if let Err(erro) = app
+                    .handle()
+                    .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+                {
+                    eprintln!("[autostart] o plugin de início com o sistema não subiu: {erro}");
+                }
+            }
             // Atualização (Adendo 10). Por último porque não participa da abertura:
             // o plugin não faz requisição nenhuma ao subir, só quando o painel pede.
             // Sem `?` pela mesma razão do atalho — um plugin que não sobe custa o
@@ -762,7 +877,9 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 app.manage(Pendente::nova());
-                if let Err(erro) = app.handle().plugin(tauri_plugin_updater::Builder::new().build())
+                if let Err(erro) = app
+                    .handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())
                 {
                     eprintln!("[atualização] o plugin de atualização não subiu: {erro}");
                 }
@@ -791,6 +908,13 @@ pub fn run() {
             delete_todo,
             clear_completed,
             restore_todos,
+            set_repeat,
+            move_todo,
+            list_recurring,
+            revive_todos,
+            list_pending_counts,
+            export_data,
+            import_data,
             hide_window,
             quit_app
         ])
@@ -821,15 +945,18 @@ mod tests_tooltip {
 
         let primeira = store.listar_abas().expect("listar abas")[0].id.clone();
         let segunda = store.criar_aba("Segunda").expect("criar aba");
-        store.acrescentar("na primeira", &primeira).expect("acrescentar");
-        store.acrescentar("na segunda", &segunda.id).expect("acrescentar");
+        store
+            .acrescentar("na primeira", &primeira)
+            .expect("acrescentar");
+        store
+            .acrescentar("na segunda", &segunda.id)
+            .expect("acrescentar");
         let concluida = store
             .acrescentar("também na segunda", &segunda.id)
             .expect("acrescentar");
 
-        let texto = |store: &Store| {
-            texto_do_tooltip(store.pendentes().expect("contar"), Idioma::Pt)
-        };
+        let texto =
+            |store: &Store| texto_do_tooltip(store.pendentes().expect("contar"), Idioma::Pt);
 
         assert!(
             texto(&store).contains("3 tarefas pendentes"),

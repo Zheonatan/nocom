@@ -71,13 +71,34 @@ impl Pendente {
     }
 }
 
+/// A marca estável de "instalação sem canal de atualização" — **é contrato**
+/// (Adendo 12): o frontend a reconhece no texto da rejeição e mostra uma frase
+/// permanente ("atualiza pelo gerenciador de pacotes") em vez de um erro com cara
+/// de rede que convida a tentar de novo para sempre.
+#[cfg(target_os = "linux")]
+const SEM_CANAL: &str = "sem-canal-de-atualizacao";
+
 /// Pergunta ao endpoint se existe versão mais nova que a instalada.
 ///
 /// `Ok(None)` é a resposta boa e comum: o app já está na última. O erro é para
 /// quando a pergunta não pôde ser feita — sem rede, endpoint fora, `latest.json`
 /// sem entrada para esta plataforma — e a frase que o usuário lê diz que **nada
 /// mudou**, porque nada mudou mesmo.
+///
+/// **Exceto num `.deb`/`.rpm`, onde a resposta certa não é um erro.** O plugin só
+/// atua no AppImage, que se anuncia pela variável de ambiente `APPIMAGE` que o
+/// runtime dele exporta. Sem ela, esta instalação atualiza pelo gerenciador de
+/// pacotes — uma condição permanente, e a rejeição carrega a marca `SEM_CANAL`
+/// para a tela poder dizer isso uma vez em vez de oferecer uma nova tentativa do
+/// que nunca vai funcionar.
 pub async fn verificar(app: &AppHandle, pendente: &Pendente) -> Result<Option<Disponivel>, String> {
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("APPIMAGE").is_none() {
+        return Err(format!(
+            "{SEM_CANAL}: esta instalação (.deb/.rpm) atualiza pelo gerenciador de pacotes"
+        ));
+    }
+
     let atualizador = app
         .updater()
         .map_err(|erro| format!("não foi possível preparar a verificação: {erro}"))?;

@@ -61,17 +61,45 @@ const pt = {
     other: "{n} pendentes",
   },
   "footer.allDone": "Tudo em dia",
+  // A mesma frase com o atalho pendurado (Adendo 12): passada a faixa de 6
+  // segundos, este é o único lugar permanente onde a combinação fica legível —
+  // custo de altura zero numa região viva que já existia. Só aparece com a lista
+  // em dia (o rodapé ocupado com contagem não precisa de mais texto) e só quando
+  // o atalho vale — anunciar tecla morta é o que o Adendo 12 veio tirar.
+  "footer.allDoneHint": "Tudo em dia — {shortcut} esconde",
   "footer.clearCompleted": "Limpar concluídas",
 
   "task.placeholder": "Nova tarefa…",
   "task.new": "Nova tarefa",
   "task.edit": "Editar tarefa",
   "task.remove": 'Remover "{title}"',
+  // Colar além do limite era truncamento em silêncio: 400 caracteres viravam 200
+  // e o resto sumia sem sinal (Adendo 12). Digitar no limite não avisa — o
+  // contador dos últimos 20 já cobre esse caso; a faixa é só para o corte grande.
+  "task.pasteTruncated":
+    "O texto colado passava de {max} caracteres e foi cortado no limite.",
   // Só para leitor de tela, e SÓ ela: o destaque da data escrita no título é
   // tinta (uma pílula em cinza), e tinta não é lida. A palavra entra entre
   // parênteses ao lado do trecho — "pagar boleto 20/08 (hoje)" —, que é como
   // alguém diria a mesma coisa em voz alta.
   "task.today": "hoje",
+
+  // --- menu de contexto (Adendo 13) ---
+  //
+  // As frases do menu falam do GESTO, não de metadado: "Repetir · Todo dia", e
+  // nunca "Recorrência: diária" — vocabulário de formulário para um menu de dois
+  // itens seria o mesmo erro que "preferências" no painel.
+  "menu.moveTo": "Mover para",
+  "menu.repeat": "Repetir",
+  "menu.repeatNone": "Nunca",
+  "menu.repeatDaily": "Todo dia",
+  "menu.repeatWeekly": "Toda semana",
+  "menu.repeatMonthly": "Todo mês",
+  // O `title` do glifo de repetição na linha — a tinta sozinha não diz o período,
+  // e o leitor de tela recebe a mesma frase por `aria-label`.
+  "task.repeatsDaily": "Repete todo dia",
+  "task.repeatsWeekly": "Repete toda semana",
+  "task.repeatsMonthly": "Repete todo mês",
 
   "list.loading": "Carregando…",
   // Estado vazio de quem JÁ usou o app: limpou a lista, ou acabou de criar uma
@@ -102,6 +130,35 @@ const pt = {
     "{shortcut} mostra e esconde a janela, de qualquer aplicativo.",
   "empty.wayBackTray": "Ou clique no ícone {place}.",
 
+  // --- as variantes do Linux (Adendo 12, segunda rodada) ---
+  //
+  // No Linux a bandeja pode simplesmente não existir (GNOME sem a extensão
+  // AppIndicator), e a barra de tarefas é a via que o Adendo 12 garantiu
+  // (`skipTaskbar: false` lá). Uma instrução em tinta apontando para um ícone
+  // que não está na tela é pior que nenhuma — então as frases de volta do Linux
+  // lideram com a barra de tarefas e citam a bandeja como segunda via.
+  "empty.wayBackTrayLinux": "Ou pela janela na barra de tarefas — ou o ícone {place}.",
+  "empty.wayBackTrayPrimaryLinux":
+    "Traga a janela de volta pela barra de tarefas, ou pelo ícone {place}.",
+  "empty.hintInactiveLinux":
+    "O atalho não está valendo — volte pela barra de tarefas, e escolha outro na engrenagem.",
+
+  // --- atalho morto (Adendo 12) ---
+  //
+  // Quando o sistema recusou a combinação (`active: false`), ensinar a tecla em
+  // peso 500 seria ensinar uma tecla morta — e a pessoa que apertasse Escape
+  // confiando nela cairia no pior desfecho do app. A hierarquia inverte: a via
+  // em tinta passa a ser a bandeja, e a frase em névoa diz o que houve e aponta
+  // a engrenagem, que é onde se escolhe outra.
+  "empty.wayBackTrayPrimary":
+    "Clique no ícone {place} para mostrar e esconder a janela.",
+  "empty.shortcutTaken":
+    "{shortcut} está ocupado por outro aplicativo. Escolha outro atalho na engrenagem, no topo da janela.",
+  // A versão do estado vazio de quem já usou o app: uma frase só, com as duas
+  // saídas — a via que funciona agora e o lugar onde se conserta a que não.
+  "empty.hintInactive":
+    "O atalho não está valendo — clique no ícone {place}, ou escolha outro na engrenagem.",
+
   // Onde o ícone da bandeja fica, na palavra que cada sistema usa para o lugar.
   // "Barra de menus" no Mac e "área de notificação" fora dele: apontar para a
   // região errada da tela é pior que não apontar para nenhuma. Quem escolhe
@@ -122,9 +179,19 @@ const pt = {
   // divide espaço com erro e desfazer. Uma frase que se lê de relance vale mais
   // aqui que duas completas que não se leem.
   "onboarding.roundTrip": "{shortcut} esconde a janela — e traz de volta.",
+  // A mesma faixa quando o atalho não está valendo (Adendo 12): ensinar a tecla
+  // morta aqui seria pior que não ensinar nada, e a bandeja é a via que existe.
+  "onboarding.roundTripTray": "A janela volta pelo ícone {place}.",
+  // No Linux, a barra de tarefas primeiro — a bandeja pode nem existir lá.
+  "onboarding.roundTripTrayLinux":
+    "A janela volta pela barra de tarefas ou pelo ícone {place}.",
 
   "notice.dismiss": "Dispensar aviso",
   "notice.undo": "Desfazer",
+  // O botão que abre a frase crua do backend dentro da faixa de erro. Existia só
+  // no `title`, que é mouse-only — leitor de tela e teclado não alcançavam nem o
+  // caminho do arquivo resgatado, a informação mais importante que o app dá.
+  "notice.details": "Detalhes",
 
   // Plural porque remoções seguidas se juntam num desfazer só: a faixa é uma, e
   // sem o lote a segunda remoção matava o desfazer da primeira em silêncio.
@@ -141,6 +208,9 @@ const pt = {
     one: 'Aba "{name}" fechada. 1 tarefa volta com ela.',
     other: 'Aba "{name}" fechada. {n} tarefas voltam com ela.',
   },
+  // Mover não destrói nada, mas ganha a mesma faixa: a tarefa sumiu da lista
+  // que está na tela, e o desfazer é o mesmo comando na direção contrária.
+  "undo.movedTo": 'Movida para "{name}".',
 
   // --- painel do atalho global (Adendo 9) ---
   //
@@ -148,13 +218,12 @@ const pt = {
   // configuração. As frases falam de TECLAS e de o que acontece com elas — nunca de
   // "preferências" nem de "opções", que é vocabulário de painel de controle e não
   // dos dois gestos concretos que este painel oferece.
-  // **O rótulo da engrenagem nomeia as duas coisas que estão atrás dela.** Era
-  // "Trocar o atalho" quando o painel só trocava o atalho; desde o Adendo 10 ele
-  // também verifica a versão, e um botão que promete uma coisa e abre duas é, para
-  // quem usa leitor de tela, a única descrição que existe do painel. Continua sem
-  // "preferências" e sem "opções" — vocabulário de painel de controle para dois
-  // gestos concretos seria a troca contrária.
-  "shortcut.open": "Atalho e versão",
+  // **O rótulo da engrenagem.** Já foi "Trocar o atalho" (um assunto) e "Atalho e
+  // versão" (dois); com o Adendo 13 o painel tem quatro — atalho, início com o
+  // sistema, dados e versão — e enumerar parou de escalar. "Configurações" venceu
+  // porque virou verdade: agora HÁ mais de uma configuração, e o nome genérico só
+  // era proibido enquanto prometia mais do que a engrenagem entregava.
+  "shortcut.open": "Configurações",
   "shortcut.title": "Atalho para mostrar e esconder",
   "shortcut.explain": "Vale de qualquer aplicativo, com o To-Do em segundo plano.",
   // O rótulo do capturador em repouso e o da captura em curso. "Aperte as teclas" é
@@ -219,6 +288,50 @@ const pt = {
   // parecer um susto em vez de o passo final do gesto.
   "update.install": "Atualizar e reiniciar",
   "update.installing": "Baixando… o app reinicia sozinho quando terminar.",
+  // A condição permanente do `.deb`/`.rpm` (Adendo 12): não é falha, é o formato
+  // da instalação. Em névoa, não em vermelho — e o botão desliga junto, porque
+  // oferecer nova tentativa do que nunca funciona é o convite errado.
+  "update.noChannel":
+    "Esta instalação atualiza pelo gerenciador de pacotes do sistema, não por aqui.",
+
+  // --- início com o sistema (Adendo 13) ---
+  //
+  // A promessa do atalho global quebra em silêncio no primeiro reinício da
+  // máquina se o processo não subir junto. É a segunda configuração do app, e
+  // passa no teste do Adendo 9: uma decisão sobre a máquina do usuário que o app
+  // não pode tomar sozinho.
+  "autostart.title": "Início",
+  "autostart.label": "Iniciar com o sistema",
+  "autostart.explain":
+    "Abre o NoCom sozinho quando você entra no computador — o atalho vale desde o começo.",
+
+  // --- exportar e importar (Adendo 13) ---
+  //
+  // O caminho de levar tudo para outro computador sem nuvem. As frases dizem as
+  // duas garantias que importam: exportar não tira nada daqui, e importar nunca
+  // remove o que já existe.
+  "data.title": "Seus dados",
+  "data.explain":
+    "Um arquivo local leva abas e tarefas para outro computador. Importar acrescenta; nunca remove.",
+  "data.export": "Exportar…",
+  "data.import": "Importar…",
+  // O caminho completo do arquivo vai no `title` da linha de status, como todo
+  // detalhe cru.
+  "data.exported": "Tudo exportado.",
+  // As duas metades compostas por `data.imported`: cada uma com o próprio plural,
+  // porque "1 tarefas novas" não é frase.
+  "data.imported": "Importado: {todos}, {tabs}.",
+  "data.importedTodos": {
+    zero: "nenhuma tarefa nova",
+    one: "1 tarefa nova",
+    other: "{n} tarefas novas",
+  },
+  "data.importedTabs": {
+    zero: "nenhuma aba nova",
+    one: "1 aba nova",
+    other: "{n} abas novas",
+  },
+  "data.importedNothing": "Nada novo: tudo que está no arquivo já estava aqui.",
 
   "tabs.label": "Abas",
   "tabs.new": "Nova aba",
@@ -228,6 +341,9 @@ const pt = {
   // e deixa de ser invisível.
   "tabs.withShortcut": "{name} ({shortcut})",
   "tabs.close": 'Fechar aba "{name}"',
+  // O `×` da aba ATIVA anuncia o `⌘W` (Adendo 13): é ela que a tecla fecha, e o
+  // `title` é onde os outros atalhos da faixa já moram.
+  "tabs.closeHint": 'Fechar aba "{name}" ({shortcut})',
   "tabs.rename": "Renomear aba",
   "tabs.defaultName": "Lista {n}",
 
@@ -248,6 +364,15 @@ const pt = {
   "error.delete": "Não foi possível remover. A tarefa continua na lista.",
   "error.clear": "Não foi possível limpar as concluídas. Nada foi removido.",
   "error.undo": "Não foi possível desfazer. Nada foi alterado.",
+  "error.move": "Não foi possível mover. A tarefa continua onde estava.",
+  "error.repeat": "Não foi possível trocar a repetição. Nada mudou.",
+  // A volta da recorrência falhou: a rotina continua concluída, e a informação
+  // de que nada se perdeu é a metade que importa.
+  "error.revive": "Não foi possível repetir as tarefas do período. Nada foi perdido.",
+  "error.autostartRead": "Não foi possível ler o início com o sistema.",
+  "error.autostart": "Não foi possível trocar o início com o sistema. Nada mudou.",
+  "error.export": "Não foi possível exportar. Seus dados continuam intactos aqui.",
+  "error.import": "Não foi possível importar. Nada mudou nos seus dados.",
   "error.tabCreate": "Não foi possível criar a aba.",
   "error.tabRename":
     "Não foi possível renomear a aba. O nome anterior foi mantido.",
@@ -284,13 +409,26 @@ const en: Record<MessageKey, Entry> = {
     other: "{n} pending",
   },
   "footer.allDone": "All clear",
+  "footer.allDoneHint": "All clear — {shortcut} hides",
   "footer.clearCompleted": "Clear completed",
 
   "task.placeholder": "New task…",
   "task.new": "New task",
   "task.edit": "Edit task",
   "task.remove": 'Remove "{title}"',
+  "task.pasteTruncated":
+    "The pasted text went past {max} characters and was cut at the limit.",
   "task.today": "today",
+
+  "menu.moveTo": "Move to",
+  "menu.repeat": "Repeat",
+  "menu.repeatNone": "Never",
+  "menu.repeatDaily": "Every day",
+  "menu.repeatWeekly": "Every week",
+  "menu.repeatMonthly": "Every month",
+  "task.repeatsDaily": "Repeats every day",
+  "task.repeatsWeekly": "Repeats every week",
+  "task.repeatsMonthly": "Repeats every month",
 
   "list.loading": "Loading…",
   "empty.title": "Nothing here yet.",
@@ -300,14 +438,29 @@ const en: Record<MessageKey, Entry> = {
   "empty.wayBackShortcut":
     "{shortcut} shows and hides the window, from any app.",
   "empty.wayBackTray": "Or click the icon {place}.",
+  "empty.wayBackTrayLinux": "Or the window in the taskbar — or the icon {place}.",
+  "empty.wayBackTrayPrimary":
+    "Click the icon {place} to show and hide the window.",
+  "empty.wayBackTrayPrimaryLinux":
+    "Bring the window back from the taskbar, or the icon {place}.",
+  "empty.hintInactiveLinux":
+    "The shortcut isn't working — come back through the taskbar, and pick another in the gear.",
+  "empty.shortcutTaken":
+    "{shortcut} is taken by another app. Pick another shortcut in the gear, at the top of the window.",
+  "empty.hintInactive":
+    "The shortcut isn't working — click the icon {place}, or pick another in the gear.",
 
   "tray.placeMenuBar": "in the menu bar",
   "tray.placeNotificationArea": "in the notification area",
 
   "onboarding.roundTrip": "{shortcut} hides the window — and brings it back.",
+  "onboarding.roundTripTray": "The window comes back from the icon {place}.",
+  "onboarding.roundTripTrayLinux":
+    "The window comes back from the taskbar or the icon {place}.",
 
   "notice.dismiss": "Dismiss notice",
   "notice.undo": "Undo",
+  "notice.details": "Details",
 
   "undo.tasksRemoved": {
     one: "Task removed.",
@@ -322,8 +475,9 @@ const en: Record<MessageKey, Entry> = {
     one: 'Tab "{name}" closed. 1 task comes back with it.',
     other: 'Tab "{name}" closed. {n} tasks come back with it.',
   },
+  "undo.movedTo": 'Moved to "{name}".',
 
-  "shortcut.open": "Shortcut and version",
+  "shortcut.open": "Settings",
   "shortcut.title": "Shortcut to show and hide",
   "shortcut.explain": "Works from any app, with the To-Do in the background.",
   "shortcut.current": "Shortcut",
@@ -355,12 +509,39 @@ const en: Record<MessageKey, Entry> = {
   "update.available": "{version} is available.",
   "update.install": "Update and restart",
   "update.installing": "Downloading… the app restarts on its own when it's done.",
+  "update.noChannel":
+    "This install updates through your system's package manager, not from here.",
+
+  "autostart.title": "Startup",
+  "autostart.label": "Start with the system",
+  "autostart.explain":
+    "Opens NoCom on its own when you log in — the shortcut works from the start.",
+
+  "data.title": "Your data",
+  "data.explain":
+    "One local file carries tabs and tasks to another computer. Importing adds; it never removes.",
+  "data.export": "Export…",
+  "data.import": "Import…",
+  "data.exported": "Everything exported.",
+  "data.imported": "Imported: {todos}, {tabs}.",
+  "data.importedTodos": {
+    zero: "no new tasks",
+    one: "1 new task",
+    other: "{n} new tasks",
+  },
+  "data.importedTabs": {
+    zero: "no new tabs",
+    one: "1 new tab",
+    other: "{n} new tabs",
+  },
+  "data.importedNothing": "Nothing new: everything in the file was already here.",
 
   "tabs.label": "Tabs",
   "tabs.new": "New tab",
   "tabs.newHint": "New tab ({shortcut})",
   "tabs.withShortcut": "{name} ({shortcut})",
   "tabs.close": 'Close tab "{name}"',
+  "tabs.closeHint": 'Close tab "{name}" ({shortcut})',
   "tabs.rename": "Rename tab",
   "tabs.defaultName": "List {n}",
 
@@ -373,6 +554,13 @@ const en: Record<MessageKey, Entry> = {
   "error.delete": "Couldn't remove it. The task is still in the list.",
   "error.clear": "Couldn't clear completed tasks. Nothing was removed.",
   "error.undo": "Couldn't undo. Nothing changed.",
+  "error.move": "Couldn't move it. The task stayed where it was.",
+  "error.repeat": "Couldn't change the repeat. Nothing changed.",
+  "error.revive": "Couldn't bring back this period's repeating tasks. Nothing was lost.",
+  "error.autostartRead": "Couldn't read the start-with-system setting.",
+  "error.autostart": "Couldn't change start with the system. Nothing changed.",
+  "error.export": "Couldn't export. Your data here is intact.",
+  "error.import": "Couldn't import. Nothing changed in your data.",
   "error.tabCreate": "Couldn't create the tab.",
   "error.tabRename": "Couldn't rename the tab. The previous name was kept.",
   "error.tabClose": "Couldn't close the tab. Nothing was removed.",

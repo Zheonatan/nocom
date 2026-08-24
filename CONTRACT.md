@@ -1531,5 +1531,308 @@ do macOS foi medida com o código que vai para produção, em cinco combinaçõe
 idioma e região. O workflow de release compila os quatro alvos, então um erro de
 compilação aparece lá; um erro de *valor* nas outras duas plataformas não aparece
 em lugar nenhum até alguém digitar uma data. Um job de CI que rode `cargo check` e
-`npm test` nos três sistemas a cada push fecharia a primeira metade, e ele não
-existe.
+`npm test` nos três sistemas a cada push fecharia a primeira metade — e ele passou
+a existir com o Adendo 12 (`.github/workflows/ci.yml`); a metade de *valor* segue
+aberta.
+
+# Adendo 12 — a degradação por sistema deixa de ser silenciosa (2026-08-23)
+
+Uma auditoria de usabilidade mediu o produto contra a promessa "fluida em todos os
+sistemas" e encontrou a fratura onde o PRODUCT.md já apontava: **as decisões foram
+raciocinadas em macOS, e no Linux os dois pilares quebram ao mesmo tempo.** O
+atalho global não funciona em sessões Wayland (padrão em GNOME/Fedora/Ubuntu
+modernos); o clique esquerdo da bandeja não é entregue via libappindicator (sobra
+só o menu de contexto); em GNOME sem a extensão AppIndicator não há ícone nenhum; e
+`skipTaskbar: true` removia a última rede de segurança. Um usuário de Fedora que
+apertasse `Escape` confiando no que o estado vazio ensinou ficava com o app
+inalcançável — o pior desfecho que este contrato conhece. Pior: `Ctrl+Alt+T`, o
+padrão de fábrica, é o atalho canônico de "abrir terminal" em GNOME, KDE e Ubuntu,
+então no Linux o estado vazio ensinava com peso 500 uma tecla garantidamente morta.
+
+A resposta não é fingir a mesma forma nos três sistemas: é **degradar
+explicitamente onde o sistema não sustenta a forma**, e a tela dizer a verdade
+sobre o que está valendo.
+
+## O que muda no Linux (e só nele)
+
+- **A janela entra na barra de tarefas.** `skipTaskbar: false`, via
+  `src-tauri/tauri.linux.conf.json` (o mecanismo de configuração por plataforma do
+  Tauri v2 — o `tauri.conf.json` principal continua valendo para macOS e Windows).
+  Onde nem o atalho nem a bandeja são garantidos, a taskbar é a única via de volta
+  que o sistema sempre oferece. O custo assumido: a janela aparece no alternador
+  de janelas do Linux, o que "sempre visível por cima" já tornava meio verdade.
+- **O padrão de fábrica vira `Ctrl+Alt+Space`.** O argumento de eliminação do
+  Adendo 2 continua sendo o método; o que muda é o resultado dele por plataforma,
+  porque a lista de teclas ocupadas é outra: `Ctrl+Alt+T` abre terminal em
+  GNOME/KDE/Ubuntu há mais de uma década. `Ctrl+Alt+Space` não é reservado por
+  nenhum dos grandes ambientes. macOS (`⌃⌥T`) e Windows (`Ctrl+Alt+T`) não mudam.
+  Os dois lados da fronteira acompanham: `PADRAO` em `atalho.rs` ganha `cfg` de
+  Linux, e `DEFAULT_SHORTCUT_LABEL` em `lib/shortcut.ts` ganha o mesmo ramo.
+
+## Segunda instância mostra a janela (os três sistemas)
+
+Relançar o app pelo launcher/menu iniciar/Dock é o gesto de quem perdeu a janela.
+Com o plugin `single-instance` (primeiro plugin do builder, como o plugin exige), a
+segunda instância não sobe: ela manda a primeira mostrar e focar a janela. Não é
+comando IPC novo — nada muda na tabela de comandos.
+
+## A tela para de ensinar atalho morto
+
+`Descricao.active` já atravessava o IPC e só o painel da engrenagem o lia. Passam a
+consultá-lo, sem comando novo:
+
+- **Os dois estados vazios.** Com `active: false`, a hierarquia inverte: a via
+  ensinada em tinta e peso 500 passa a ser o ícone da bandeja, e a frase em névoa
+  diz que a combinação está ocupada e aponta a engrenagem.
+- **A faixa da primeira tarefa** ensina a bandeja em vez da tecla morta.
+- **O rodapé em "Tudo em dia"** (ver abaixo) só anuncia o atalho quando ele vale.
+
+## O limite de título passa a ser contado com a mesma régua nos dois lados
+
+O backend conta `chars().count()` (pontos de código); o `maxLength` do input conta
+unidades UTF-16 — um emoji vale 2, o campo parava antes do limite do contrato e o
+contador "restam N" mentia por fator 2. O frontend passa a cortar em **200 pontos
+de código**, no `onChange`, e o `maxLength` nativo sai dos dois campos. Colar texto
+que passa do limite deixa de ser truncamento silencioso: a faixa de aviso diz que o
+texto foi cortado (sem substituir um erro nem uma oferta de desfazer que estejam na
+faixa). O limite em si não muda: 200 continua sendo 200, agora igual dos dois lados.
+
+## Descobribilidade que sobrevive ao primeiro dia (só frontend)
+
+- **O rodapé "Tudo em dia" ganha o atalho** ("Tudo em dia — ⌃⌥T esconde"): custo de
+  altura zero numa região viva que já existia, e o único lugar permanente onde a
+  combinação fica legível depois que a faixa de 6 segundos passou.
+- **`⌘Z`/`Ctrl+Z` aciona o desfazer** enquanto a oferta está na faixa (fora de
+  edição inline e do painel). O botão continua; a tecla é um segundo caminho.
+- **O detalhe cru do erro sai do `title`**: a faixa de erro ganha um botão
+  "Detalhes" (`aria-expanded`) que mostra a frase crua do backend no corpo da
+  faixa. O `title` continua, mas deixa de ser o único canal — leitor de tela e
+  teclado alcançam o caminho do arquivo resgatado.
+- **`aria-keyshortcuts`** nos chips de aba (`Control+1`/`Meta+1`…) e no botão de
+  nova aba: o `title` era o único canal dos atalhos de aba, e `title` é mouse-only.
+- **`dir="auto"`** no título da tarefa, nos campos e no nome da aba: um título em
+  árabe/hebraico renderiza na direção dele em vez de embaralhar com a pílula.
+
+## A vista que troca vale também para o mouse (segunda rodada da auditoria)
+
+A Regra da Vista que Troca desligava os atalhos de aba e punha o campo em `inert`
+com o painel aberto — mas a faixa de abas continuava clicável pelo mouse: dava
+para criar, fechar e renomear uma aba com a lista fora da tela, disparando undo e
+aviso sobre conteúdo que ninguém estava vendo. A faixa agora fica `inert` junto
+com o campo. Ela não é região de arrasto, então nada de mover a janela se perde.
+
+## A captura de atalho precisa estar armada para salvar
+
+Com o painel aberto, qualquer `modificador+tecla` salvava o atalho global na hora
+— um `⌘C` de memória muscular rebindava a única configuração do app. Um combo que
+fecha a **menos de 300ms** de uma captura armada pelo teclado é engolido: a
+captura fica de pé, a prévia mostra os modificadores, e repetir a tecla (com o
+modificador ainda seguro) salva. O clique no capturador continua salvando de
+primeira — clicar é intenção explícita.
+
+## A verificação de versão diz quando não há canal
+
+`.deb` e `.rpm` não têm canal de atualização — o plugin só atua no AppImage, que
+se anuncia pela variável de ambiente `APPIMAGE`. Sem ela, `check_update` rejeita
+com a marca estável `sem-canal-de-atualizacao` (**é contrato**: o frontend a
+reconhece pelo texto), e o painel mostra uma frase permanente em névoa — atualiza
+pelo gerenciador de pacotes — com o botão desligado, em vez de um erro com cara
+de rede que convida a tentar de novo para sempre.
+
+## CI nos três sistemas
+
+`.github/workflows/ci.yml` roda `npm test`, `npm run build`, `cargo check` e
+`cargo test` em macOS, Ubuntu e Windows a cada push — é a metade da dívida dos
+Adendos 11 e 12 que dava para fechar sem máquina real. Um erro de **compilação**
+num `cfg` de Windows/Linux agora aparece num push, e não na release.
+
+## Definição de pronto (adicional)
+
+- `npm run build`, `npm test`, `cargo check` e `cargo test` passam limpos.
+- No Linux, a janela aparece na barra de tarefas; nos outros dois, não.
+- Relançar o app com a janela escondida mostra e foca a janela existente.
+- Com `active: false`, nenhuma superfície ensina a combinação como se valesse:
+  os dois estados vazios, a faixa da primeira tarefa e o rodapé falam da volta
+  que existe ou omitem a tecla — e no Linux as frases citam a barra de tarefas,
+  porque a bandeja pode nem existir lá (GNOME sem extensão).
+- Uma tarefa de 200 emojis é aceita inteira; o contador chega a 0 exatamente
+  quando o campo para de aceitar; colar 400 caracteres avisa na faixa.
+- O detalhe do erro é alcançável por teclado e lido por leitor de tela.
+- Com o painel aberto, a faixa de abas não responde a clique nem a tecla.
+- `⌘C` com o painel aberto não troca o atalho; segurar o modificador e apertar a
+  tecla de novo troca.
+- Num `.deb`/`.rpm`, "Verificar" responde a frase do gerenciador de pacotes, em
+  névoa, uma vez — e o botão desliga, porque a condição é permanente.
+- **O que não foi verificado nesta máquina:** o comportamento real em
+  Wayland/GNOME/KDE continua sem medição de campo — os `cfg` de Linux não compilam
+  aqui. O CI compila e testa nos três; o **comportamento** só se confirma com o
+  app rodando lá. A metade de valor da dívida do Adendo 11 continua aberta.
+
+---
+
+# Adendo 13 — menu de contexto, recorrência, mover entre abas, contagem por aba, ⌘W, iniciar com o sistema e exportar/importar (2026-08-23)
+
+Sete mudanças pedidas pelo usuário na mesma rodada. Três atravessam a fronteira
+IPC (recorrência, mover, contagens, exportar/importar — com comandos novos), duas
+são só do frontend (⌘W e o tooltip do chip), e uma entra por plugin (iniciar com
+o sistema). Este adendo registra o modelo, os comandos e as decisões — inclusive
+as duas que mexem em linha que o PRODUCT.md tinha traçado, e que voltam lá.
+
+## O menu de contexto — a primeira superfície flutuante do app
+
+Clique direito numa linha de tarefa abre um menu (Radix ContextMenu via shadcn),
+com duas entradas hoje: **Mover para** (as outras abas) e **Repetir** (nunca /
+todo dia / toda semana / todo mês). O menu foi desenhado para receber opções
+futuras — é o lugar canônico de "ação sobre esta tarefa que não merece um botão
+permanente na linha".
+
+O DESIGN.md dizia "o app não tem modal nem popover", e este menu é a exceção
+declarada, com o argumento: ele aparece **sob o cursor, por gesto explícito**,
+some ao primeiro clique fora, e custa **zero de altura permanente** — que é
+exatamente o que a Regra do Custo de Altura protege. Pelo teclado, `Shift+F10`
+(ou a tecla de menu) com o foco na linha abre o mesmo menu — gesto nativo do
+navegador, nada a ensinar.
+
+Linha otimista (`pending`) não abre menu: não dá para mover nem repetir o que o
+backend ainda não confirmou.
+
+## Modelo de dados — dois campos novos em `Todo`
+
+```rust
+pub struct Todo {
+    // ... campos existentes intactos ...
+    /// Recorrência escolhida no menu. `none` é o padrão e o estado de sempre.
+    #[serde(default)]
+    pub repeat: Recorrencia, // "none" | "daily" | "weekly" | "monthly"
+    /// Quando a tarefa foi concluída (epoch millis), ou null. Carimbado pelo
+    /// backend no toggle para done; limpo no toggle de volta e na reativação.
+    #[serde(default)]
+    pub done_at: Option<i64>,
+}
+```
+
+Os dois têm `serde(default)` pela mesma razão de sempre: um `todos.json` de
+versão anterior não pode falhar a leitura por campo que falta. Arquivo antigo lê
+como `repeat: none, done_at: null`, que é exatamente o comportamento antigo.
+
+## Semântica da recorrência — o que ela É e o que ela NÃO é
+
+Uma tarefa com recorrência, quando concluída, **volta sozinha a pendente** no
+início do período seguinte:
+
+- **diária**: na primeira meia-noite local depois de `done_at`;
+- **semanal**: na meia-noite 7 dias depois do dia de `done_at`;
+- **mensal**: na meia-noite do mesmo dia do mês seguinte (dia 31 num mês de 30
+  cai no último dia do mês — a mesma régua do `Date` do JS, fixada em teste).
+
+O que ela **não** faz, e é a linha do PRODUCT.md: não notifica, não conta
+atraso, não ordena, não marca "vencida". A tarefa simplesmente reaparece
+pendente, desbotada de volta ao normal, como se o usuário a tivesse desmarcado.
+A cor continua marcando só erro e hoje.
+
+**Quem decide "quando é meia-noite" é o frontend.** O calendário local já mora
+lá (`useToday`, Adendo 11), e o backend não tem relógio de fuso sem uma crate
+nova. A divisão: o frontend lê `list_recurring` (todas as abas), calcula quais
+concluídas venceram o período (`src/lib/recurrence.ts`, com testes em
+`node --test`) e chama `revive_todos(ids)`; o backend só executa a mutação —
+`done = false`, `done_at = null` — dentro da transação de sempre. Roda na carga
+inicial e na virada da meia-noite (o mesmo despertador do `useToday`).
+
+`set_repeat` numa tarefa **já concluída e sem `done_at`** (concluída antes desta
+versão) carimba `done_at = agora`: sem isso ela nunca teria base de cálculo e
+nunca voltaria.
+
+## "Limpar concluídas" preserva as recorrentes
+
+Uma recorrente concluída não está "encerrada" — está esperando o período. Limpar
+as concluídas as levaria junto e cancelaria em silêncio uma recorrência que o
+usuário configurou de propósito. Então `clear_completed` passa a remover só as
+concluídas **sem** recorrência, e o frontend conta o botão pela mesma régua (o
+"Limpar concluídas" desabilita quando as únicas concluídas são recorrentes).
+Remover uma recorrente continua possível — pelo `×` da linha, gesto explícito
+sobre ela, com o desfazer de sempre.
+
+## Comandos IPC novos
+
+| Comando | Args (JS) | Retorno | Erro |
+|---|---|---|---|
+| `set_repeat` | `{ id, repeat }` | `Todo` (estado novo) | `string` se id não existe ou `repeat` inválido |
+| `move_todo` | `{ id, tabId }` | `Todo` (já na aba nova) | `string` se id ou aba não existem |
+| `list_recurring` | — | `Todo[]` (todas as abas, só `repeat != none`) | `string` |
+| `revive_todos` | `{ ids: string[] }` | `Todo[]` (as reativadas) | `string` se algum id não existe (tudo-ou-nada) |
+| `list_pending_counts` | — | `{ tab_id, pending }[]` | `string` |
+| `export_data` | `{ path }` | `void` | `string` |
+| `import_data` | `{ path }` | `{ tabs, todos }` (quantos entraram) | `string` |
+
+Todos passam por `mutar` (os que mutam) — tray e contagens continuam com um funil
+só. `move_todo` **preserva `created_at`**: a tarefa entra na ordem canônica da
+aba nova pela idade real dela, não como se fosse nova. `revive_todos` é
+tudo-ou-nada como `restore_todos`, e um lote vazio é `Err` pela mesma razão do
+Esclarecimento 5.3 (não é gesto que a interface produza).
+
+## Contagem de pendentes por aba
+
+`list_pending_counts` existe para o tooltip do chip: `"Casa — 3 pendentes"` no
+`title` que o chip já tinha por causa do truncamento. Custo de altura zero, e a
+informação que evita trocar de aba só para olhar. O frontend relê depois de cada
+mutação que pode mudar contagem (a releitura é uma varredura em memória do outro
+lado do IPC — barata de propósito).
+
+## ⌘W fecha a aba ativa
+
+O quarto idioma de navegador que faltava na faixa (`⌘T`, `⌘1–9`, `Ctrl+Tab` já
+existiam). Só do frontend, no mesmo efeito das outras teclas de aba, com as
+mesmas guardas (edição inline e painel aberto desligam). Com uma aba só, a tecla
+é engolida (`preventDefault`) e não faz nada — o mesmo motivo de o `×` sumir. O
+desfazer de fechar aba já existia e é o que paga o risco do gesto. A tecla fica
+descobrível no `title` do `×` da aba ativa.
+
+## Iniciar com o sistema (`tauri-plugin-autostart`)
+
+A promessa inteira do app é `⌃⌥T` a qualquer momento — e ela quebra em silêncio
+no primeiro reinício da máquina, porque nada garante que o processo esteja de
+pé. O plugin `autostart` entra (LaunchAgent no macOS, registro no Windows,
+`.desktop` autostart no Linux), com um interruptor no painel da engrenagem.
+
+É a **segunda configuração do app**, e passa no teste do Adendo 9 pela mesma
+porta do atalho: é uma decisão sobre a máquina do usuário que o app não pode
+tomar sozinho (registrar-se no login sem perguntar seria abuso; não oferecer
+deixa a promessa quebrar). O painel deixa de se chamar "Atalho e versão" — com
+quatro assuntos, enumerar parou de escalar — e o rótulo da engrenagem passa a
+"Configurações". O PRODUCT.md é atualizado junto.
+
+O frontend fala com o plugin direto (`@tauri-apps/plugin-autostart`), sem
+comando nosso: seria uma terceira cópia da mesma função. As permissões entram na
+capability da janela.
+
+## Exportar e importar (`export_data` / `import_data`)
+
+O caso de uso é levar tudo de um computador para outro sem nuvem — a resposta
+compatível com "zero conta, zero sync". Dois botões no painel, com os diálogos
+de arquivo do sistema (`tauri-plugin-dialog`; o caminho escolhido vai ao
+backend, que é quem lê e grava).
+
+- **Exportar** grava o estado inteiro (abas, tarefas, aba ativa) no formato
+  exato do `todos.json`, pela mesma `persistencia::gravar` (atômica). Um arquivo
+  exportado é um `todos.json` válido por construção.
+- **Importar MESCLA, nunca substitui.** Aba ou tarefa cujo id já existe é
+  pulada; o que não existe entra. Nenhum caminho de importação remove nada — é a
+  regra inaceitável do PRODUCT.md valendo também para a porta nova. Tarefa
+  importada cuja aba não veio no arquivo é adotada pela primeira aba (a mesma
+  regra do `normalizar`). O retorno diz quantos entraram, e o painel mostra.
+  O formato antigo (array sem abas) também é aceito na importação, pela mesma
+  leitura da migração.
+
+## Definição de pronto (adicional)
+
+- `npm run build`, `npm test`, `cargo check` e `cargo test` passam limpos.
+- Um `todos.json` da versão anterior abre sem perda, com `repeat: none` em tudo.
+- Concluir uma diária hoje e mudar o relógio do teste para amanhã a devolve a
+  pendente (fixado em teste de `recurrence.ts`, sem relógio real).
+- "Limpar concluídas" com uma recorrente concluída na lista: a recorrente fica,
+  as outras saem, e o desfazer repõe só as que saíram.
+- Mover uma tarefa para outra aba a coloca lá **na posição da idade dela**, e o
+  desfazer da faixa a traz de volta.
+- Importar o próprio export em cima de si mesmo entra com `{ tabs: 0, todos: 0 }`
+  e não muda nada.
+- `⌘W` com uma aba só não fecha janela nenhuma e não faz nada.

@@ -91,6 +91,10 @@ export function InlineEdit({
       // Texto do usuário: renderiza na direção dele (árabe, hebraico).
       dir="auto"
       onKeyDown={(e) => {
+        // Enter e Escape dentro de composição de IME confirmam ou cancelam a
+        // COMPOSIÇÃO, não a edição: sem a guarda, o Enter da conversão salvava
+        // o texto pela metade e o Escape descartava a edição inteira.
+        if (e.nativeEvent.isComposing) return;
         if (e.key === "Enter") {
           e.preventDefault();
           finish(true);

@@ -527,6 +527,27 @@ function App() {
   }, []);
 
   /**
+   * Põe o foco no checkbox da n-ésima linha da lista, presa aos limites dela.
+   * Devolve se conseguiu — quem chama usa isso para decidir se engole a tecla.
+   *
+   * O checkbox, e não a linha: ele já é uma parada de tabulação, já responde ao
+   * espaço para alternar, e a `li` inteira teria que ganhar `tabindex` só para
+   * receber um foco que ela não usa para nada.
+   *
+   * (Vive aqui em cima, antes dos handlers de mutação, porque `handleDelete`
+   * também o usa — uma `const` de useCallback não existe antes da linha dela.)
+   */
+  const focusRowAt = useCallback((index: number): boolean => {
+    const rows = listRef.current?.querySelectorAll<HTMLElement>("[data-todo-id]");
+    if (rows === undefined || rows.length === 0) return false;
+    const alvo = rows[Math.min(Math.max(index, 0), rows.length - 1)];
+    const box = alvo?.querySelector<HTMLElement>('[data-slot="checkbox"]');
+    if (!box) return false;
+    box.focus();
+    return true;
+  }, []);
+
+  /**
    * Abre e fecha o painel do atalho — e, se a leitura da carga inicial tiver
    * falhado, tenta de novo aqui.
    *
@@ -1035,6 +1056,11 @@ function App() {
    * outra por um retorno mais largo do que o esperado.
    */
   const applyRestored = useCallback((restored: Todo[], tabId: string) => {
+    // A guarda de aba do Adendo 8, que vale para TODA escrita depois de um
+    // `await`: clicar em "Desfazer" e trocar de aba com o `restore_todos` em
+    // voo poria a lista da aba antiga na tela da nova. O disco já restaurou —
+    // a lista certa aparece quando o usuário voltar àquela aba.
+    if (activeTabRef.current !== tabId) return;
     setTodos(restored.filter((item) => item.tab_id === tabId).sort(byCreatedAt));
   }, []);
 
@@ -1045,7 +1071,27 @@ function App() {
       const before = todos;
       const removed = todos.find((item) => item.id === id);
       const tabId = activeTabId;
+      // **O foco não pode morrer com a linha.** O Enter no `×` (Adendo 7 deu
+      // tecla ao gesto) removia a linha DEBAIXO do foco: ele caía no `body` e a
+      // tecla seguinte não ia a lugar nenhum. Se o foco estava na linha
+      // removida, ele desce para a vizinha — `focusRowAt` clampa, então remover
+      // a última foca a que virou última — ou volta ao campo se a lista
+      // esvaziou. No rAF, porque o DOM só perde a linha depois do re-render.
+      const rows = Array.from(
+        listRef.current?.querySelectorAll<HTMLElement>("[data-todo-id]") ?? [],
+      );
+      const focused =
+        document.activeElement?.closest<HTMLElement>("[data-todo-id]") ?? null;
+      const focusIndex =
+        focused !== null && focused.dataset.todoId === id
+          ? rows.indexOf(focused)
+          : -1;
       setTodos((prev) => prev.filter((item) => item.id !== id));
+      if (focusIndex !== -1) {
+        requestAnimationFrame(() => {
+          if (!focusRowAt(focusIndex)) focusDraft();
+        });
+      }
       try {
         await deleteTodo(id);
         // Guarda o `Todo` inteiro, como estava: `restore_todos` devolve com o `id`
@@ -1083,7 +1129,7 @@ function App() {
         fail(err, "error.delete");
       }
     },
-    [todos, activeTabId, offerUndo, applyRestored, fail],
+    [todos, activeTabId, offerUndo, applyRestored, fail, focusRowAt, focusDraft],
   );
 
   const handleRename = useCallback(
@@ -1203,6 +1249,13 @@ function App() {
     // que de fato saíram.
     const removed = todos.filter((item) => item.done && item.repeat === "none");
     setTodos((prev) => prev.filter((item) => !item.done || item.repeat !== "none"));
+    // O mesmo resgate de foco do `handleDelete`, para o outro jeito de remover
+    // pelo teclado: limpar tudo o que era limpável DESABILITA o próprio botão,
+    // e um botão desabilitado solta o foco no `body`. Aqui não há linha vizinha
+    // a herdar — o destino natural é o campo, que é para onde o ciclo volta.
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) focusDraft();
+    });
     try {
       const remaining = await clearCompleted(tabId);
       // **A gravação em disco dá tempo de o usuário trocar de aba.** Sem esta
@@ -1390,24 +1443,6 @@ function App() {
       fail(err, "error.tabClose");
     }
   }
-
-  /**
-   * Põe o foco no checkbox da n-ésima linha da lista, presa aos limites dela.
-   * Devolve se conseguiu — quem chama usa isso para decidir se engole a tecla.
-   *
-   * O checkbox, e não a linha: ele já é uma parada de tabulação, já responde ao
-   * espaço para alternar, e a `li` inteira teria que ganhar `tabindex` só para
-   * receber um foco que ela não usa para nada.
-   */
-  const focusRowAt = useCallback((index: number): boolean => {
-    const rows = listRef.current?.querySelectorAll<HTMLElement>("[data-todo-id]");
-    if (rows === undefined || rows.length === 0) return false;
-    const alvo = rows[Math.min(Math.max(index, 0), rows.length - 1)];
-    const box = alvo?.querySelector<HTMLElement>('[data-slot="checkbox"]');
-    if (!box) return false;
-    box.focus();
-    return true;
-  }, []);
 
   /**
    * Setas percorrem a lista.
@@ -1724,6 +1759,11 @@ function App() {
             setDraft(text);
           }}
           onKeyDown={(e) => {
+            // Confirmar uma conversão de IME dispara um Enter com `isComposing`
+            // — que fecha a composição, não a tarefa. Sem a guarda, o título
+            // entra pela metade; e as setas, que percorrem os candidatos do IME,
+            // saltariam para a lista no meio da palavra.
+            if (e.nativeEvent.isComposing) return;
             if (e.key === "Enter") {
               e.preventDefault();
               void handleAdd();

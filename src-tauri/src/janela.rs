@@ -103,7 +103,9 @@ fn gravar(arquivo: &Path, estado: &mut Estado) {
     // O relógio anda mesmo se a gravação falhar: com o disco cheio, tentar de
     // novo a cada quadro do arrasto só multiplicaria a falha.
     estado.ultima_gravacao = Some(Instant::now());
-    if persistencia::gravar(arquivo, &atual).is_ok() {
+    // A variante sem fsync: isto roda no event loop, no meio do arrasto, e a
+    // posição é o dado descartável que `ler_opcional` já trata como tal.
+    if persistencia::gravar_descartavel(arquivo, &atual).is_ok() {
         estado.gravada = Some(atual);
     }
 }

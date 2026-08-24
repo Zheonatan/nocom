@@ -3117,6 +3117,62 @@ mod tests_resgate {
             "o backup preservado precisa continuar sendo o PRIMEIRO"
         );
     }
+
+    /// **Bytes que não são UTF-8 também são resgate, e não primeira execução.**
+    /// `read_to_string` recusa o conteúdo antes de o JSON entrar em cena, e
+    /// enquanto esse erro contava como "ausente" o app abria vazio com a lista
+    /// (corrompida, mas presente) ainda no disco — e a primeira mutação gravava
+    /// por cima dela.
+    #[test]
+    fn bytes_que_nao_sao_utf8_sao_resgate_e_nao_primeira_execucao() {
+        let diretorio = diretorio_limpo("utf8");
+        let arquivo = diretorio.join("todos.json");
+        let bytes: &[u8] = b"{ \"tabs\": [ \xFF\xFE\x80 ] }";
+        fs::write(&arquivo, bytes).expect("gravar os bytes tortos");
+
+        let store = Store::abrir(arquivo.clone());
+        let backup = diretorio.join("todos.corrupt.json");
+
+        assert!(store.resgate().is_some(), "leitura recusada precisa relatar");
+        assert!(!arquivo.exists(), "o ilegível sai do caminho");
+        assert_eq!(
+            fs::read(&backup).expect("ler o backup"),
+            bytes,
+            "o backup precisa ser byte a byte o que estava no disco"
+        );
+    }
+
+    /// **Erro de leitura com o arquivo presente não é primeira execução.** Um
+    /// EACCES num `todos.json` perfeitamente válido não pode abrir o app vazio
+    /// em silêncio: o arquivo tem a lista inteira, e a primeira mutação gravaria
+    /// por cima. `preservar` move por `rename`, que não exige ler o conteúdo.
+    #[cfg(unix)]
+    #[test]
+    fn arquivo_valido_sem_permissao_de_leitura_e_resgate() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let diretorio = diretorio_limpo("permissao");
+        let arquivo = diretorio.join("todos.json");
+        let valido = r#"{ "tabs": [ { "id": "a", "name": "Tarefas", "created_at": 1 } ],
+                          "todos": [], "active_tab": "a" }"#;
+        fs::write(&arquivo, valido).expect("gravar o arquivo válido");
+        fs::set_permissions(&arquivo, fs::Permissions::from_mode(0o000)).expect("trancar");
+
+        // Rodando como root a tranca não tranca, e este teste não tem o que medir.
+        if fs::read_to_string(&arquivo).is_ok() {
+            return;
+        }
+
+        let store = Store::abrir(arquivo.clone());
+        let backup = diretorio.join("todos.corrupt.json");
+
+        assert!(store.resgate().is_some(), "leitura negada precisa relatar");
+        assert!(!arquivo.exists(), "o arquivo sai do caminho antes de qualquer gravação");
+        assert!(backup.exists(), "a lista continua no disco, guardada de lado");
+
+        // Devolve a permissão para a limpeza da próxima execução conseguir remover.
+        let _ = fs::set_permissions(&backup, fs::Permissions::from_mode(0o600));
+    }
 }
 
 /// A gravação em si: temporário, `sync_all`, rename. O que estes testes prendem é

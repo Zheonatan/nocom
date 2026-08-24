@@ -10,9 +10,35 @@ name: CI
 # Não empacota nada: instalador é assunto do `release.yml`. Por isso não há
 # tauri-action, não há assinatura, e os jobs correm em paralelo — o `max-parallel`
 # do release existe por causa do `latest.json`, que aqui nem é gerado.
+# O que NÃO dispara a matriz: mudança que nenhum dos quatro comandos alcança —
+# o site, os assets da marca e os documentos. (Os .md daqui são lidos por gente,
+# não pelo build; o site tem workflow próprio com o `--check` dele.) E `push`
+# fica restrito ao main: branch com PR aberto já roda pelo `pull_request`, e sem
+# o filtro cada push rodava a matriz de três sistemas DUAS vezes.
+# (As duas listas são cópia uma da outra porque o GitHub Actions não aceita
+# âncora de YAML — mudou numa, muda na outra.)
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - "site/**"
+      - "assets/**"
+      - "**/*.md"
+      - "scripts/site.mjs"
+      - "scripts/vitrine/**"
   pull_request:
+    paths-ignore:
+      - "site/**"
+      - "assets/**"
+      - "**/*.md"
+      - "scripts/site.mjs"
+      - "scripts/vitrine/**"
+
+# Um push novo torna o run anterior obsoleto: cancelar economiza três sistemas
+# de compilação Rust por push empilhado.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verificar:

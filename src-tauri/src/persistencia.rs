@@ -27,15 +27,21 @@ pub enum Leitura<T> {
     Lido(T),
     /// Não há arquivo, ou ele está vazio. É a primeira execução.
     Ausente,
-    /// O arquivo existe, tem conteúdo, e não foi entendido.
+    /// O arquivo existe e não foi entendido — ou nem pôde ser lido.
     Ilegivel,
 }
 
-/// Lê o que estiver no disco. Erro de leitura do sistema de arquivos conta como
-/// ausente: sem conteúdo em mãos não há nada a preservar, e o app precisa abrir.
+/// Lê o que estiver no disco. **Só a inexistência do arquivo conta como ausente.**
+/// Qualquer outro erro de leitura — permissão negada, I/O transitório, bytes que
+/// não são UTF-8 — é um arquivo que EXISTE e pode conter a lista inteira: tratá-lo
+/// como ausente abriria o app vazio e a primeira mutação gravaria por cima dele.
+/// `Ilegivel` aciona o `preservar`, que move por `rename` e funciona sem precisar
+/// ler o conteúdo.
 pub fn ler<T: DeserializeOwned>(arquivo: &Path) -> Leitura<T> {
-    let Ok(conteudo) = fs::read_to_string(arquivo) else {
-        return Leitura::Ausente;
+    let conteudo = match fs::read_to_string(arquivo) {
+        Ok(conteudo) => conteudo,
+        Err(erro) if erro.kind() == std::io::ErrorKind::NotFound => return Leitura::Ausente,
+        Err(_) => return Leitura::Ilegivel,
     };
     // Um arquivo de zero byte é o que sobra de uma gravação que morreu antes de
     // escrever qualquer coisa. Não há nada nele para preservar nem para relatar.
@@ -89,6 +95,24 @@ pub fn preservar(arquivo: &Path) -> Option<PathBuf> {
 /// existente, válido para o sistema de arquivos e **vazio** — exatamente a perda
 /// que o temporário existe para evitar.
 pub fn gravar<T: Serialize>(arquivo: &Path, valor: &T) -> Result<(), String> {
+    gravar_com(arquivo, valor, true)
+}
+
+/// Igual, **sem o `sync_all`** — para dado descartável gravado em gesto
+/// contínuo. O handler de `Moved` roda no event loop principal, e um fsync a
+/// cada 500ms de arrasto é soluço na janela com o disco ocupado. O que a
+/// durabilidade compraria aqui é uma posição que, perdida numa queda de
+/// energia, custa uma janela no centro — a mesma régua do `ler_opcional`.
+///
+/// O temporário e o rename **ficam**: eles protegem contra o arquivo truncado
+/// por uma gravação interrompida, que é outra garantia — um `janela.json` pela
+/// metade seria descartado inteiro na próxima abertura, e o rename evita que
+/// ele exista. A lista de tarefas continua passando pelo `gravar` de cima.
+pub fn gravar_descartavel<T: Serialize>(arquivo: &Path, valor: &T) -> Result<(), String> {
+    gravar_com(arquivo, valor, false)
+}
+
+fn gravar_com<T: Serialize>(arquivo: &Path, valor: &T, durar: bool) -> Result<(), String> {
     if let Some(pai) = arquivo.parent() {
         fs::create_dir_all(pai)
             .map_err(|erro| format!("Falha ao criar {}: {erro}", pai.display()))?;
@@ -103,9 +127,11 @@ pub fn gravar<T: Serialize>(arquivo: &Path, valor: &T) -> Result<(), String> {
         destino
             .write_all(json.as_bytes())
             .map_err(|erro| format!("Falha ao gravar {}: {erro}", temporario.display()))?;
-        destino
-            .sync_all()
-            .map_err(|erro| format!("Falha ao gravar {}: {erro}", temporario.display()))?;
+        if durar {
+            destino
+                .sync_all()
+                .map_err(|erro| format!("Falha ao gravar {}: {erro}", temporario.display()))?;
+        }
     }
 
     fs::rename(&temporario, arquivo)
@@ -117,8 +143,10 @@ pub fn gravar<T: Serialize>(arquivo: &Path, valor: &T) -> Result<(), String> {
     // `sync_all` acima — o que se perde aqui é a durabilidade do *nome*, não a do
     // conteúdo, e falhar a gravação por causa disso seria trocar uma garantia
     // menor por um erro na tela.
-    if let Some(pai) = arquivo.parent() {
-        let _ = File::open(pai).and_then(|diretorio| diretorio.sync_all());
+    if durar {
+        if let Some(pai) = arquivo.parent() {
+            let _ = File::open(pai).and_then(|diretorio| diretorio.sync_all());
+        }
     }
 
     Ok(())

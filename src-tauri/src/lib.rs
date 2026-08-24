@@ -818,7 +818,6 @@ pub fn run() {
         let _ = janela.set_focus();
     }));
     builder
-        .plugin(tauri_plugin_opener::init())
         // Os diálogos de salvar/abrir do exportar e importar (Adendo 13). O
         // frontend só pede o caminho; ler e gravar continuam sendo do backend.
         .plugin(tauri_plugin_dialog::init())

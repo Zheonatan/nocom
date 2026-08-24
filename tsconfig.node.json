@@ -1,6 +1,13 @@
 {
   "compilerOptions": {
     "composite": true,
+    // O `tsc -b` do build passou a checar este projeto (antes o `tsc` puro
+    // ignorava referências e o vite.config.ts nunca era verificado). Sem os
+    // dois campos abaixo, a checagem emitiria .js/.d.ts/.tsbuildinfo na raiz.
+    "emitDeclarationOnly": true,
+    "declarationDir": "./node_modules/.tmp/tsconfig.node",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "strict": true,
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",

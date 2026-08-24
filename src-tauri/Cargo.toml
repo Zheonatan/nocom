@@ -22,7 +22,6 @@ tauri-build = { version = "2", features = [] }
 # janela sobe opaca. Anda em par com `app.macOSPrivateApi` no tauri.conf.json, e
 # o preço é conhecido: um app que a usa não entra na Mac App Store.
 tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
-tauri-plugin-opener = "2"
 
 # Dialogos de salvar/abrir do exportar e importar (Adendo 13). O frontend so
 # pede o caminho; quem le e grava o arquivo e o backend, pela persistencia
@@ -71,4 +70,16 @@ tauri-plugin-autostart = "2"
 # usado. `AppHandle::restart()` e do proprio Tauri -- `tauri-plugin-process`
 # existiria aqui para expor a mesma funcao uma segunda vez.
 tauri-plugin-updater = "2"
+
+# O binario e tambem o tamanho de cada download de atualizacao (Adendo 10): sem
+# este perfil, o release sai com os defaults do cargo (sem LTO, 16 unidades de
+# codegen, simbolos inclusos). Os valores sao os recomendados pelo guia de
+# tamanho do proprio Tauri; `opt-level = "s"` porque o app nao e CPU-bound --
+# nenhum caminho quente dele passa de uma varredura de lista em memoria.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
 

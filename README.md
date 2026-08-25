@@ -87,12 +87,12 @@ sempre: o instalador ainda não é assinado. Veja
 
 | Sistema | Arquivo |
 | --- | --- |
-| **macOS** (Apple Silicon) | [NoCom_0.4.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_aarch64.dmg) |
-| **macOS** (Intel) | [NoCom_0.4.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64.dmg) |
-| **Windows** | [NoCom_0.4.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64-setup.exe) |
-| **Linux** (.deb) | [NoCom_0.4.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.deb) |
-| **Linux** (.rpm) | [NoCom-0.4.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom-0.4.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [NoCom_0.4.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.5.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.5.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64.dmg) |
+| **Windows** | [NoCom_0.5.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.5.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.5.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom-0.5.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.5.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.AppImage) |
 
 Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
 
@@ -312,12 +312,12 @@ Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê
 **Publicar uma versão é um comando:**
 
 ```sh
-npm run publicar -- 0.4.0
+npm run publicar -- 0.5.0
 ```
 
 Ele sobe o número nos seis arquivos que o citam (`package.json`, `Cargo.toml`,
 `Cargo.lock`, `tauri.conf.json`, os links de download aqui do README e o IPC
-falso da vitrine), comita, cria a tag `v0.4.0` e empurra. Se qualquer arquivo
+falso da vitrine), comita, cria a tag `v0.5.0` e empurra. Se qualquer arquivo
 tiver mudado de forma, ele para antes de comitar em vez de subir uma versão pela
 metade. `--sem-push` para antes de empurrar, para conferir o commit.
 
@@ -354,7 +354,7 @@ abaixo:
 precisa que o pacote já exista. Com o `.exe` de uma release publicada:
 
 ```powershell
-wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.4.0/NoCom_0.4.0_x64-setup.exe
+wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe
 ```
 
 Responda `Zheonatan.NoCom` como identificador — é o que o job procura. Da
@@ -372,7 +372,7 @@ mundo a reinstalar na mão uma última vez.
 
 ## Estado do projeto
 
-Versão 0.4.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
+Versão 0.5.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).
 

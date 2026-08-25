@@ -1,6 +1,6 @@
 [package]
 name = "nocom"
-version = "0.4.0"
+version = "0.5.0"
 description = "Uma lista de tarefas que vive por cima do seu trabalho"
 authors = ["Ruan A."]
 edition = "2021"

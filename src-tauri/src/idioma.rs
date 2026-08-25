@@ -108,6 +108,39 @@ pub fn menu_sair(idioma: Idioma) -> &'static str {
     }
 }
 
+/// O corpo da notificação de lembrete (Adendo 14): **quando** é a data de que a
+/// tarefa fala.
+///
+/// O título da notificação é o título da tarefa — é ele que identifica do que se
+/// trata, e o sistema já põe o nome do app no cabeçalho. O corpo diz a distância
+/// até a data, que é a informação que o título sozinho não dá: a mesma frase
+/// "pagar boleto 20/08" chega três vezes diferentes conforme o período escolhido.
+///
+/// **Frase, e não contagem de dias.** "Em uma semana" e não "em 7 dias": o app não
+/// conta quanto falta (é a linha do PRODUCT.md), ele repete o período que o
+/// usuário escolheu no menu. O que chega é o eco do gesto, não um cálculo novo.
+///
+/// Nasce aqui, no Rust, e não no `i18n.ts`, pela mesma razão do tooltip do tray: a
+/// notificação é disparada pelo temporizador do backend, que roda com a janela
+/// escondida e a webview possivelmente adormecida — não há a quem perguntar do
+/// outro lado do IPC no instante em que o texto é montado.
+pub fn corpo_do_lembrete(reminder: crate::store::Lembrete, idioma: Idioma) -> &'static str {
+    use crate::store::Lembrete;
+    match (idioma, reminder) {
+        (Idioma::Pt, Lembrete::NaData) => "É hoje.",
+        (Idioma::Pt, Lembrete::DiaAntes) => "É amanhã.",
+        (Idioma::Pt, Lembrete::SemanaAntes) => "É em uma semana.",
+        // `Nenhum` não chega aqui: uma tarefa sem lembrete não tem alarme para
+        // vencer. A frase existe para o `match` ser total sem um `unreachable!`
+        // que derrubaria o app por causa de um texto de notificação.
+        (Idioma::Pt, Lembrete::Nenhum) => "Está chegando.",
+        (Idioma::En, Lembrete::NaData) => "It's today.",
+        (Idioma::En, Lembrete::DiaAntes) => "It's tomorrow.",
+        (Idioma::En, Lembrete::SemanaAntes) => "It's in a week.",
+        (Idioma::En, Lembrete::Nenhum) => "It's coming up.",
+    }
+}
+
 #[cfg(test)]
 mod tests_deteccao {
     use super::*;
@@ -143,6 +176,49 @@ mod tests_deteccao {
     fn idioma_desconhecido_ou_lista_vazia_cai_no_fallback() {
         assert_eq!(detectar(["de-DE", "ja-JP"]), FALLBACK);
         assert_eq!(detectar(Vec::<String>::new()), FALLBACK);
+    }
+}
+
+#[cfg(test)]
+mod tests_lembrete {
+    use super::*;
+    use crate::store::Lembrete;
+
+    /// Os três períodos precisam dizer coisas DIFERENTES, nas duas línguas: uma
+    /// notificação que diz "é hoje" para um lembrete de uma semana antes é pior
+    /// que notificação nenhuma — ela afirma uma data errada, e quem a lê age nela.
+    #[test]
+    fn cada_periodo_tem_a_propria_frase_nas_duas_linguas() {
+        for idioma in [Idioma::Pt, Idioma::En] {
+            let frases = [
+                corpo_do_lembrete(Lembrete::NaData, idioma),
+                corpo_do_lembrete(Lembrete::DiaAntes, idioma),
+                corpo_do_lembrete(Lembrete::SemanaAntes, idioma),
+            ];
+            for (i, uma) in frases.iter().enumerate() {
+                assert!(!uma.is_empty(), "frase vazia em {idioma:?}");
+                for outra in frases.iter().skip(i + 1) {
+                    assert_ne!(uma, outra, "dois períodos com a mesma frase em {idioma:?}");
+                }
+            }
+        }
+    }
+
+    /// **Nenhum número de dias no corpo.** É a linha do PRODUCT.md escrita como
+    /// teste: o app repete o período escolhido, não conta quanto falta. No dia em
+    /// que alguém trocar "em uma semana" por "em 7 dias", este teste explica o
+    /// motivo antes de a mudança chegar ao usuário.
+    #[test]
+    fn o_corpo_nao_conta_dias() {
+        for idioma in [Idioma::Pt, Idioma::En] {
+            for reminder in [Lembrete::NaData, Lembrete::DiaAntes, Lembrete::SemanaAntes] {
+                let frase = corpo_do_lembrete(reminder, idioma);
+                assert!(
+                    !frase.chars().any(|c| c.is_ascii_digit()),
+                    "o corpo virou contagem de dias: {frase}"
+                );
+            }
+        }
     }
 }
 

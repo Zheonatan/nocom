@@ -33,7 +33,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { msUntilNextDay, splitTitle, todayKey } from "./dates.ts";
+import { msUntilNextDay, soleDate, splitTitle, todayKey } from "./dates.ts";
 
 // As duas ordens, nomeadas. `splitTitle(titulo, hoje, DIA)` diz mais na chamada
 // do que um `true` solto, e o teste inteiro fica legível sem consultar a
@@ -555,5 +555,101 @@ describe("a ordem vem de fora, e o módulo não adivinha", () => {
       recarregado.splitTitle("pagar 21/08", HOJE, MES).trailing?.today,
       false,
     );
+  });
+});
+
+/**
+ * `soleDate` (Adendo 14) é a mesma leitura de `splitTitle` devolvendo NÚMEROS em
+ * vez de posições, e é a única porta pela qual uma data do título vira um
+ * instante gravado. Um erro aqui não pinta nada errado na tela — ele agenda um
+ * aviso para o dia errado, ou deixa de agendar em silêncio, que são exatamente os
+ * dois defeitos que este arquivo existe para pegar.
+ */
+describe("soleDate", () => {
+  it("lê a data única nas duas ordens, com mês humano", () => {
+    assert.deepEqual(soleDate("pagar boleto 03/09", HOJE, DIA), {
+      year: 2026,
+      month: 9,
+      day: 3,
+    });
+    assert.deepEqual(soleDate("pay bill 03/09", HOJE, MES), {
+      year: 2026,
+      month: 3,
+      day: 9,
+    });
+  });
+
+  it("sem ano, o ano é o de hoje — e vem de `today`, não de um relógio próprio", () => {
+    assert.deepEqual(soleDate("20/08", "2031-01-02", DIA), {
+      year: 2031,
+      month: 8,
+      day: 20,
+    });
+  });
+
+  it("dois dígitos são deste século; quatro passam inteiros", () => {
+    assert.deepEqual(soleDate("evento 20/08/27", HOJE, DIA), {
+      year: 2027,
+      month: 8,
+      day: 20,
+    });
+    assert.deepEqual(soleDate("evento 20/08/2029", HOJE, DIA), {
+      year: 2029,
+      month: 8,
+      day: 20,
+    });
+  });
+
+  it("a posição no título não importa — só a quantidade", () => {
+    // `splitTitle` só EXTRAI a data que está no fim; o lembrete não tem essa
+    // condição, porque não move texto nenhum.
+    assert.deepEqual(soleDate("reunião 19/10 com o time", HOJE, DIA), {
+      year: 2026,
+      month: 10,
+      day: 19,
+    });
+  });
+
+  it("título sem data, ou com mais de uma, não dá lembrete", () => {
+    assert.equal(soleDate("comprar leite", HOJE, DIA), null);
+    assert.equal(soleDate("de 19/10 a 25/10", HOJE, DIA), null);
+    // A guarda da regex continua valendo: aqui não há data nenhuma a achar.
+    assert.equal(soleDate("versão 1/2/3/4", HOJE, DIA), null);
+  });
+
+  it("data impossível não vira instante — mas continua ganhando pílula", () => {
+    // As duas metades da decisão, no mesmo teste: `soleDate` recusa e
+    // `splitTitle` não. Separá-las deixaria a contradição aparente sem o
+    // contexto que a explica.
+    assert.equal(soleDate("prazo 31/02", HOJE, DIA), null);
+    assert.equal(soleDate("prazo 32/01", HOJE, DIA), null);
+    assert.equal(soleDate("prazo 20/13", HOJE, DIA), null);
+    assert.equal(ler("prazo 31/02").trailing?.text, "31/02");
+  });
+
+  it("o fim de fevereiro segue o ano bissexto, e não uma tabela fixa", () => {
+    assert.deepEqual(soleDate("29/02/2028", HOJE, DIA), {
+      year: 2028,
+      month: 2,
+      day: 29,
+    });
+    assert.equal(soleDate("29/02/2027", HOJE, DIA), null);
+    // 2100 não é bissexto — a regra do século, que uma checagem de `% 4` sozinha
+    // erraria.
+    assert.equal(soleDate("29/02/2100", HOJE, DIA), null);
+    assert.deepEqual(soleDate("29/02/2000", HOJE, DIA), {
+      year: 2000,
+      month: 2,
+      day: 29,
+    });
+  });
+
+  it("os meses de 30 dias são recusados no 31", () => {
+    for (const mes of ["04", "06", "09", "11"]) {
+      assert.equal(soleDate(`prazo 31/${mes}`, HOJE, DIA), null, mes);
+    }
+    for (const mes of ["01", "03", "05", "07", "08", "10", "12"]) {
+      assert.ok(soleDate(`prazo 31/${mes}`, HOJE, DIA), mes);
+    }
   });
 });

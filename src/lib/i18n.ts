@@ -101,6 +101,33 @@ const pt = {
   "task.repeatsWeekly": "Repete toda semana",
   "task.repeatsMonthly": "Repete todo mês",
 
+  // --- lembrete (Adendo 14) ---
+  //
+  // "Lembrar" e não "Notificação": o menu fala do gesto que o usuário pede, e não
+  // do mecanismo do sistema operacional que o cumpre. É a mesma régua de "Repetir"
+  // em vez de "Recorrência".
+  //
+  // Os três períodos são ditos em relação à DATA ("na data", "um dia antes"), e
+  // nunca em horas ou em contagem de dias: a data está escrita ali no título, e a
+  // frase que se lê ao lado dela é a que diz de que dia se trata sem obrigar
+  // ninguém a fazer conta.
+  "menu.remind": "Lembrar",
+  "menu.remindNone": "Não lembrar",
+  "menu.remindOnDate": "Na data",
+  "menu.remindDayBefore": "Um dia antes",
+  "menu.remindWeekBefore": "Uma semana antes",
+  // O `title` do sino na linha, com a hora dentro: ela não aparece em nenhum
+  // outro lugar da interface, e sem ela o usuário só descobre quando o aviso
+  // chega. `{time}` vem formatado pelo `Intl` na convenção do sistema — 9h no
+  // Brasil, 9:00 AM nos Estados Unidos.
+  "task.remindsOnDate": "Avisa na data, às {time}",
+  "task.remindsDayBefore": "Avisa um dia antes, às {time}",
+  "task.remindsWeekBefore": "Avisa uma semana antes, às {time}",
+  // O aviso já foi dado: o sino continua na linha (a escolha está lá), mas ele
+  // não promete mais nada. Dizer "avisa" de um alarme que já tocou seria a
+  // interface afirmando um futuro que não existe.
+  "task.remindedAlready": "O aviso deste lembrete já foi dado",
+
   "list.loading": "Carregando…",
   // Estado vazio de quem JÁ usou o app: limpou a lista, ou acabou de criar uma
   // aba. Não ensina a acrescentar — quem chegou aqui já acrescentou antes, e
@@ -370,6 +397,7 @@ const pt = {
   "error.undo": "Não foi possível desfazer. Nada foi alterado.",
   "error.move": "Não foi possível mover. A tarefa continua onde estava.",
   "error.repeat": "Não foi possível trocar a repetição. Nada mudou.",
+  "error.remind": "Não foi possível trocar o lembrete. Nada mudou.",
   // A volta da recorrência falhou: a rotina continua concluída, e a informação
   // de que nada se perdeu é a metade que importa.
   "error.revive": "Não foi possível repetir as tarefas do período. Nada foi perdido.",
@@ -433,6 +461,15 @@ const en: Record<MessageKey, Entry> = {
   "task.repeatsDaily": "Repeats every day",
   "task.repeatsWeekly": "Repeats every week",
   "task.repeatsMonthly": "Repeats every month",
+  "menu.remind": "Remind me",
+  "menu.remindNone": "Don't remind",
+  "menu.remindOnDate": "On the date",
+  "menu.remindDayBefore": "A day before",
+  "menu.remindWeekBefore": "A week before",
+  "task.remindsOnDate": "Alerts on the date, at {time}",
+  "task.remindsDayBefore": "Alerts a day before, at {time}",
+  "task.remindsWeekBefore": "Alerts a week before, at {time}",
+  "task.remindedAlready": "This reminder has already gone off",
 
   "list.loading": "Loading…",
   "empty.title": "Nothing here yet.",
@@ -561,6 +598,7 @@ const en: Record<MessageKey, Entry> = {
   "error.undo": "Couldn't undo. Nothing changed.",
   "error.move": "Couldn't move it. The task stayed where it was.",
   "error.repeat": "Couldn't change the repeat. Nothing changed.",
+  "error.remind": "Couldn't change the reminder. Nothing changed.",
   "error.revive": "Couldn't bring back this period's repeating tasks. Nothing was lost.",
   "error.autostartRead": "Couldn't read the start-with-system setting.",
   "error.autostart": "Couldn't change start with the system. Nothing changed.",

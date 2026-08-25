@@ -648,8 +648,23 @@ async function extrair(base, servidorUrl, idioma, marcacaoAnterior) {
 
 const { createServer } = await import('vite')
 // `logLevel: 'warn'` para o banner do Vite não se misturar à saída deste script.
-// A porta é 0: o SO escolhe uma livre, como no Chrome acima e pelo mesmo motivo.
-const servidor = await createServer({ root: RAIZ, logLevel: 'warn', server: { port: 0 } })
+//
+// **A porta tem que ser livre, e `port: 0` sozinho não garantia isso.** O
+// `vite.config.ts` declara `strictPort: true` — o Tauri exige porta fixa em
+// desenvolvimento — e essa opção vinha junto na fusão com a config do arquivo.
+// O Vite não trata `0` como "escolha uma": ele cai na porta padrão (5173) e, com
+// `strictPort`, morre se ela estiver ocupada. Bastava qualquer outro projeto com
+// um `vite` de pé na máquina para a vitrine não subir, com um erro que não fala
+// de vitrine nenhuma ("Port 5173 is already in use").
+//
+// `strictPort: false` devolve ao Vite a busca pela próxima porta livre, e a
+// porta REAL é lida logo abaixo de `httpServer.address()` — que é o que este
+// script sempre fez, e o que torna a escolha dele irrelevante para o resto.
+const servidor = await createServer({
+  root: RAIZ,
+  logLevel: 'warn',
+  server: { port: 0, strictPort: false },
+})
 await servidor.listen()
 const { port } = servidor.httpServer.address()
 const servidorUrl = `http://localhost:${port}`

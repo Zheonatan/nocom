@@ -58,6 +58,26 @@ pub enum Recorrencia {
     Mensal,
 }
 
+/// O lembrete de uma tarefa (Adendo 14). No fio ele viaja como
+/// `"none" | "on_date" | "day_before" | "week_before"` — o formato que o contrato
+/// fixa e que o TypeScript espelha; os nomes em português são só deste lado.
+///
+/// É a ESCOLHA do usuário, e não o alarme: o instante calculado a partir dela
+/// mora em `remind_at`, e os dois andam juntos porque o menu de contexto precisa
+/// mostrar qual período está marcado mesmo depois de o alarme já ter disparado.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Lembrete {
+    #[default]
+    #[serde(rename = "none")]
+    Nenhum,
+    #[serde(rename = "on_date")]
+    NaData,
+    #[serde(rename = "day_before")]
+    DiaAntes,
+    #[serde(rename = "week_before")]
+    SemanaAntes,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Todo {
     pub id: String,
@@ -74,6 +94,22 @@ pub struct Todo {
     /// recorrência, e quem calcula o vencimento é o frontend (Adendo 13).
     #[serde(default)]
     pub done_at: Option<i64>,
+    /// O lembrete escolhido no menu de contexto (Adendo 14). `default` pela mesma
+    /// razão dos dois acima: arquivo de versão anterior lê como `none`, que é o
+    /// comportamento antigo — nenhuma tarefa existente ganha aviso na atualização.
+    #[serde(default)]
+    pub reminder: Lembrete,
+    /// **Quando avisar** (epoch millis), ou `None`. Calculado pelo frontend a
+    /// partir da data escrita no título — o calendário local mora lá (Adendo 11),
+    /// e o Rust não tem fuso sem uma crate nova.
+    ///
+    /// `None` com `reminder != none` quer dizer **já disparado** (ou já vencido
+    /// sem chance de disparar): o alarme é consumido quando toca, e a escolha
+    /// fica, para o menu continuar mostrando o que o usuário marcou. Este é o
+    /// único campo do modelo que fala de uma data — e ele só existe por gesto
+    /// explícito, nunca por a tarefa ter data no título.
+    #[serde(default)]
+    pub remind_at: Option<i64>,
 }
 
 /// O que `close_tab` devolve: a aba e as tarefas que saíram com ela.
@@ -450,6 +486,8 @@ impl Store {
                 tab_id,
                 repeat: Recorrencia::Nenhuma,
                 done_at: None,
+                reminder: Lembrete::Nenhum,
+                remind_at: None,
             };
             let novo_para_devolver = novo.clone();
             estado.todos.push(novo);
@@ -624,6 +662,121 @@ impl Store {
                 alvo.done_at = Some(agora_em_millis());
             }
             Ok(alvo.clone())
+        })
+    }
+
+    /// Arma, troca ou desarma o lembrete de uma tarefa (Adendo 14).
+    ///
+    /// **O backend não calcula nada aqui, e não é omissão.** `remind_at` chega
+    /// pronto do frontend, porque o instante depende do calendário e do fuso
+    /// locais — a mesma divisão de trabalho da recorrência (Adendo 13): lá o
+    /// frontend decide quais venceram e o Rust executa; aqui ele decide quando
+    /// avisar e o Rust guarda o número e olha o relógio.
+    ///
+    /// **`none` limpa o alarme junto.** Desmarcar no menu é o gesto de cancelar, e
+    /// deixar um `remind_at` órfão faria o aviso tocar depois de o usuário ter
+    /// dito que não queria.
+    ///
+    /// **Um período sem instante é recusado.** Não é um estado que a interface
+    /// produza (ela só oferece o submenu quando há data válida no título), então é
+    /// bug de quem chamou — e bug faz barulho, pela mesma régua do lote vazio de
+    /// `revive_todos`. Gravar `reminder` sem `remind_at` criaria uma tarefa que
+    /// mostra o sino e nunca avisa, que é exatamente a falha que ninguém vê.
+    ///
+    /// `done`, `created_at` e `repeat` ficam intactos: escolher "um dia antes" não
+    /// conclui, não move e não repete nada.
+    pub fn definir_lembrete(
+        &self,
+        id: &str,
+        reminder: Lembrete,
+        remind_at: Option<i64>,
+    ) -> Result<Todo, String> {
+        if reminder != Lembrete::Nenhum && remind_at.is_none() {
+            return Err(format!(
+                "Lembrete {reminder:?} sem instante de disparo para a tarefa {id}."
+            ));
+        }
+        self.transacao(|estado| {
+            let alvo = estado
+                .todos
+                .iter_mut()
+                .find(|todo| todo.id == id)
+                .ok_or_else(|| format!("Tarefa {id} não existe."))?;
+            alvo.reminder = reminder;
+            alvo.remind_at = if reminder == Lembrete::Nenhum {
+                None
+            } else {
+                remind_at
+            };
+            Ok(alvo.clone())
+        })
+    }
+
+    /// Alguma tarefa tem lembrete armado? (Adendo 14.)
+    ///
+    /// Serve a uma pergunta só, na abertura: vale pedir autorização de
+    /// notificação ao sistema? Quem nunca armou um lembrete não deve receber um
+    /// diálogo de permissão — ver `aviso::preparar`.
+    ///
+    /// **Conta a ESCOLHA, e não o alarme.** Um lembrete que já disparou tem
+    /// `remind_at` nulo e continua sendo um lembrete que o usuário quis; olhar
+    /// para `remind_at` faria a autorização deixar de ser pedida justamente para
+    /// quem já usa a funcionalidade.
+    ///
+    /// Não devolve `Result`: um cadeado envenenado aqui vira "não pede
+    /// autorização agora", que é o mesmo desfecho de não haver lembrete nenhum —
+    /// e transformar isso em erro na abertura não daria ao usuário nada a fazer.
+    pub fn tem_lembrete_armado(&self) -> bool {
+        self.travar()
+            .map(|estado| {
+                estado
+                    .todos
+                    .iter()
+                    .any(|todo| todo.reminder != Lembrete::Nenhum)
+            })
+            .unwrap_or(false)
+    }
+
+    /// Os lembretes que chegaram a hora (Adendo 14): consome os alarmes vencidos e
+    /// devolve **só os que merecem notificação**.
+    ///
+    /// Consumir e avisar são coisas diferentes de propósito. Todo alarme vencido é
+    /// consumido (`remind_at = None`), toque ele ou não — senão o temporizador
+    /// reencontraria o mesmo alarme no tique seguinte e avisaria em laço. Mas dois
+    /// deles não tocam:
+    ///
+    /// - **A tarefa já está concluída.** Avisar sobre algo que a pessoa terminou é
+    ///   ruído sobre trabalho feito. A escolha continua gravada (o sino fica na
+    ///   linha), só este disparo não acontece.
+    /// - **O alarme está velho demais.** A máquina desligada por uma semana volta
+    ///   com alarmes de dias atrás na fila, e despejá-los todos de uma vez é a
+    ///   pior coisa que um app de notificação pode fazer no primeiro minuto de
+    ///   uso. Dentro da tolerância — a máquina que passou a noite desligada e
+    ///   acordou às 10h — o aviso das 9h ainda vale, e chega atrasado em vez de
+    ///   não chegar.
+    ///
+    /// **Sem nada vencido não há transação, e não há gravação.** Este método roda a
+    /// cada tique do temporizador; uma escrita por tique acordaria o disco a cada
+    /// meio minuto para não mudar nada. A leitura barata vem primeiro, e o caminho
+    /// caro só abre quando há o que fazer.
+    pub fn lembretes_vencidos(&self, agora: i64, tolerancia: i64) -> Result<Vec<Todo>, String> {
+        if !self.travar()?.todos.iter().any(|todo| vencido(todo, agora)) {
+            return Ok(Vec::new());
+        }
+        self.transacao(|estado| {
+            let mut avisar = Vec::new();
+            for todo in estado.todos.iter_mut() {
+                if !vencido(todo, agora) {
+                    continue;
+                }
+                // `unwrap_or(agora)` nunca age: `vencido` já garantiu o `Some`.
+                let atraso = agora - todo.remind_at.unwrap_or(agora);
+                todo.remind_at = None;
+                if !todo.done && atraso <= tolerancia {
+                    avisar.push(todo.clone());
+                }
+            }
+            Ok(avisar)
         })
     }
 
@@ -871,6 +1024,8 @@ fn migrar(antigos: Vec<TodoAntigo>) -> Estado {
             // O formato antigo não tinha recorrência: `none` É o valor fiel.
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         })
         .collect();
     Estado {
@@ -992,7 +1147,13 @@ fn ordenar_abas(abas: &mut [Tab]) {
     abas.sort_by_key(|aba| aba.created_at);
 }
 
-fn agora_em_millis() -> i64 {
+/// O alarme desta tarefa já chegou a hora? Um `remind_at` nulo é o caso normal —
+/// tarefa sem lembrete, ou com o lembrete já consumido.
+fn vencido(todo: &Todo, agora: i64) -> bool {
+    matches!(todo.remind_at, Some(quando) if quando <= agora)
+}
+
+pub(crate) fn agora_em_millis() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|desde| desde.as_millis() as i64)
@@ -1325,6 +1486,8 @@ mod tests_ordem {
             tab_id: "aba".to_owned(),
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         }
     }
 
@@ -1412,6 +1575,8 @@ mod tests_restaurar {
             tab_id: tab_id.to_owned(),
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         }
     }
 
@@ -2110,6 +2275,8 @@ mod tests_abas {
             tab_id: viva.id.clone(),
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         };
 
         let erro = store
@@ -2220,6 +2387,8 @@ mod tests_abas {
             tab_id: outra.clone(),
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         });
 
         assert!(store.restaurar_aba(fechada.tab, lote).is_err());
@@ -3242,6 +3411,227 @@ mod tests_adendo13 {
         let _ = fs::remove_dir_all(&diretorio);
     }
 
+    // --- lembretes (Adendo 14) ---
+
+    /// Meia-noite de 20 de agosto de 2026, em millis, como base fixa dos testes de
+    /// lembrete. Um instante literal e não `agora_em_millis()`: o que está sob
+    /// teste é a comparação com o relógio, e um teste que usa o relógio real não
+    /// testa comparação nenhuma.
+    const DIA_D: i64 = 1_755_648_000_000;
+    const HORA: i64 = 60 * 60 * 1000;
+
+    #[test]
+    fn definir_lembrete_arma_e_desarma() {
+        let (store, diretorio) = store_limpa("lem-definir");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("pagar boleto 20/08", &aba).expect("acrescentar");
+        assert_eq!(criada.reminder, Lembrete::Nenhum, "o padrão é none");
+        assert_eq!(criada.remind_at, None);
+
+        let armada = store
+            .definir_lembrete(&criada.id, Lembrete::DiaAntes, Some(DIA_D - 15 * HORA))
+            .expect("armar");
+        assert_eq!(armada.reminder, Lembrete::DiaAntes);
+        assert_eq!(armada.remind_at, Some(DIA_D - 15 * HORA));
+        assert!(!armada.done, "armar não conclui");
+        assert_eq!(armada.created_at, criada.created_at, "armar não reposiciona");
+
+        // Desarmar limpa o alarme junto: um `remind_at` órfão avisaria depois de o
+        // usuário ter dito que não queria.
+        let desarmada = store
+            .definir_lembrete(&criada.id, Lembrete::Nenhum, Some(DIA_D))
+            .expect("desarmar");
+        assert_eq!(desarmada.reminder, Lembrete::Nenhum);
+        assert_eq!(desarmada.remind_at, None, "`none` tem que limpar o alarme");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Um período sem instante gravaria uma tarefa que mostra o sino e nunca
+    /// avisa — a falha que ninguém vê. Recusar é o barulho que a torna visível.
+    #[test]
+    fn definir_lembrete_recusa_periodo_sem_instante() {
+        let (store, diretorio) = store_limpa("lem-sem-instante");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("sem data no título", &aba).expect("acrescentar");
+
+        assert!(store
+            .definir_lembrete(&criada.id, Lembrete::NaData, None)
+            .is_err());
+        assert!(store
+            .definir_lembrete("nao-existe", Lembrete::NaData, Some(DIA_D))
+            .is_err());
+
+        // A recusa é ANTES de qualquer escrita: a tarefa continua sem lembrete.
+        let lista = store.listar(&aba).expect("listar");
+        assert_eq!(lista[0].reminder, Lembrete::Nenhum);
+        assert_eq!(lista[0].remind_at, None);
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// A pergunta da autorização olha a ESCOLHA, e não o alarme. Um lembrete que
+    /// já disparou (`remind_at` nulo) continua contando — senão o app pararia de
+    /// pedir permissão justamente para quem já usa a funcionalidade, que é o caso
+    /// de toda abertura depois da primeira.
+    #[test]
+    fn tem_lembrete_armado_conta_ate_o_ja_disparado() {
+        let (store, diretorio) = store_limpa("lem-armado");
+        let aba = aba_de(&store);
+        assert!(!store.tem_lembrete_armado(), "lista nova não tem lembrete");
+
+        let criada = store.acrescentar("pagar boleto 20/08", &aba).expect("acrescentar");
+        assert!(!store.tem_lembrete_armado(), "tarefa sem lembrete não conta");
+
+        store
+            .definir_lembrete(&criada.id, Lembrete::NaData, Some(DIA_D))
+            .expect("armar");
+        assert!(store.tem_lembrete_armado());
+
+        // Dispara e consome o alarme: `remind_at` fica nulo, `reminder` fica.
+        store.lembretes_vencidos(DIA_D, 12 * HORA).expect("varrer");
+        assert_eq!(store.listar(&aba).expect("listar")[0].remind_at, None);
+        assert!(
+            store.tem_lembrete_armado(),
+            "o já disparado continua sendo um lembrete que o usuário quis"
+        );
+
+        store
+            .definir_lembrete(&criada.id, Lembrete::Nenhum, None)
+            .expect("desarmar");
+        assert!(!store.tem_lembrete_armado(), "desarmar zera a resposta");
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// O caminho normal: o alarme chega a hora, a tarefa sai para ser notificada,
+    /// e o alarme é consumido — **uma vez, e só uma**. Sem o consumo, o vigia
+    /// reencontraria a mesma tarefa a cada trinta segundos e notificaria em laço.
+    #[test]
+    fn lembretes_vencidos_avisa_uma_vez_e_consome() {
+        let (store, diretorio) = store_limpa("lem-vencidos");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("pagar boleto 20/08", &aba).expect("acrescentar");
+        store
+            .definir_lembrete(&criada.id, Lembrete::NaData, Some(DIA_D + 9 * HORA))
+            .expect("armar");
+
+        // Antes da hora não sai nada, e o alarme continua de pé.
+        assert!(store
+            .lembretes_vencidos(DIA_D + 8 * HORA, 12 * HORA)
+            .expect("varrer")
+            .is_empty());
+        assert_eq!(
+            store.listar(&aba).expect("listar")[0].remind_at,
+            Some(DIA_D + 9 * HORA),
+            "alarme por vencer não pode ser consumido"
+        );
+
+        let avisos = store
+            .lembretes_vencidos(DIA_D + 9 * HORA, 12 * HORA)
+            .expect("varrer");
+        assert_eq!(avisos.len(), 1);
+        assert_eq!(avisos[0].id, criada.id);
+        assert_eq!(
+            avisos[0].reminder,
+            Lembrete::NaData,
+            "o período tem que vir junto — é ele que escreve o corpo da notificação"
+        );
+
+        // A escolha FICA (o sino continua na linha); só o alarme foi consumido.
+        let depois = store.listar(&aba).expect("listar");
+        assert_eq!(depois[0].reminder, Lembrete::NaData);
+        assert_eq!(depois[0].remind_at, None);
+        assert!(
+            store
+                .lembretes_vencidos(DIA_D + 10 * HORA, 12 * HORA)
+                .expect("varrer de novo")
+                .is_empty(),
+            "o mesmo lembrete não pode tocar duas vezes"
+        );
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Tarefa concluída não avisa — e mesmo assim o alarme é consumido. As duas
+    /// metades importam: avisar sobre trabalho feito é ruído, e deixar o alarme
+    /// de pé reabriria o laço que o teste acima fecha.
+    #[test]
+    fn lembretes_vencidos_nao_avisa_sobre_concluida() {
+        let (store, diretorio) = store_limpa("lem-concluida");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("pagar boleto 20/08", &aba).expect("acrescentar");
+        store
+            .definir_lembrete(&criada.id, Lembrete::NaData, Some(DIA_D + 9 * HORA))
+            .expect("armar");
+        store.alternar(&criada.id).expect("concluir");
+
+        assert!(store
+            .lembretes_vencidos(DIA_D + 9 * HORA, 12 * HORA)
+            .expect("varrer")
+            .is_empty());
+        assert_eq!(
+            store.listar(&aba).expect("listar")[0].remind_at,
+            None,
+            "o alarme da concluída tem que ser consumido em silêncio"
+        );
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// A máquina que passou a semana desligada volta com alarmes velhos na fila.
+    /// Despejá-los todos no primeiro minuto é a pior coisa que um app de
+    /// notificação pode fazer — e as frases deles ("é amanhã") já seriam falsas.
+    #[test]
+    fn lembretes_vencidos_engole_o_atraso_grande_e_entrega_o_pequeno() {
+        let (store, diretorio) = store_limpa("lem-atraso");
+        let aba = aba_de(&store);
+
+        let recente = store.acrescentar("no limite", &aba).expect("acrescentar");
+        store
+            .definir_lembrete(&recente.id, Lembrete::DiaAntes, Some(DIA_D))
+            .expect("armar");
+        let velha = store.acrescentar("de semana passada", &aba).expect("acrescentar");
+        store
+            .definir_lembrete(&velha.id, Lembrete::DiaAntes, Some(DIA_D - 7 * 24 * HORA))
+            .expect("armar");
+
+        // Exatamente na tolerância ainda entrega: o limite é inclusivo, e o caso
+        // de borda é a máquina que acorda na hora exata.
+        let avisos = store
+            .lembretes_vencidos(DIA_D + 12 * HORA, 12 * HORA)
+            .expect("varrer");
+        let ids: Vec<&str> = avisos.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec![recente.id.as_str()]);
+
+        // Os dois alarmes foram consumidos, o entregue e o engolido.
+        for todo in store.listar(&aba).expect("listar") {
+            assert_eq!(todo.remind_at, None, "{}", todo.title);
+        }
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
+    /// Um milissegundo além da tolerância já não entrega. O par com o teste acima
+    /// é o que fixa a borda nos dois lados — sem ele, uma comparação `<` em vez de
+    /// `<=` passaria despercebida.
+    #[test]
+    fn lembretes_vencidos_para_um_milissegundo_depois_da_tolerancia() {
+        let (store, diretorio) = store_limpa("lem-borda");
+        let aba = aba_de(&store);
+        let criada = store.acrescentar("por um triz", &aba).expect("acrescentar");
+        store
+            .definir_lembrete(&criada.id, Lembrete::NaData, Some(DIA_D))
+            .expect("armar");
+
+        assert!(store
+            .lembretes_vencidos(DIA_D + 12 * HORA + 1, 12 * HORA)
+            .expect("varrer")
+            .is_empty());
+
+        let _ = fs::remove_dir_all(&diretorio);
+    }
+
     /// Concluir carimba `done_at`; desmarcar limpa. É a base de cálculo da volta,
     /// e vale para toda tarefa — ver o comentário no `alternar`.
     #[test]
@@ -3274,6 +3664,8 @@ mod tests_adendo13 {
             tab_id: aba.clone(),
             repeat: Recorrencia::Nenhuma,
             done_at: None,
+            reminder: Lembrete::Nenhum,
+            remind_at: None,
         };
         store.restaurar(vec![legado]).expect("semear");
 
@@ -3389,6 +3781,8 @@ mod tests_adendo13 {
                 tab_id: destino.id.clone(),
                 repeat: Recorrencia::Nenhuma,
                 done_at: None,
+                reminder: Lembrete::Nenhum,
+                remind_at: None,
             }])
             .expect("semear o destino");
         store
@@ -3400,6 +3794,8 @@ mod tests_adendo13 {
                 tab_id: origem.clone(),
                 repeat: Recorrencia::Nenhuma,
                 done_at: None,
+                reminder: Lembrete::Nenhum,
+                remind_at: None,
             }])
             .expect("semear a origem");
 
@@ -3589,6 +3985,9 @@ mod tests_adendo13 {
         assert_eq!(lista.len(), 1);
         assert_eq!(lista[0].repeat, Recorrencia::Nenhuma);
         assert_eq!(lista[0].done_at, None);
+        // Adendo 14, pela mesma régua: ninguém ganha lembrete por atualizar o app.
+        assert_eq!(lista[0].reminder, Lembrete::Nenhum);
+        assert_eq!(lista[0].remind_at, None);
         assert!(store.resgate().is_none(), "o arquivo não pode ler como ilegível");
 
         let _ = fs::remove_dir_all(&diretorio);

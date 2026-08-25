@@ -1836,3 +1836,373 @@ backend, que é quem lê e grava).
 - Importar o próprio export em cima de si mesmo entra com `{ tabs: 0, todos: 0 }`
   e não muda nada.
 - `⌘W` com uma aba só não fecha janela nenhuma e não faz nada.
+
+# Adendo 14 — lembretes do sistema (2026-08-25)
+
+Pedido pelo usuário nestas palavras: *"caso haja uma data, o usuário pode clicar
+com botão direito e pedir pra lembrar na data, um dia antes e na data, uma semana
+antes."*
+
+Uma mudança só, e ela **atravessa uma linha que o PRODUCT.md tinha traçado com
+todas as letras** ("não notifica", "não avisa quando passa"). O registro dessa
+linha movida está lá, e este adendo registra o modelo, o comando e as decisões —
+inclusive as que existem só para manter a linha nova o mais estreita possível.
+
+## O que é, em uma frase
+
+Clique direito numa tarefa cujo título tem uma data → **Lembrar** → *na data*, *um
+dia antes*, *uma semana antes*. Às **9h** do dia calculado, o sistema mostra uma
+notificação nativa com o título da tarefa.
+
+## O que impede isto de virar prazo
+
+O não-objetivo do PRODUCT.md não some — ele fica **mais estreito**, e são cinco
+condições concretas que o sustentam:
+
+1. **Nada é agendado sem gesto explícito.** Ter data no título não dá lembrete a
+   tarefa nenhuma. A única forma de armar um é escolher o período no menu.
+2. **Nada na tela é derivado do lembrete.** Não há ordenação por aviso, não há
+   "atrasada", não há contagem de dias. O sino da linha diz *que* vai avisar e
+   *quando* — no `title` —, e mais nada.
+3. **A data continua morando no título.** O que é persistido é o INSTANTE do
+   alarme, não a data: a data continua sendo lida do título a cada renderização e
+   descartada no mesmo quadro, como no Adendo 11. Renomear a tarefa move o
+   alarme junto; apagar a data do título cancela o lembrete.
+4. **O corpo da notificação repete o período escolhido, não conta dias.** "É em
+   uma semana", nunca "faltam 7 dias" — o app devolve o eco do gesto, e não um
+   cálculo novo. Há teste em `idioma.rs` que falha se um dígito aparecer ali.
+5. **O aviso não sobrevive ao dia dele.** Um alarme com mais de 12 horas de
+   atraso é engolido em silêncio — ver a tolerância, abaixo.
+
+O teste para trabalho futuro é o mesmo dos adendos 11 e 13: se uma tarefa com
+lembrete começar a parecer *diferente* de uma sem — mais alta na lista, em outra
+cor, com um contador —, o app virou gerenciador de prazo, e isso volta ao
+PRODUCT.md antes de voltar ao código.
+
+## Modelo de dados — dois campos novos em `Todo`
+
+```rust
+pub struct Todo {
+    // ... campos existentes intactos ...
+    /// O período escolhido no menu. `none` é o padrão e o estado de sempre.
+    #[serde(default)]
+    pub reminder: Lembrete, // "none" | "on_date" | "day_before" | "week_before"
+    /// QUANDO avisar (epoch millis), ou null. Calculado pelo frontend.
+    #[serde(default)]
+    pub remind_at: Option<i64>,
+}
+```
+
+Os dois têm `serde(default)` pela razão de sempre: um `todos.json` de versão
+anterior não pode falhar a leitura por campo que falta. Arquivo antigo lê como
+`reminder: none, remind_at: null` — **ninguém ganha aviso por atualizar o app**.
+
+**Por que dois campos, e não um.** `remind_at` sozinho não diria *qual* período
+está marcado depois de o alarme disparar (o menu precisa mostrar o radio certo, e
+o corpo da notificação precisa da palavra). `reminder` sozinho obrigaria o backend
+a fazer calendário, que é o que a divisão de trabalho abaixo existe para evitar.
+
+**`remind_at: null` com `reminder != none` quer dizer "já disparou".** O alarme é
+consumido quando toca; a escolha fica. É esse par que o sino lê para trocar o
+`title` de "avisa na data" para "o aviso já foi dado" — um sino que continua
+prometendo depois de ter tocado afirma um futuro que não existe.
+
+## Quem calcula o quê
+
+A mesma divisão do Adendo 13, pelo mesmo motivo:
+
+| | onde | por quê |
+|---|---|---|
+| Ler a data do título | frontend (`soleDate`, em `lib/dates.ts`) | é a leitura do Adendo 11, já pronta |
+| Calcular o instante do alarme | frontend (`lib/reminders.ts`) | calendário e fuso locais só existem na webview |
+| Guardar o instante | backend (`set_reminder`) | é a `Store`, com a transação de sempre |
+| Comparar com o relógio e notificar | backend (vigia em `lib.rs`) | precisa rodar com a janela escondida |
+
+O Rust não tem calendário de fuso sem uma crate nova, e um alarme calculado em
+UTC dispararia na hora errada para todo mundo fora de Londres.
+
+## A hora é 9h, fixa
+
+A data escrita no título **não tem hora** ("pagar boleto 20/08"), então a hora tem
+que sair de algum lugar. As três candidatas eram uma constante, um ajuste no
+painel e um seletor por tarefa; as duas últimas custam altura ou um diálogo numa
+janela de 360x480 (Regra do Custo de Altura) e cobram uma configuração de quem só
+queria ser lembrado.
+
+Nove da manhã porque um lembrete existe para chegar **antes** de o dia começar a
+gastar a atenção de quem o recebe. Meia-noite é tecnicamente o início do dia e
+praticamente um alarme no meio do sono; o fim da tarde chega depois de o dia já
+ter sido decidido. A hora aparece escrita no `title` do sino, na convenção do
+sistema (`09:00` no Brasil, `9:00 AM` nos Estados Unidos) — é o único lugar da
+interface onde ela existe, e sem ele o usuário só descobriria a hora quando o
+aviso chegasse.
+
+## Quando o submenu abre, e quando cada item abre
+
+Duas perguntas diferentes, e é a diferença entre elas que faz o menu não trancar
+ninguém para fora:
+
+- **O submenu "Lembrar"** abre quando há uma data única e ainda por vir no título
+  **ou** quando já existe um lembrete marcado. A segunda metade é o que mantém o
+  cancelamento alcançável depois de a data ter passado ou ter sido apagada.
+- **Os três períodos** desabilitam quando não há data válida por vir. **"Não
+  lembrar" nunca desabilita.**
+
+Desabilitar em vez de sumir é a régua do "Mover para" do Adendo 13, e aqui ela
+vale duas vezes: o item some justamente para quem ainda não descobriu que basta
+escrever uma data no título, e é o item cinza que conta isso.
+
+**A régua de "ainda por vir" é o DIA, e não o alarme.** Às 14h do próprio 20/08 as
+9h já passaram, e "lembrar na data" continua sendo uma coisa sensata de pedir — o
+alarme sai atrasado no próximo tique do vigia, dizendo "é hoje", que é verdade.
+Se a régua fosse o alarme, o submenu fecharia no meio do dia de que ele fala.
+
+## Três casos em que `soleDate` recusa a data
+
+`soleDate` é a mesma leitura de `splitTitle` devolvendo números em vez de posições
+no texto. Ela devolve `null` — e o submenu não abre — em três casos:
+
+- **Nenhuma data no título.** Não há o que lembrar.
+- **Mais de uma data.** "de 19/10 a 25/10" tem duas, e escolher uma seria o app
+  decidindo qual metade do que a pessoa escreveu é a que importa. Mesma condição
+  de `splitTitle`, mesmo motivo: o módulo lê caracteres, não português.
+- **Data que não existe no calendário.** `31/02` continua ganhando pílula (o
+  Adendo 11 decidiu não validar, e isso não muda), mas **não ganha lembrete**:
+  `new Date(2026, 1, 31)` transborda em silêncio para 3 de março, isto é,
+  avisaria num dia que ninguém escreveu. A validação não desmente quem digitou —
+  a pílula fica; o que acontece é só o submenu não abrir.
+
+Sem ano, o ano é o corrente, como em `matchesToday`. A consequência assumida:
+`20/08` escrito em dezembro é uma data que já passou, e o lembrete não é
+oferecido. Rolar para o ano seguinte seria adivinhar intenção a partir de um dado
+que não está no texto.
+
+## O lembrete segue a data do título
+
+Renomear "pagar boleto 20/08" para "pagar boleto 21/08" **move o aviso junto**;
+apagar a data do título **cancela** o lembrete, em vez de deixar um sino avisando
+de um dia que não está mais escrito em lugar nenhum.
+
+**O recálculo só acontece quando a data muda, e a condição é correção e não
+economia.** Um lembrete que já disparou tem `remind_at` nulo; recalcular por causa
+de um acento corrigido no mesmo dia o rearmaria para um instante já passado, e o
+vigia tocaria o mesmo aviso uma segunda vez no tique seguinte. É o que `sameDate`
+existe para impedir.
+
+O ajuste falha em silêncio de propósito: o renomear já está gravado e já está na
+tela, e levantar a faixa vermelha diria "não foi possível renomear" sobre uma
+renomeação que aconteceu.
+
+## O vigia, e por que ele é uma thread do Rust
+
+Uma thread do sistema acorda **a cada 30 segundos**, pede à `Store` os alarmes
+vencidos e mostra uma notificação por tarefa.
+
+- **Não é um `setTimeout` na webview.** A janela deste app passa a maior parte do
+  tempo escondida, e webview escondida tem os temporizadores estrangulados pelo
+  sistema — no macOS eles chegam a parar em bateria. Um lembrete que só toca com
+  a janela aberta é um lembrete que só avisa quem já estava olhando.
+- **Não é uma tarefa do runtime async.** O que ela faz é dormir e varrer uma
+  lista; declarar o tokio como dependência direta para isso seria trocar uma
+  thread ociosa por um agendador inteiro.
+- **Meio minuto é folga que ninguém percebe**, porque o que o aviso anuncia é um
+  DIA. Em troca, o processo passa quase todo o tempo dormindo: sem nada vencido,
+  `lembretes_vencidos` sai numa varredura em memória **sem tocar no disco** — uma
+  gravação por tique acordaria o disco a cada trinta segundos para não mudar nada.
+- **A primeira volta acontece antes do primeiro sono**, porque o app pode ter
+  passado a noite fechado e os alarmes da madrugada estão esperando na abertura.
+
+## Consumir e avisar são coisas diferentes
+
+Todo alarme vencido é consumido (`remind_at = None`), toque ele ou não — senão o
+vigia reencontraria o mesmo alarme no tique seguinte e notificaria em laço. Mas
+dois não tocam:
+
+- **A tarefa já está concluída.** Avisar sobre algo terminado é ruído sobre
+  trabalho feito. A escolha continua gravada (o sino fica na linha).
+- **O alarme tem mais de 12 horas de atraso.** E **o número não é arbitrário**: o
+  alarme dispara às 9h e o corpo afirma uma distância até a data. Doze horas
+  depois das 9h ainda é o mesmo dia (21h), então **as três frases continuam
+  verdadeiras**. Uma tolerância maior deixaria a notificação atravessar a
+  meia-noite e dizer "é amanhã" no próprio dia — uma data errada num aviso é pior
+  que aviso nenhum.
+
+O que a tolerância cobre: a máquina que passou a noite desligada e acorda às 10h
+recebe o aviso das 9h, atrasado e correto. O que ela recusa: a máquina desligada
+por uma semana despejando avisos de dias que já passaram no primeiro minuto de
+uso.
+
+## O texto da notificação
+
+**Título** = o título da tarefa. É ele que diz do que se trata, e o sistema já põe
+o nome do app no cabeçalho. **Corpo** = a distância até a data, que o título
+sozinho não dá:
+
+| período | pt | en |
+|---|---|---|
+| `on_date` | É hoje. | It's today. |
+| `day_before` | É amanhã. | It's tomorrow. |
+| `week_before` | É em uma semana. | It's in a week. |
+
+Nasce no Rust (`idioma::corpo_do_lembrete`) e não no `i18n.ts`, pela mesma razão
+do tooltip do tray: o disparo vem do vigia do backend, que roda com a janela
+escondida e a webview possivelmente adormecida — não há a quem perguntar do outro
+lado do IPC no instante em que o texto é montado.
+
+## Comando IPC novo
+
+| Comando | Args (JS) | Retorno | Erro |
+|---|---|---|---|
+| `set_reminder` | `{ id, reminder, remindAt }` | `Todo` (estado novo) | `string` se id não existe, `reminder` inválido, ou período **sem** instante |
+
+Passa por `mutar` como toda mutação — o tooltip não muda com um lembrete, mas
+"toda mutação funila por aqui" é a regra que se mantém certa sozinha.
+
+**`reminder: "none"` limpa o `remind_at` junto**, qualquer que seja o valor
+enviado: desmarcar no menu é o gesto de cancelar, e um alarme órfão avisaria
+depois de o usuário ter dito que não queria.
+
+**Um período sem instante é recusado**, e não normalizado. Não é um estado que a
+interface produza (ela só oferece os períodos quando há data válida), então é bug
+de quem chamou — mesma régua do lote vazio de `revive_todos` no Esclarecimento
+5.3. Gravar `reminder` sem `remind_at` criaria uma tarefa que mostra o sino e
+nunca avisa: exatamente a falha que ninguém vê.
+
+## A notificação do macOS **não** passa pelo plugin do Tauri
+
+**Foi medido, e custou uma rodada inteira de depuração.** A primeira versão desta
+mudança usava `tauri-plugin-notification` nos três sistemas, e no macOS **ela não
+entregava nada** — nem sequer fazia o app aparecer em Ajustes do Sistema ›
+Notificações.
+
+O caminho do plugin, lido no código dele: `NotificationBuilder::show` →
+`notify-rust` → `mac-notification-sys` → **`NSUserNotification`**, a API que a
+Apple aposentou. Num macOS 27 ela aceita a chamada, devolve `Ok`, e descarta em
+silêncio.
+
+Três medições, nesta ordem, cada uma matando uma hipótese:
+
+1. **Os alarmes chegavam ao fim do funil.** As tarefas do teste ficaram com
+   `reminder` marcado e `remind_at` nulo — e `remind_at` só vira nulo dentro de
+   `lembretes_vencidos`. O agendamento estava certo; falhava a última linha.
+2. **`mac_notification_sys::set_application` + `send_notification`, chamados
+   direto, devolveram `Ok` nos dois** — e o `com.nocom.app` continuou fora da
+   lista de apps do Notification Center. "Ok" ali quer dizer "a chamada foi
+   aceita", não "alguém entregou".
+3. **A mesma notificação pelo `UNUserNotificationCenter`**, de um `.app` assinado
+   com o mesmo bundle identifier, **apareceu na tela**.
+
+O sintoma que fecha o argumento: um app só entra naquela lista de Ajustes quando
+pede autorização pela API corrente, e a API antiga não pede nada.
+
+**A divisão que ficou** (`src-tauri/src/aviso.rs`, o único lugar do backend que
+sabe que existe mais de um sistema operacional):
+
+| sistema | como | por quê |
+|---|---|---|
+| macOS | `UNUserNotificationCenter` via `objc2` | a API corrente; a do plugin está morta |
+| Windows | `tauri-plugin-notification` → WinRT | API corrente, já funciona |
+| Linux | `tauri-plugin-notification` → D-Bus | API corrente, já funciona |
+
+O plugin **não entra na compilação do macOS**, e os quatro crates de interop
+(`objc2`, `block2`, `objc2-foundation`, `objc2-user-notifications`) só entram
+nela. Trocar o que funciona no Windows e no Linux por interop escrita à mão seria
+custo sem ganho.
+
+**Um identificador único por aviso.** Reaproveitar um identificador **substitui** a
+notificação anterior em vez de somar — duas tarefas vencendo no mesmo tique
+virariam um aviso só, e a segunda sumiria sem nunca ter sido vista.
+
+**Sem gatilho de data no `UNNotificationRequest`** (`trigger: None` = entregue
+agora). O agendamento é do vigia; passar um gatilho ao sistema seria um segundo
+agendador competindo com quem já decide a hora.
+
+## A autorização, e onde ela é pedida
+
+**O `UNUserNotificationCenter` tem estado de autorização de verdade**, e é a
+diferença que o plugin não dava: `request_permission` dele devolve `Granted` sem
+consultar nada — está no código, sem ramo nenhum. Com a API corrente, o sistema
+responde se concedeu, e uma recusa vira uma linha no stderr em vez de silêncio.
+
+**O pedido é preguiçoso, e são dois gatilhos:**
+
+1. **Armar um lembrete.** É o gesto que quer dizer "sim, me avise", e é o instante
+   certo para o sistema perguntar. O pedido vem **depois** da mutação: um diálogo
+   de permissão antes de a escolha estar gravada perguntaria sobre algo que ainda
+   podia falhar. Desarmar não pede nada — cancelar não é pedir aviso.
+2. **Abrir o app com algum lembrete já armado** de uma execução anterior
+   (`tem_lembrete_armado`). Sem este segundo gatilho, quem armou um lembrete numa
+   versão anterior nunca veria o diálogo, e os avisos continuariam sem aparecer.
+
+**Não roda na abertura de quem nunca armou nada.** Um diálogo de permissão vindo
+de um aplicativo de lista de tarefas que a pessoa nem usa para lembretes é cobrar
+configuração de quem não pediu — o que este app evita em toda outra decisão.
+
+`tem_lembrete_armado` conta a **escolha**, e não o alarme: um lembrete que já
+disparou tem `remind_at` nulo e continua sendo um lembrete que o usuário quis.
+Olhar para `remind_at` faria a autorização deixar de ser pedida justamente para
+quem já usa a funcionalidade.
+
+## Limites de plataforma, ditos e não escondidos
+
+**Nenhuma falha é engolida em silêncio.** Foi o silêncio — um `let _ =` em cima do
+resultado — que fez a primeira versão parecer funcionar enquanto não entregava
+nada. Recusa de autorização e recusa de entrega vão as duas para o stderr.
+
+**No Windows e no Linux não há autorização a pedir.** Quem decide se a notificação
+aparece é o assistente de foco e o daemon de notificação, e nenhum dos dois tem
+uma porta para o app bater antes. Ali o app continua sem saber se o aviso chegou.
+
+**Nenhum pacote npm entra nisto.** O disparo é inteiramente do lado do Rust — a
+webview não participa. O `@tauri-apps/plugin-notification` foi instalado, medido e
+removido.
+
+O que a interface promete é só o que ela controla: o sino diz que o lembrete está
+armado, e o `title` dele diz para quando.
+
+**Notificação não é clicável.** Clicar nela não traz a janela de volta — as vias
+de volta continuam sendo as três de sempre (atalho global, ícone da bandeja,
+relançar o app). O suporte a clique em notificação de desktop é irregular entre
+os três sistemas, e uma via de volta que funciona em um deles e falha em silêncio
+nos outros é pior que a ausência dela.
+
+**No macOS a notificação exige o app empacotado e assinado.** O
+`UNUserNotificationCenter` se identifica pelo bundle, e `cargo tauri dev` roda o
+binário fora do `.app`. O teste do lembrete se faz na build empacotada — foi assim
+que a medição das três hipóteses acima foi feita.
+
+**E o app precisa SABER disso, senão ele morre.** Esta linha custou uma segunda
+rodada: `+[UNUserNotificationCenter currentNotificationCenter]` não devolve erro
+sem bundle, ele **lança** `NSInternalInconsistencyException`
+("bundleProxyForCurrentProcess is nil") — e exceção de Objective-C atravessando
+Rust é `abort`. O app morria na abertura, antes da janela, em todo `tauri dev`.
+
+A guarda pergunta ao **bundle**, e não ao perfil de compilação: `NSBundle`
+`mainBundle().bundleIdentifier()` sendo `None` é o mesmo que o framework foi
+buscar e não achou. Um `cfg!(debug_assertions)` ou o `tauri::is_dev()` cobririam o
+`tauri dev` e continuariam derrubando quem roda `target/release/nocom` direto — o
+mesmo problema com outro nome. Sem bundle, `preparar` e `mostrar` não fazem nada e
+uma única linha vai ao stderr (uma por execução, não uma por lembrete: o vigia
+repetiria o recado a cada aviso vencido).
+
+## Definição de pronto (adicional)
+
+- `npm run build`, `npm test`, `cargo check` e `cargo test` passam limpos.
+- Um `todos.json` da versão anterior abre sem perda, com `reminder: none` e
+  `remind_at: null` em tudo (fixado em teste).
+- Uma tarefa sem data no título tem o submenu "Lembrar" **cinza**, e não ausente.
+- Uma tarefa com `31/02` no título mostra a pílula e tem o submenu cinza.
+- Marcar "na data" numa tarefa datada de hoje, depois das 9h, faz a notificação
+  chegar em até 30 segundos — é o caminho de teste ponta a ponta do vigia, e ele
+  **tem que ser feito na build empacotada** (ver os limites de plataforma).
+- **`tauri dev` sobe e roda normalmente**, com uma linha no stderr dizendo que os
+  lembretes não vão aparecer sem o app empacotado. Este item existe porque a
+  primeira versão da interop derrubava o `dev` na abertura.
+- No macOS, o app aparece em **Ajustes do Sistema › Notificações** depois de o
+  primeiro lembrete ser armado. Se não aparecer, a notificação não vai chegar — é
+  o sintoma que denunciou a API morta, e vale como verificação permanente.
+- O mesmo lembrete **não toca duas vezes** (fixado em teste da `Store`).
+- Renomear a tarefa trocando `20/08` por `21/08` move o alarme; apagar a data do
+  título apaga o lembrete e o sino some.
+- Renomear a tarefa **sem** mexer na data não rearma um lembrete já disparado.
+- Concluir uma tarefa antes da hora do aviso a faz não notificar.

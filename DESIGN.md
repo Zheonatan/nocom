@@ -1502,9 +1502,11 @@ dos 6 segundos da faixa, a custo zero de altura.
 ### Menu de contexto da tarefa (a única superfície flutuante do app)
 
 O clique direito numa linha abre um menu (Adendo 13) com os gestos sobre a tarefa que
-não merecem botão permanente: **Mover para** (as outras abas) e **Repetir** (nunca /
-todo dia / toda semana / todo mês) — e é o lugar canônico das opções futuras dessa
-classe. Ele é a **exceção declarada** à Regra da Vista que Troca, com o argumento
+não merecem botão permanente: **Mover para** (as outras abas), **Repetir** (nunca /
+todo dia / toda semana / todo mês) e, desde o Adendo 14, **Lembrar** (não lembrar / na
+data / um dia antes / uma semana antes) — e é o lugar canônico das opções futuras dessa
+classe. O terceiro item chegou sem custar um pixel a nenhuma superfície permanente, que
+é a prova de que a exceção declarada abaixo estava paga. Ele é a **exceção declarada** à Regra da Vista que Troca, com o argumento
 inteiro: aparece sob o cursor por gesto explícito, some ao primeiro clique fora, e
 custa zero de altura permanente — que é exatamente o que a regra protege. Pelo
 teclado, `Shift+F10` (ou a tecla de menu) com o foco na linha abre o mesmo menu, de
@@ -1525,6 +1527,30 @@ graça, porque é o gesto nativo do navegador.
   Ele fica visível também na concluída, porque é ali que responde a pergunta que a
   linha riscada levanta ("acabou?" — não: volta). A frase do período vive no `title` e
   no `aria-label`.
+- **O sino do lembrete** (Adendo 14) é o irmão do glifo acima e usa exatamente a mesma
+  régua: 12px, névoa, `title` e `aria-label` com a frase inteira. Dois metadados na
+  mesma linha só não viram ruído porque nenhum dos dois é tinta — se um deles ganhasse
+  cor, a linha passaria a ter duas hierarquias competindo com o texto que a pessoa
+  escreveu.
+- **A hora do lembrete só existe no `title` do sino** ("Avisa na data, às 09:00"),
+  escrita na convenção do sistema. Ela é fixa e não é escolhível, então um controle para
+  ela seria altura gasta com uma decisão que ninguém tomou — mas escondê-la por completo
+  faria o usuário descobrir a hora só quando o aviso chegasse, que é tarde demais para
+  ser informação.
+- **O sino muda o que promete depois de tocar.** Com o aviso já dado, o `title` passa a
+  falar no passado ("O aviso deste lembrete já foi dado"). A tinta é a mesma — o que
+  mudou não é o estado da tarefa, é o que a marca promete —, e um sino que continua
+  dizendo "avisa na data" depois de ter tocado afirma um futuro que não existe.
+- **"Lembrar" desabilita, e desabilita em duas alturas.** O submenu inteiro fica cinza
+  quando não há data única e por vir no título **e** não há lembrete marcado; dentro
+  dele, os três períodos ficam cinza sem data válida, e **"Não lembrar" nunca**. As duas
+  metades pagam por si: o item cinza é o que conta, a quem nunca escreveu uma data no
+  título, que escrever uma faz algo; e o cancelamento precisa continuar alcançável
+  depois de a data ter passado ou ter sido apagada, senão o sino tranca na linha.
+- **Nenhuma cor entra com o lembrete.** Vermelho continua sendo erro e hoje (Regra do
+  Pigmento Único), e a data de um lembrete armado tem exatamente a mesma pílula que a de
+  uma tarefa sem aviso nenhum. Uma tarefa que vai notificar **não parece diferente** de
+  uma que não vai, e é essa indiferença visual que segura a linha do PRODUCT.md.
 
 ### Painel de configurações (a única troca de vista do app)
 O painel da engrenagem guarda os quatro assuntos que não são sobre a lista (Adendos 9,

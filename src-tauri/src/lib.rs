@@ -9,6 +9,7 @@
 
 mod atalho;
 mod atualizacao;
+mod aviso;
 mod cantos;
 mod formato;
 mod heranca;
@@ -28,7 +29,7 @@ use atalho::Atalho;
 use atualizacao::{Disponivel, Pendente};
 use idioma::Idioma;
 use janela::{Janela, Posicao, Retangulo};
-use store::{AbaFechada, ContagemAba, Importado, Recorrencia, Store, Tab, Todo};
+use store::{AbaFechada, ContagemAba, Importado, Lembrete, Recorrencia, Store, Tab, Todo};
 
 /// Rótulo da única janela, fixado no `tauri.conf.json`. O tray precisa achá-la
 /// pelo nome, e depender do padrão implícito deixaria o ícone virar um botão que
@@ -369,6 +370,37 @@ async fn set_repeat(
     mutar(&app, || store.definir_recorrencia(&id, repeat))
 }
 
+/// Arma, troca ou desarma o lembrete de uma tarefa (Adendo 14). `reminder` chega
+/// como `"none" | "on_date" | "day_before" | "week_before"` — valor fora disso é
+/// recusado pela desserialização antes de o comando rodar.
+///
+/// **`remindAt` vem calculado do frontend**, em epoch millis: o instante depende
+/// do calendário e do fuso locais, que moram na webview (Adendo 11). O backend
+/// guarda o número e compara com o relógio; não há conversão de data neste lado.
+///
+/// Passa por `mutar` como toda mutação — o tooltip não muda com um lembrete, mas
+/// "toda mutação funila por aqui" é a regra que se mantém certa sozinha.
+#[tauri::command]
+async fn set_reminder(
+    id: String,
+    reminder: Lembrete,
+    remind_at: Option<i64>,
+    app: AppHandle,
+    store: State<'_, Store>,
+) -> Result<Todo, String> {
+    let atualizado = mutar(&app, || store.definir_lembrete(&id, reminder, remind_at))?;
+    // O primeiro dos dois gatilhos da autorização (ver `aviso::preparar`): armar
+    // um lembrete é o gesto que quer dizer "sim, me avise", e é o instante certo
+    // para o sistema perguntar. Depois da mutação de propósito — um diálogo de
+    // permissão antes de a escolha estar gravada perguntaria sobre algo que ainda
+    // podia falhar. Desarmar não pede nada: cancelar não é pedir aviso.
+    #[cfg(desktop)]
+    if reminder != Lembrete::Nenhum {
+        aviso::preparar(&app);
+    }
+    Ok(atualizado)
+}
+
 /// Move a tarefa para outra aba (Adendo 13), preservando `created_at`. Passa por
 /// `mutar` porque a contagem por aba muda — o tooltip do tray não, mas a regra é
 /// "toda mutação funila por aqui".
@@ -462,6 +494,95 @@ fn atualizar_tooltip(app: &AppHandle) {
         return;
     };
     let _ = bandeja.set_tooltip(Some(texto_do_tooltip(pendentes, idioma::atual())));
+}
+
+/// De quanto em quanto tempo o vigia olha os alarmes (Adendo 14).
+///
+/// Meio minuto é a folga que um lembrete tolera sem ninguém notar — a data que
+/// ele anuncia é um DIA, e chegar às 9h00m20s em vez das 9h00m00s não muda nada
+/// para quem lê. Em troca, o processo passa 99,9% do tempo dormindo: o custo de
+/// acordar é uma varredura em memória que sai sem tocar no disco quando não há
+/// nada vencido (ver `lembretes_vencidos`).
+const INTERVALO_LEMBRETES: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// Quanto atraso um lembrete ainda tolera antes de ser engolido em silêncio
+/// (Adendo 14). **Doze horas, e o número não é arbitrário.**
+///
+/// O alarme dispara às 9h, e o corpo da notificação afirma uma distância até a
+/// data ("é hoje", "é amanhã", "é em uma semana"). Doze horas depois das 9h ainda
+/// é o mesmo dia — 21h — e portanto **todas as três frases continuam
+/// verdadeiras**. Uma tolerância maior deixaria a notificação atravessar a
+/// meia-noite e dizer "é amanhã" no próprio dia, que é uma data errada, e uma
+/// data errada num aviso é pior que aviso nenhum.
+///
+/// O que isso cobre na prática: a máquina que passou a noite desligada e acorda
+/// às 10h recebe o aviso das 9h, atrasado e correto. O que isso recusa: a máquina
+/// que passou a semana desligada despejando avisos de dias que já passaram no
+/// primeiro minuto de uso.
+const TOLERANCIA_LEMBRETE_MS: i64 = 12 * 60 * 60 * 1000;
+
+/// O vigia dos lembretes (Adendo 14): uma thread que acorda, olha os alarmes
+/// vencidos e notifica.
+///
+/// **Thread do sistema, e não um `setTimeout` na webview.** A janela deste app
+/// passa a maior parte do tempo escondida, e webview escondida tem os
+/// temporizadores estrangulados pelo sistema — no macOS eles chegam a parar em
+/// bateria. Um lembrete que só toca quando a janela está aberta é um lembrete que
+/// só avisa quem já estava olhando.
+///
+/// **Thread nua, e não uma tarefa do runtime async.** O que ela faz é dormir meio
+/// minuto e varrer uma lista; declarar o tokio como dependência direta para isso
+/// seria trocar uma thread ociosa por um agendador inteiro.
+///
+/// **A primeira volta acontece antes do primeiro sono**, de propósito: o app pode
+/// ter passado a noite fechado, e os alarmes da madrugada estão esperando na
+/// abertura. Sem isso, o primeiro aviso do dia chegaria meio minuto depois de o
+/// app subir — o que é inofensivo — mas a intenção ficaria implícita, e a próxima
+/// pessoa a mexer aqui trocaria a ordem sem saber o que estava perdendo.
+#[cfg(desktop)]
+fn vigiar_lembretes(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || loop {
+        disparar_lembretes(&app);
+        std::thread::sleep(INTERVALO_LEMBRETES);
+    });
+}
+
+/// Uma volta do vigia: consome os alarmes vencidos e mostra uma notificação por
+/// tarefa.
+///
+/// **Nada aqui pode falhar para cima**, pela mesma razão de `atualizar_tooltip`:
+/// esta função roda fora de qualquer gesto do usuário, não há Promise a rejeitar
+/// e não há tela esperando resposta. Um sistema que recusa a notificação custa o
+/// aviso, e não o app — mas **a recusa vai para o stderr** (ver `aviso.rs`).
+/// Engolir o resultado em silêncio foi o que fez a primeira versão desta função
+/// parecer funcionar enquanto não entregava nada.
+///
+/// **O alarme é consumido mesmo quando a notificação não sai.** É a `Store` que
+/// decide isso (ver `lembretes_vencidos`), e é o que impede o laço: um alarme que
+/// sobrevivesse à falha de entrega seria reencontrado no tique seguinte, e o app
+/// tentaria notificar a mesma tarefa a cada trinta segundos para sempre.
+///
+/// O **título** da notificação é o título da tarefa — é ele que diz do que se
+/// trata, e o sistema já põe o nome do app no cabeçalho. O **corpo** é a distância
+/// até a data, que o título sozinho não dá.
+#[cfg(desktop)]
+fn disparar_lembretes(app: &AppHandle) {
+    let Some(store) = app.try_state::<Store>() else {
+        return;
+    };
+    let Ok(vencidos) = store.lembretes_vencidos(store::agora_em_millis(), TOLERANCIA_LEMBRETE_MS)
+    else {
+        return;
+    };
+    let idioma = idioma::atual();
+    for todo in vencidos {
+        aviso::mostrar(
+            app,
+            &todo.title,
+            idioma::corpo_do_lembrete(todo.reminder, idioma),
+        );
+    }
 }
 
 /// O texto do tooltip, na língua do sistema.
@@ -890,6 +1011,27 @@ pub fn run() {
                     eprintln!("[atualização] o plugin de atualização não subiu: {erro}");
                 }
             }
+            // Lembretes (Adendo 14). Fora do macOS o plugin de notificação sobe
+            // aqui, sem `?` pela mesma razão dos vizinhos — um app sem
+            // notificação ainda é a lista de tarefas inteira. No macOS não há
+            // plugin a subir: `aviso.rs` fala com o sistema direto, e a razão
+            // está registrada lá.
+            #[cfg(all(desktop, not(target_os = "macos")))]
+            if let Err(erro) = app.handle().plugin(tauri_plugin_notification::init()) {
+                eprintln!("[lembretes] o plugin de notificação não subiu: {erro}");
+            }
+            #[cfg(desktop)]
+            {
+                // A autorização é pedida com preguiça (ver `aviso::preparar`), e
+                // este é o segundo dos dois gatilhos: abrir o app com lembretes
+                // já armados de uma execução anterior. Sem ele, quem armou antes
+                // desta versão nunca veria o diálogo de permissão — e os avisos
+                // continuariam sem aparecer, exatamente como antes do conserto.
+                if app.state::<Store>().tem_lembrete_armado() {
+                    aviso::preparar(app.handle());
+                }
+                vigiar_lembretes(app.handle());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -915,6 +1057,7 @@ pub fn run() {
             clear_completed,
             restore_todos,
             set_repeat,
+            set_reminder,
             move_todo,
             list_recurring,
             revive_todos,

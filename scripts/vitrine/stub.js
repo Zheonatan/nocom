@@ -67,6 +67,13 @@ const FUTURO = escrever(new Date(agora.getTime() + 3 * 86400000));
 // estoura dentro do render — a página fica branca e a captura morre em
 // "a interface não terminou de montar". Foi o que aconteceu entre o Adendo 13 e
 // este arquivo: o stub ficou no formato de antes e a vitrine parou de subir.
+//
+// **`reminder` entrou pela mesma porta, no Adendo 14, e cai no mesmo buraco.** A
+// linha guarda o sino com `todo.reminder !== "none"` e busca a frase em
+// `REMIND_TITLE[todo.reminder]` — sem o campo, é `t(undefined)` de novo. Este
+// parágrafo existe para que o terceiro campo do `Todo` que a linha ler seja
+// acrescentado aqui ANTES de a vitrine quebrar, e não depois: a regra é que
+// **todo campo de `Todo` que o `TodoRow` lê tem que estar no `tarefa()` abaixo**.
 // **O conteúdo de exemplo acompanha a língua.** Enquanto era um PNG só, a página
 // em inglês mostrava uma janela em português — e a `alt` dela nomeava as abas
 // "Trabalho" e "Casa" em texto inglês, admitindo por escrito o que não dava para
@@ -111,7 +118,14 @@ const abas = [
   { id: "trabalho", name: texto.abas[0], created_at: ms(0) },
   { id: "casa", name: texto.abas[1], created_at: ms(1) },
 ];
-const tarefa = (t) => ({ done: false, repeat: "none", tab_id: "trabalho", ...t });
+const tarefa = (t) => ({
+  done: false,
+  repeat: "none",
+  reminder: "none",
+  remind_at: null,
+  tab_id: "trabalho",
+  ...t,
+});
 const tarefas = [
   // As cinco primeiras: título simples, data NO FIM (vai para a coluna da direita
   // e acende em vermelho por ser hoje), título simples, data no fim mas futura (a
@@ -187,13 +201,21 @@ const COMANDOS = {
 
   // --------------------------------------------------------------- Adendo 13
   //
-  // Estes seis existem porque o app os CHAMA, e não porque a foto os mostra.
+  // Estes existem porque o app os CHAMA, e não porque a foto os mostra.
   // `list_pending_counts` e `list_recurring` rodam na montagem; sem eles o
   // `invoke` devolvia `undefined`, e um `undefined` onde o App espera lista é a
   // mesma classe de falha que o `repeat` ausente lá em cima.
   set_repeat: ({ id, repeat }) => {
     const t = acha(id);
     t.repeat = repeat;
+    return t;
+  },
+  /** Adendo 14. Nenhuma tarefa da vitrine lembra, mas o comando existe pelo mesmo
+      motivo dos vizinhos: o app o chama, e um `undefined` de volta é falha. */
+  set_reminder: ({ id, reminder, remindAt }) => {
+    const t = acha(id);
+    t.reminder = reminder;
+    t.remind_at = reminder === "none" ? null : remindAt;
     return t;
   },
   move_todo: ({ id, tabId }) => {

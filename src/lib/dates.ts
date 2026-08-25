@@ -264,3 +264,72 @@ export function splitTitle(
   }
   return { segments, rest, trailing };
 }
+
+/**
+ * A data do título como números de calendário, e não como posições no texto.
+ *
+ * Existe para o lembrete (Adendo 14), que é a primeira coisa neste app a
+ * precisar da data **como data** e não como trecho a pintar. A leitura continua
+ * sendo a mesma — mesma regex, mesma ordem de dia e mês, mesmo século — e o
+ * resultado continua sendo descartado no mesmo quadro por quem desenha; só o
+ * lembrete guarda algo, e o que ele guarda é um instante, nunca esta data.
+ *
+ * **Devolve `null` em três casos, e cada um paga por si:**
+ *
+ * - **Nenhuma data no título.** Não há o que lembrar.
+ * - **Mais de uma data.** "de 19/10 a 25/10" tem duas, e escolher uma delas por
+ *   conta própria seria o app decidindo qual metade do que a pessoa escreveu é a
+ *   que importa. É a mesma condição de `splitTitle`, pelo mesmo motivo: este
+ *   módulo lê caracteres, não português.
+ * - **Data que não existe no calendário.** `31/02` ganha pílula (o módulo não
+ *   valida nada, e a decisão está no cabeçalho), mas **não ganha lembrete**: a
+ *   pílula é tinta em cima do que a pessoa digitou, enquanto um lembrete é um
+ *   instante que precisa existir — e `new Date(2026, 1, 31)` transborda em
+ *   silêncio para 3 de março, isto é, avisaria num dia que ninguém escreveu.
+ *   **A validação não desmente quem digitou**: a pílula continua lá, e o que
+ *   acontece é só o submenu "Lembrar" não abrir.
+ *
+ * Sem ano, o ano é o de `today` — a mesma definição de `matchesToday`, e a mesma
+ * consequência assumida: `20/08` escrito em dezembro é 20 de agosto **deste**
+ * ano, uma data que já passou, e o lembrete não é oferecido. Rolar para o ano
+ * seguinte seria adivinhar a intenção a partir de um dado que não está no texto.
+ */
+export type SoleDate = { year: number; month: number; day: number };
+
+/** Quantos dias tem o mês (humano, 1–12) deste ano. */
+function diasNoMes(ano: number, mes: number): number {
+  if (mes === 2) {
+    const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+    return bissexto ? 29 : 28;
+  }
+  return mes === 4 || mes === 6 || mes === 9 || mes === 11 ? 30 : 31;
+}
+
+export function soleDate(
+  title: string,
+  today: string,
+  dayFirst: boolean,
+): SoleDate | null {
+  const casamentos = [...title.matchAll(DATE_PATTERN)];
+  // Exatamente uma. O `[0]` sob `noUncheckedIndexedAccess` precisa do guarda,
+  // que a checagem de comprimento sozinha não dá ao compilador.
+  const unico = casamentos.length === 1 ? casamentos[0] : undefined;
+  if (unico === undefined) return null;
+
+  // Os `= ""` nunca agem — ver o comentário gêmeo em `achar`.
+  const [, , primeiro = "", segundo = "", ano] = unico;
+  const day = Number(dayFirst ? primeiro : segundo);
+  const month = Number(dayFirst ? segundo : primeiro);
+  const year =
+    ano === undefined
+      ? // O ano corrente vem de `today` (`2026-08-25`), e não de um `new Date()`
+        // aqui: é a mesma leitura de "hoje" que o resto do módulo usa, e um
+        // relógio próprio daria respostas diferentes na virada da meia-noite.
+        Number(today.slice(0, 4))
+      : // `26` é 2026 — o mesmo século assumido em `matchesToday`.
+        Number(ano.length === 2 ? `20${ano}` : ano);
+
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > diasNoMes(year, month)) return null;
+  return { year, month, day };
+}

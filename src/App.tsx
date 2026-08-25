@@ -19,9 +19,11 @@ import { TabStrip } from "@/components/TabStrip";
 import { TodoRow } from "@/components/TodoRow";
 import { useFlipRows } from "@/hooks/use-flip-rows";
 import { useToday } from "@/hooks/use-today";
+import { soleDate } from "@/lib/dates";
 import { t, type MessageKey } from "@/lib/i18n";
 import { hasAddedTask, markTaskAdded } from "@/lib/onboarding";
 import { dueIds } from "@/lib/recurrence";
+import { remindAt, sameDate, stillAhead } from "@/lib/reminders";
 import { DEFAULT_SHORTCUT_LABEL } from "@/lib/shortcut";
 import {
   addTodo,
@@ -55,6 +57,7 @@ import {
   reviveTodos,
   setActiveTab,
   setRepeat,
+  setReminder,
   TAB_SHORTCUT_LIMIT,
   TITLE_MAX_LENGTH,
   toggleTodo,
@@ -62,6 +65,7 @@ import {
   UNDO_SHORTCUT,
   type ClosedTab,
   type GlobalShortcut,
+  type Reminder,
   type Repeat,
   type Tab,
   type Todo,
@@ -938,6 +942,8 @@ function App() {
       tab_id: tabId,
       repeat: "none",
       done_at: null,
+      reminder: "none",
+      remind_at: null,
     };
     // A linha nasce abaixo da dobra numa lista longa; o efeito de layout logo
     // abaixo a traz à vista no mesmo quadro em que ela aparece.
@@ -1176,19 +1182,81 @@ function App() {
     [todos, activeTabId, mutateTodos, offerUndo, applyRestored, focusRowAt, focusDraft],
   );
 
+  /**
+   * O alarme que este período pediria, dada a data escrita neste título — ou
+   * `null` quando o título não tem uma data única e ainda por vir.
+   *
+   * **É a única conta de "quando avisar" do app** (Adendo 14), e por isso ela
+   * mora num lugar só: os dois caminhos que armam um lembrete — escolher no menu
+   * e renomear a tarefa — passam por aqui. Duas contas do mesmo número em
+   * arquivos diferentes divergem na primeira que alguém esquecer de mudar.
+   */
+  const alarmeDe = useCallback(
+    (title: string, reminder: Exclude<Reminder, "none">): number | null => {
+      const data = soleDate(title, today, dayFirst);
+      if (data === null || !stillAhead(data, Date.now())) return null;
+      return remindAt(data, reminder);
+    },
+    [today, dayFirst],
+  );
+
+  /**
+   * O lembrete segue a data do título (Adendo 14). Renomear "pagar boleto 20/08"
+   * para "pagar boleto 21/08" move o aviso junto; apagar a data do título
+   * cancela o lembrete, em vez de deixar um sino que avisa de um dia que não
+   * está mais escrito em lugar nenhum.
+   *
+   * **Só age quando a DATA muda, e a condição é correção e não economia.** Um
+   * lembrete que já disparou tem `remind_at` nulo; recalcular por causa de um
+   * acento corrigido no mesmo dia o rearmaria para um instante já passado, e o
+   * vigia do backend tocaria o mesmo aviso uma segunda vez no tique seguinte.
+   *
+   * Silencioso na falha, de propósito: o renomear em si deu certo e já está na
+   * tela, e o que ficou para trás é o ajuste de um metadado. Levantar a faixa
+   * vermelha aqui diria "não foi possível renomear" sobre uma renomeação que
+   * aconteceu — que é pior que o sino apontando para o dia antigo.
+   */
+  const seguirDataDoTitulo = useCallback(
+    async (renomeada: Todo, tituloAnterior: string) => {
+      if (renomeada.reminder === "none") return;
+      const antes = soleDate(tituloAnterior, today, dayFirst);
+      const depois = soleDate(renomeada.title, today, dayFirst);
+      if (sameDate(antes, depois)) return;
+      const alarme = alarmeDe(renomeada.title, renomeada.reminder);
+      try {
+        applyUpdated(
+          alarme === null
+            ? await setReminder(renomeada.id, "none", null)
+            : await setReminder(renomeada.id, renomeada.reminder, alarme),
+        );
+      } catch {
+        // Ver o cabeçalho: o renomear já está gravado, e não há gesto do usuário
+        // a repetir.
+      }
+    },
+    [today, dayFirst, alarmeDe, applyUpdated],
+  );
+
   const handleRename = useCallback(
     (id: string, title: string) => {
       setEditingId(null);
+      // Capturado ANTES da chamada: depois dela o título antigo já não está em
+      // lugar nenhum, e é a data DELE que decide se o lembrete precisa se mexer.
+      const tituloAnterior = todos.find((item) => item.id === id)?.title ?? "";
       return mutateTodos({
         errorKey: "error.rename",
         optimistic: (prev) =>
           prev.map((item) => (item.id === id ? { ...item, title } : item)),
         // `rename_todo` não mexe em `created_at` nem em `done`, então a ordem da
         // lista não muda — só o texto.
-        run: async () => applyUpdated(await renameTodo(id, title)),
+        run: async () => {
+          const renomeada = await renameTodo(id, title);
+          applyUpdated(renomeada);
+          await seguirDataDoTitulo(renomeada, tituloAnterior);
+        },
       });
     },
-    [mutateTodos, applyUpdated],
+    [todos, mutateTodos, applyUpdated, seguirDataDoTitulo],
   );
 
   const handleCancelEdit = useCallback(() => setEditingId(null), []);
@@ -1243,6 +1311,36 @@ function App() {
         run: async () => applyUpdated(await setRepeat(id, repeat)),
       }),
     [mutateTodos, applyUpdated],
+  );
+
+  /**
+   * Armar, trocar ou desarmar o lembrete (Adendo 14). Otimista como o toggle: o
+   * sino aparece no clique, e o `remind_at` que a linha desenha é o mesmo número
+   * que vai para o backend — não há nada que só ele saiba aqui.
+   *
+   * **A conta de "quando" acontece antes do IPC**, e é ela que decide se há
+   * chamada: um período escolhido sobre um título sem data válida não é um erro a
+   * mostrar, é um gesto que a interface não deveria ter oferecido (o submenu
+   * desabilita os três períodos exatamente nesse caso). O caminho existe para a
+   * janela estreita entre abrir o menu e clicar com a meia-noite no meio — e sair
+   * sem fazer nada é o desfecho certo, porque nada aconteceu.
+   */
+  const handleSetReminder = useCallback(
+    (id: string, reminder: Reminder) => {
+      const alvo = todos.find((item) => item.id === id);
+      if (alvo === undefined) return;
+      const alarme = reminder === "none" ? null : alarmeDe(alvo.title, reminder);
+      if (reminder !== "none" && alarme === null) return;
+      return mutateTodos({
+        errorKey: "error.remind",
+        optimistic: (prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, reminder, remind_at: alarme } : item,
+          ),
+        run: async () => applyUpdated(await setReminder(id, reminder, alarme)),
+      });
+    },
+    [todos, alarmeDe, mutateTodos, applyUpdated],
   );
 
   /**
@@ -1982,6 +2080,7 @@ function App() {
                   onRename={handleRename}
                   onMove={handleMove}
                   onSetRepeat={handleSetRepeat}
+                  onSetReminder={handleSetReminder}
                 />
               ))}
             </ul>

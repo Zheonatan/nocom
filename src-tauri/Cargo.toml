@@ -83,3 +83,32 @@ opt-level = "s"
 panic = "abort"
 strip = true
 
+
+# --- notificacao dos lembretes (Adendo 14) ---
+#
+# Duas implementacoes, e a divisao NAO e preciosismo: e a diferenca entre uma API
+# viva e uma morta. Ver `aviso.rs`, que registra a medicao inteira.
+
+# Fora do macOS o plugin do Tauri serve: por baixo dele o `notify-rust` fala WinRT
+# no Windows e D-Bus no Linux, que sao as APIs correntes dos dois sistemas. So
+# desktop, pela mesma razao dos vizinhos acima.
+[target.'cfg(all(not(any(target_os = "android", target_os = "ios")), not(target_os = "macos")))'.dependencies]
+tauri-plugin-notification = "2"
+
+# No macOS o plugin NAO serve, e foi medido: ele chama `mac-notification-sys`, que
+# usa `NSUserNotification` -- a API que a Apple aposentou. No macOS 27 ela aceita a
+# chamada, devolve Ok, e descarta em silencio; o app nem chega a aparecer em
+# Ajustes do Sistema > Notificacoes. Falar direto com `UNUserNotificationCenter`,
+# que e a API corrente, custa estes quatro crates e entrega de verdade -- inclusive
+# com um estado de autorizacao REAL, que o plugin nao tem.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSString", "NSError", "NSBundle"] }
+objc2-user-notifications = { version = "0.3", features = [
+  "UNUserNotificationCenter",
+  "UNNotificationRequest",
+  "UNNotificationContent",
+  "UNNotificationTrigger",
+  "block2",
+] }

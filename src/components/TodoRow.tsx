@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Repeat as RepeatIcon, X } from "lucide-react";
+import { Bell, Repeat as RepeatIcon, X } from "lucide-react";
 import { InlineEdit } from "@/components/InlineEdit";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,9 +14,16 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { splitTitle } from "@/lib/dates";
+import { soleDate, splitTitle } from "@/lib/dates";
 import { t, type MessageKey } from "@/lib/i18n";
-import { TITLE_MAX_LENGTH, type Repeat, type Tab, type Todo } from "@/lib/todos";
+import { REMINDER_HOUR, stillAhead } from "@/lib/reminders";
+import {
+  TITLE_MAX_LENGTH,
+  type Reminder,
+  type Repeat,
+  type Tab,
+  type Todo,
+} from "@/lib/todos";
 
 /**
  * A frase de cada período, para o `title` e o `aria-label` do glifo: a tinta
@@ -27,6 +34,33 @@ const REPEAT_TITLE: Record<Exclude<Repeat, "none">, MessageKey> = {
   weekly: "task.repeatsWeekly",
   monthly: "task.repeatsMonthly",
 };
+
+/**
+ * A frase de cada lembrete, para o `title` e o `aria-label` do sino — a mesma
+ * régua do glifo de repetição: a tinta diz "avisa", e não diz quando.
+ */
+const REMIND_TITLE: Record<Exclude<Reminder, "none">, MessageKey> = {
+  on_date: "task.remindsOnDate",
+  day_before: "task.remindsDayBefore",
+  week_before: "task.remindsWeekBefore",
+};
+
+/**
+ * A hora do lembrete escrita na convenção do sistema — "09:00" no Brasil,
+ * "9:00 AM" nos Estados Unidos.
+ *
+ * **Constante de módulo, e não cálculo por linha.** O valor não muda nunca (a
+ * hora é fixa, ver `REMINDER_HOUR`) e um `Intl.DateTimeFormat` novo por linha
+ * renderizada seria o objeto mais caro deste arquivo, construído dezenas de vezes
+ * para produzir sempre o mesmo texto.
+ *
+ * A data usada para formatar é descartável — só a hora dela é lida — e por isso é
+ * um `Date` qualquer com a hora certa.
+ */
+const HORA_DO_LEMBRETE: string = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+}).format(new Date(2000, 0, 1, REMINDER_HOUR));
 
 type TodoRowProps = {
   todo: Todo;
@@ -62,6 +96,14 @@ type TodoRowProps = {
   /** Adendo 13: os dois gestos do menu de contexto. */
   onMove: (id: string, tabId: string) => void;
   onSetRepeat: (id: string, repeat: Repeat) => void;
+  /**
+   * Adendo 14: o terceiro. **Só o período sobe** — o instante do alarme é
+   * calculado no `App`, que já relê a data do título no renomear pela mesma
+   * função. Mandar o instante daqui seria a linha decidindo quando avisar, e
+   * duas contas do mesmo número em lugares diferentes divergem na primeira que
+   * alguém esquecer.
+   */
+  onSetReminder: (id: string, reminder: Reminder) => void;
 };
 
 /**
@@ -144,6 +186,7 @@ export const TodoRow = memo(function TodoRow({
   onRename,
   onMove,
   onSetRepeat,
+  onSetReminder,
 }: TodoRowProps) {
   // As abas para onde esta tarefa PODE ir. A própria fica de fora: um item de
   // "mover" que não move nada só ensinaria desconfiança do menu.
@@ -161,6 +204,25 @@ export const TodoRow = memo(function TodoRow({
   const partes = todo.done
     ? { segments: [], rest: todo.title, trailing: null }
     : splitTitle(todo.title, today, dayFirst);
+
+  // O submenu "Lembrar" (Adendo 14) só tem o que oferecer se houver uma data
+  // única e ainda por vir no título — ver `soleDate` e `stillAhead`.
+  //
+  // **`Date.now()` no render, e é o lugar certo.** O que se decide aqui é se um
+  // item de menu abre AGORA, no instante do clique direito; não há nada a
+  // reagendar quando o dia vira, porque o menu não fica aberto atravessando a
+  // meia-noite. A data de HOJE, essa sim, continua vindo de cima (`today`), que é
+  // o valor que a lista inteira precisa ver igual.
+  //
+  // A leitura acontece mesmo na concluída — ao contrário do destaque, que a
+  // Regra do Desbotamento desliga. O menu não é tinta: desligá-lo ali tiraria de
+  // quem concluiu a única via de desmarcar um lembrete que ela já não quer.
+  const dataUnica = soleDate(todo.title, today, dayFirst);
+  const podeAgendar = dataUnica !== null && stillAhead(dataUnica, Date.now());
+  // O submenu abre também quando não dá mais para agendar, desde que haja um
+  // lembrete marcado: é por ele que se cancela. Sem esta segunda metade, apagar a
+  // data do título trancaria o sino na linha para sempre.
+  const abreLembrete = podeAgendar || todo.reminder !== "none";
 
   return (
     // O menu de contexto (Adendo 13) envolve a linha SEM tocar no DOM dela: o
@@ -334,6 +396,37 @@ export const TodoRow = memo(function TodoRow({
           <RepeatIcon className="size-3" />
         </span>
       )}
+      {/* O sino do lembrete (Adendo 14). Mesma névoa e mesmos 12px do glifo de
+          repetição, e pelo mesmo motivo: é metadado, não alarme — a única coisa
+          na linha que diz "esta tarefa vai avisar", e ela não pode competir com
+          o texto que a pessoa escreveu.
+
+          **O `title` muda quando o aviso já foi dado.** Um sino que continua
+          prometendo "avisa na data" depois de ter tocado afirma um futuro que não
+          existe; `remind_at` nulo com `reminder` marcado é exatamente esse estado
+          (ver `lib/todos.ts`), e a frase passa a falar no passado. A tinta é a
+          mesma: o que mudou é o que ela promete, não o que ela marca.
+
+          Some na edição, como a data e o glifo de repetição, para devolver a
+          largura ao campo. */}
+      {todo.reminder !== "none" && !editing && (
+        <span
+          role="img"
+          title={
+            todo.remind_at === null
+              ? t("task.remindedAlready")
+              : t(REMIND_TITLE[todo.reminder], { time: HORA_DO_LEMBRETE })
+          }
+          aria-label={
+            todo.remind_at === null
+              ? t("task.remindedAlready")
+              : t(REMIND_TITLE[todo.reminder], { time: HORA_DO_LEMBRETE })
+          }
+          className="shrink-0 text-muted-foreground"
+        >
+          <Bell className="size-3" />
+        </span>
+      )}
       {/* A data que saiu do fim do título, alinhada à direita.
 
           **Entre o título e o `×`, e não no lugar dele.** O botão de remover já
@@ -407,6 +500,39 @@ export const TodoRow = memo(function TodoRow({
             </ContextMenuRadioItem>
             <ContextMenuRadioItem value="monthly">
               {t("menu.repeatMonthly")}
+            </ContextMenuRadioItem>
+          </ContextMenuRadioGroup>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      {/* "Lembrar" (Adendo 14). Desabilita em vez de sumir, como o "Mover para"
+          ao lado e pela mesma razão: um menu que muda de tamanho conforme o
+          estado ensina a procurar opções que não estão lá. Aqui isso vale duas
+          vezes, porque o item some justamente para quem ainda não descobriu que
+          basta escrever uma data no título — e é o item cinza que conta isso. */}
+      <ContextMenuSub>
+        <ContextMenuSubTrigger disabled={!abreLembrete}>
+          {t("menu.remind")}
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent>
+          <ContextMenuRadioGroup
+            value={todo.reminder}
+            onValueChange={(valor) => onSetReminder(todo.id, valor as Reminder)}
+          >
+            {/* "Não lembrar" nunca desabilita: é o cancelamento, e ele precisa
+                continuar alcançável depois de a data do título ter passado ou
+                ter sido apagada. Os três períodos, sim — agendar para um dia que
+                acabou é o único gesto daqui que não pode dar em nada. */}
+            <ContextMenuRadioItem value="none">
+              {t("menu.remindNone")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="on_date" disabled={!podeAgendar}>
+              {t("menu.remindOnDate")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="day_before" disabled={!podeAgendar}>
+              {t("menu.remindDayBefore")}
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem value="week_before" disabled={!podeAgendar}>
+              {t("menu.remindWeekBefore")}
             </ContextMenuRadioItem>
           </ContextMenuRadioGroup>
         </ContextMenuSubContent>

@@ -3,10 +3,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import { t } from "@/lib/i18n";
 import { isMac } from "@/lib/platform";
 import type { Repeat } from "@/lib/recurrence";
+import type { Reminder } from "@/lib/reminders";
 
-// O tipo nasce em `recurrence.ts` (que não pode importar daqui — ver o
-// cabeçalho de lá) e é reexportado porque quem fala de `Todo` fala daqui.
-export type { Repeat };
+// Os tipos nascem em `recurrence.ts` e em `reminders.ts` (que não podem importar
+// daqui — ver o cabeçalho de lá) e são reexportados porque quem fala de `Todo`
+// fala daqui.
+export type { Repeat, Reminder };
 
 // Helpers puros que moravam aqui e saíram para módulos que o `node --test`
 // consegue carregar (o runner não resolve `@/`, e este arquivo puxa o
@@ -132,6 +134,15 @@ export type Todo = {
    * toggle; é a base de cálculo do "volta a pendente" — ver `lib/recurrence.ts`.
    */
   done_at: number | null;
+  /** Adendo 14: o lembrete escolhido no menu de contexto. `none` é o normal. */
+  reminder: Reminder;
+  /**
+   * Quando avisar (epoch millis), ou null. Calculado AQUI — o calendário local
+   * mora no frontend — e só guardado lá. `null` com `reminder` diferente de
+   * `none` quer dizer que o alarme já disparou (ou já venceu sem chance de
+   * disparar); a escolha fica para o menu poder mostrá-la.
+   */
+  remind_at: number | null;
 };
 
 /** Espelha o struct `Tab` do Rust. Uma aba é um escopo de lista (Adendo 5). */
@@ -244,6 +255,27 @@ export function clearCompleted(tabId: string): Promise<Todo[]> {
  */
 export function setRepeat(id: string, repeat: Repeat): Promise<Todo> {
   return invoke<Todo>("set_repeat", { id, repeat });
+}
+
+/**
+ * Arma, troca ou desarma o lembrete (Adendo 14). O retorno é a tarefa como ficou.
+ *
+ * **`remindAt` é calculado aqui, não lá.** O instante depende do calendário e do
+ * fuso locais, que só a webview tem (a mesma razão de `lib/recurrence.ts`) — quem
+ * o produz é `remindAt` de `lib/reminders.ts`, a partir da data que `soleDate` leu
+ * do título. O backend guarda o número e compara com o relógio.
+ *
+ * **`none` não leva instante**, e o backend limpa o que houvesse: desmarcar é o
+ * gesto de cancelar. No caminho contrário, um período **sem** instante é rejeitado
+ * pelo backend — é bug de quem chamou, porque a interface só oferece o submenu
+ * quando há data válida no título.
+ */
+export function setReminder(
+  id: string,
+  reminder: Reminder,
+  remindAt: number | null,
+): Promise<Todo> {
+  return invoke<Todo>("set_reminder", { id, reminder, remindAt });
 }
 
 /**

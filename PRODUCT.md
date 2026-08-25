@@ -46,21 +46,51 @@ não tem prazos, prioridades, subtarefas, etiquetas, colaboração nem sincroniz
 **Onde fica a linha da recorrência** (Adendo 13, pedida pelo usuário nestas palavras —
 "criar uma tarefa com recorrência: diária, semanal, mensal"): uma tarefa concluída com
 "repetir" **volta sozinha a pendente** no período seguinte, e é só isso. O que a mantém do
-lado de cá da linha dos prazos: não notifica, não conta atraso, não ordena por vencimento e
-não marca "atrasada" — a tarefa reaparece pendente como se tivesse sido desmarcada, e a cor
-continua reservada a erro e a hoje. O teste para trabalho futuro é o mesmo da data no
+lado de cá da linha dos prazos: não conta atraso, não ordena por vencimento e não marca
+"atrasada" — a tarefa reaparece pendente como se tivesse sido desmarcada, e a cor continua
+reservada a erro e a hoje. (A recorrência **também não notifica**: o Adendo 14 abriu
+notificação para o lembrete pedido sobre a data do título, e não para o período da
+recorrência, que continua sendo uma tarefa que reaparece em silêncio.) O teste para trabalho futuro é o mesmo da data no
 título: se uma recorrência vencida começar a parecer diferente de uma por vencer, o app
 virou gerenciador de prazo, e isso volta a este documento antes de voltar ao código.
 
 **Onde fica a linha do "sem prazos"** (Adendo 11, e o teste de qualquer trabalho futuro
 nesta área): o app **lê** a data que você escreveu no título, mostra ela numa coluna à
 direita da linha e a marca em vermelho pastel **no dia**. E **não gerencia vencimento**:
-não ordena por data, não avisa quando passa, não conta quantos dias faltam, e não tem
-campo "para quando".
+não ordena por data, não conta quantos dias faltam, e não tem campo "para quando". Desde o
+Adendo 14 ele **avisa**, e só quando alguém pede tarefa por tarefa — ver a linha do
+lembrete, logo abaixo.
 
 A garantia é estrutural e não uma promessa: a data **não existe no modelo de dados** — é
 lida do título na renderização e descartada no mesmo quadro. A única operação sobre ela é
 comparar com hoje.
+
+**Onde fica a linha do lembrete** (Adendo 14, pedido pelo usuário nestas palavras — "caso
+haja uma data, o usuário pode clicar com botão direito e pedir pra lembrar na data, um dia
+antes e na data, uma semana antes"). **Esta é a linha que se moveu, e o registro é
+honesto:** os dois parágrafos acima diziam "não notifica" e "não avisa quando passa", e a
+partir daqui o app notifica. O não-objetivo não some — ele fica mais estreito, e são cinco
+condições concretas que o sustentam:
+
+1. **Nada é agendado sem gesto explícito.** Ter data no título não dá aviso a tarefa
+   nenhuma; a única forma de armar um é escolher o período no menu de contexto.
+2. **Nada na tela é derivado do lembrete.** Não há ordenação por aviso, não há "atrasada",
+   não há contagem de dias. O sino da linha diz *que* vai avisar e, no `title`, *quando*.
+3. **A data continua fora do modelo de dados.** O que é gravado é o INSTANTE do alarme, não
+   a data — que continua sendo lida do título a cada renderização e descartada no mesmo
+   quadro. Renomear move o alarme junto; apagar a data do título cancela o lembrete.
+4. **O aviso repete o período escolhido, não conta dias.** "É em uma semana", nunca "faltam
+   7 dias" — é o eco do gesto, não um cálculo novo.
+5. **O aviso não sobrevive ao dia dele.** Um alarme com mais de 12 horas de atraso é
+   engolido em silêncio, porque a frase que ele diria já teria virado mentira.
+
+E a permissão é do sistema, não do app: no macOS o diálogo de autorização aparece **no
+gesto de armar o primeiro lembrete**, e nunca na abertura. Quem nunca usar lembrete nunca
+é perguntado sobre notificação.
+
+O teste para trabalho futuro: se uma tarefa com lembrete começar a parecer *diferente* de
+uma sem — mais alta na lista, em outra cor, com um contador —, o app virou gerenciador de
+prazo, e isso volta a este documento antes de voltar ao código.
 
 **Esta linha ficou mais fina, e o registro é honesto:** uma coluna de datas à direita com
 o dia de hoje em vermelho é visualmente vizinha de uma coluna de prazos, e vermelho é a

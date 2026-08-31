@@ -21,6 +21,7 @@
      requisicao de terceiro, e nao ha "preconnect" para lugar nenhum. -->
 <link rel="preload" href="../fontes/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../fontes/azeret-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fontes/chakra-petch-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../folha.css">
 <!-- OS @property DO TAILWIND, E ELES PRECISAM ESTAR AQUI E NAO NO ESPECIME.
      A regra @property e do DOCUMENTO: dentro de uma shadow root ela e ignorada. O
@@ -34,19 +35,24 @@
 </head>
 <body>
 <!--
-IMPECCABLE DIRECTION CONTRACT · seed 0108210e
-THESIS: Nada e afirmado, tudo e medido. A folha recusa o heroi escuro com brilho
-difuso e a captura flutuando em moldura arredondada.
-OWN-WORLD: Pelicula cinza-fria, prancha um tom acima, fio de 1px, zero sombra e
-zero canto arredondado. Uma matiz so, o vermelho do proprio app, reservada as
-cotas. Archivo em versalete tracked, Spectral no corpo, Azeret Mono em toda
-medida. Sem manchete de secao: a folha tem rotulo de zona.
-STORY: A visitante escolhe o sistema no topo, ve a janela medida em 1:1, e instala
-com o comando do sistema dela -- sem ler uma linha que sirva a outro sistema.
-FIRST VIEWPORT: Bloco de titulo com a marca no seu campo preto e a linha de
-assunto a direita; o seletor de sistema logo abaixo; e uma prancha de duas zonas,
-especime de 360x480 cotado a esquerda e a instalacao (a acao primaria) a direita.
-FORM: Folha de cotas, candidato 4 da lista aterrada, registro safer, seed 0108210e.
+IMPECCABLE DIRECTION CONTRACT · seed 9139ab9b
+THESIS: O app abre num puxao, e a pagina e a folha Miura que o prova: um pacote
+de bolso que se desdobra na janela inteira. Recusa o heroi de SaaS com screenshot
+emoldurado e grade de features -- e recusa polir a folha de cotas anterior.
+OWN-WORLD: Folha branca fosca sobre campo de vincos em paralelogramo; facetas e
+vincos em cinzas croma-0, montanha mais forte que vale; UMA matiz, o vermelho
+destructive do app, no pacote, na acao primaria e no realce. Chakra Petch caps no
+display, Archivo no corpo, Azeret Mono em id de vinco, medida e comando. Paineis
+com canto chanfrado a 60 graus, botoes em paralelogramo com seta.
+STORY: A visitante ve a janela real implantada de um pacote vermelho marcado
+⌃⌥T, entende que o app abre num gesto, testa o atalho na propria pagina, e
+instala com o comando do sistema dela.
+FIRST VIEWPORT: Duas colunas: a esquerda a manchete em display, o subtitulo, o
+botao vermelho INSTALAR e o seletor de sistema; a direita o palco -- o leque de
+facetas cinzas abrindo do pacote ate a janela de 360x480 em escala 1:1. A
+interacao-assinatura: ⌃⌥T dobra e desdobra a janela na pagina, uma vez por gesto.
+FORM: O Pacote Miura, desafiante competitivo do catalogo
+(paper-folds-pleats-deployable-miura-orbit-sheet), vencedor da rodada; seed 9139ab9b.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 -->
 <a class="pular" href="#instalar">Skip to install</a>
@@ -54,8 +60,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <div class="folha">
 
-  <header class="bloco-titulo">
-    <div class="bt-identidade">
+  <header class="topo">
+    <div class="topo-marca">
       <!-- A marca sangra no proprio campo preto: o compromisso e um anel branco
            de fio fino num campo preto, com o diametro a 0,62 do campo e o traco a
            campo/64. As fracoes sao as de assets/marca/nocom.svg. -->
@@ -65,38 +71,81 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </svg>
       <h1>NoCom</h1>
     </div>
-    <div class="bt-assunto">
-      <p class="assunto">A to-do list that lives on top of your work.</p>
-      <p class="assunto-sub">Appears with a shortcut, disappears with <em>Escape</em>, and keeps everything on your own machine. No account, no cloud.</p>
-      <nav class="idioma"><a href="../" hreflang="pt-BR">Português</a></nav>
-    </div>
-    <dl class="bt-campos">
+    <dl class="topo-campos">
       <div><dt>version</dt><dd>0.5.0</dd></div>
       <div><dt>licence</dt><dd>MIT</dd></div>
     </dl>
+    <nav class="idioma"><a href="../" hreflang="pt-BR">Português</a></nav>
   </header>
 
-  <!-- O seletor de sistema usa role=group com aria-pressed, e nao um tablist:
-       a pagina nao cumpre a navegacao por setas que um tablist promete, e anunciar
-       semantica que a interface nao cumpre e o que o DESIGN.md do app proibe. -->
-  <div class="seletor" role="group" aria-label="System">
-    <span class="seletor-rotulo">System</span>
-    <div class="seletor-botoes">
-      <button type="button" data-escolha="macos" aria-pressed="false">macOS</button>
-      <button type="button" data-escolha="windows" aria-pressed="false">Windows</button>
-      <button type="button" data-escolha="linux" aria-pressed="false">Linux</button>
+  <!-- A PRIMEIRA DOBRA: o argumento a esquerda, a implantacao a direita. A
+       manchete e um <p> com id porque a hierarquia de headings e a mesma de
+       antes (h1 NoCom, h2 por secao) e a manchete e assunto, nao secao. -->
+  <section class="dobra-abre" aria-labelledby="h-assunto">
+    <div class="argumento">
+      <p class="manchete" id="h-assunto">A to-do list that lives on top of your work.</p>
+      <p class="assunto-sub">Appears with a shortcut, disappears with <em>Escape</em>, and keeps everything on your own machine. No account, no cloud.</p>
+      <p class="acao">
+        <a class="botao-implantar" href="#instalar"><span>Install</span><svg viewBox="0 0 18 10" width="18" height="10" aria-hidden="true"><path d="M0 5h15M11 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
+      </p>
+
+      <!-- O seletor de sistema usa role=group com aria-pressed, e nao um tablist:
+           a pagina nao cumpre a navegacao por setas que um tablist promete, e
+           anunciar semantica que a interface nao cumpre e o que o DESIGN.md do
+           app proibe. -->
+      <div class="seletor" role="group" aria-label="System">
+        <span class="seletor-rotulo">System</span>
+        <div class="seletor-botoes">
+          <button type="button" data-escolha="macos" aria-pressed="false"><span>macOS</span></button>
+          <button type="button" data-escolha="windows" aria-pressed="false"><span>Windows</span></button>
+          <button type="button" data-escolha="linux" aria-pressed="false"><span>Linux</span></button>
+        </div>
+      </div>
+
+      <p class="aviso-movel" id="aviso-movel" hidden>NoCom is a desktop app. Open this page on macOS, Windows or Linux to install it.</p>
     </div>
-  </div>
 
-  <p class="aviso-movel" id="aviso-movel" hidden>NoCom is a desktop app. Open this page on macOS, Windows or Linux to install it.</p>
-
-  <div class="prancha especime-prancha">
-    <div class="especime-grade">
-
-      <section class="coluna-palco desenha-alvo" aria-labelledby="h-especime">
-        <h2 id="h-especime">The window</h2>
-        <div class="palco-caixa">
-          <div class="palco">
+    <div class="implantacao">
+      <!-- A marca compacta do pacote, so para telas estreitas: o leque nao
+           cabe la, mas a origem do gesto continua contada. -->
+      <p class="pacote-movel" aria-hidden="true">
+        <svg viewBox="0 0 34 34" width="34" height="34">
+          <rect class="pacote-campo" x="2" y="2" width="30" height="30" />
+          <circle class="pacote-anel" cx="17" cy="17" r="9.3" />
+        </svg>
+        <span>⌃⌥T</span>
+      </p>
+      <div class="palco-caixa">
+        <div class="palco desenha-alvo">
+          <svg class="leque" viewBox="0 0 600 520" width="600" height="520" aria-hidden="true">
+    <g class="leque-facetas">
+      <polygon class="faceta" style="--i:11;--fecha:94deg;--mix:16%" points="84,498 -20.2,-92.9 64.3,-21.6" />
+      <polygon class="faceta" style="--i:10;--fecha:86.2deg;--mix:70%" points="84,498 64.3,-21.6 143.2,-99.1" />
+      <polygon class="faceta" style="--i:9;--fecha:78.3deg;--mix:19%" points="84,498 143.2,-99.1 205.4,-7.6" />
+      <polygon class="faceta" style="--i:8;--fecha:70.5deg;--mix:73%" points="84,498 205.4,-7.6 302.3,-60.9" />
+      <polygon class="faceta" style="--i:7;--fecha:62.7deg;--mix:23%" points="84,498 302.3,-60.9 337.4,43.9" />
+      <polygon class="faceta" style="--i:6;--fecha:54.8deg;--mix:76%" points="84,498 337.4,43.9 445.1,18.8" />
+      <polygon class="faceta" style="--i:5;--fecha:47deg;--mix:26%" points="84,498 445.1,18.8 450.6,129.2" />
+      <polygon class="faceta" style="--i:4;--fecha:39.2deg;--mix:79%" points="84,498 450.6,129.2 561.1,134.1" />
+      <polygon class="faceta" style="--i:3;--fecha:31.3deg;--mix:29%" points="84,498 561.1,134.1 536.6,241.9" />
+      <polygon class="faceta" style="--i:2;--fecha:23.5deg;--mix:83%" points="84,498 536.6,241.9 641.6,276.5" />
+      <polygon class="faceta" style="--i:1;--fecha:15.7deg;--mix:32%" points="84,498 641.6,276.5 588.9,373.7" />
+      <polygon class="faceta" style="--i:0;--fecha:7.8deg;--mix:86%" points="84,498 588.9,373.7 680.7,435.3" />
+    </g>
+    <polyline class="leque-borda" points="-20.2,-92.9 64.3,-21.6 143.2,-99.1 205.4,-7.6 302.3,-60.9 337.4,43.9 445.1,18.8 450.6,129.2 561.1,134.1 536.6,241.9 641.6,276.5 588.9,373.7 680.7,435.3" />
+    <g class="leque-ids">
+      <text class="vinco-id-leque" x="62.8" y="-61.6">V-02</text>
+      <text class="vinco-id-leque" x="218.2" y="-61.1">M-05</text>
+      <text class="vinco-id-leque" x="374.5" y="-22.4">V-11</text>
+      <text class="vinco-id-leque" x="604.4" y="291.2">M-08</text>
+    </g>
+    <g class="pacote" transform="rotate(-8 84 498)">
+      <rect class="pacote-campo" x="57" y="471" width="54" height="54" />
+      <circle class="pacote-anel" cx="84" cy="498" r="16.7" />
+    </g>
+    <text class="pacote-atalho" x="84" y="543" text-anchor="middle">⌃⌥T</text>
+  </svg>
+          <div class="janela-viva">
           <div class="especime" role="img" aria-label="The NoCom window: the tabs Work and Home, a new-task field and seven tasks. Two carry a date in a right-hand column, today's is highlighted in red, and the last one is done and struck through."
                data-ordem="mes">
             <template shadowrootmode="open">
@@ -206,21 +255,33 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <rect class="realce" data-realce="sair" x="323" y="9" width="24" height="24" />
           </svg>
           </div>
+          <!-- O controle de verdade do pacote: o desenho vive num SVG
+               aria-hidden, entao quem recebe foco, teclado e leitor de tela e
+               este botao invisivel por cima dele. -->
+          <button type="button" class="pacote-botao" aria-pressed="false" aria-label="Fold or unfold the window (⌃⌥T)"></button>
         </div>
-        <p class="legenda-palco">
-          <b>Scale 1:1</b> this is the room it takes on your screen, and it is only there when you call it.
-        </p>
+      </div>
+      <p class="legenda-palco">
+        <b>Scale 1:1</b> this is the room it takes on your screen, and it is only there when you call it.
+      </p>
+      <p class="puxao-dica">Try it right here: <code>⌃⌥T</code> hides the window and brings it back.</p>
+    </div>
+  </section>
 
-        <!-- As chamadas sao os controles: escolher uma realca a regiao na janela
-             acima e move o detalhe ampliado abaixo. Sem JavaScript elas continuam
-             legiveis como lista numerada, e o detalhe desaparece em vez de ficar
-             parado numa regiao que ninguem escolheu. -->
-        <ol class="chamadas">
+  <section class="prancha prancha-janela" aria-labelledby="h-especime">
+    <h2 id="h-especime"><span class="vinco-id" aria-hidden="true">M-01</span>The window</h2>
+    <div class="janela-grade">
+
+      <!-- As chamadas sao os controles: escolher uma realca a regiao na janela
+           da primeira dobra e move o detalhe ampliado ao lado. Sem JavaScript
+           elas continuam legiveis como lista numerada, e o detalhe desaparece em
+           vez de ficar parado numa regiao que ninguem escolheu. -->
+      <ol class="chamadas">
           <li>
             <button type="button" data-chamada="campo"
                     data-regiao="13,77,256,32"
                     aria-pressed="true">
-              <span class="chamada-num">1</span>
+              <span class="chamada-num"><span>1</span></span>
               <span class="chamada-nome">The field</span>
               <span class="chamada-texto"><code>⌃⌥T</code> shows the window and puts the cursor here. Your hand never leaves the keyboard.</span>
             </button>
@@ -229,7 +290,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <button type="button" data-chamada="abas"
                     data-regiao="13,41,240,28"
                     aria-pressed="false">
-              <span class="chamada-num">2</span>
+              <span class="chamada-num"><span>2</span></span>
               <span class="chamada-nome">The tabs</span>
               <span class="chamada-texto">Separate contexts (project, home, today), created and named in the same gesture.</span>
             </button>
@@ -238,7 +299,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <button type="button" data-chamada="data"
                     data-regiao="266,176,49,20"
                     aria-pressed="false">
-              <span class="chamada-num">3</span>
+              <span class="chamada-num"><span>3</span></span>
               <span class="chamada-nome">The date</span>
               <span class="chamada-texto">Type a date in the title and it moves to the right-hand column, red on the day.</span>
             </button>
@@ -247,7 +308,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <button type="button" data-chamada="concluida"
                     data-regiao="37,387,164,17"
                     aria-pressed="false">
-              <span class="chamada-num">4</span>
+              <span class="chamada-num"><span>4</span></span>
               <span class="chamada-nome">The done one</span>
               <span class="chamada-texto">Done strikes through, fades, and moves to the end of the list. It never deletes.</span>
             </button>
@@ -256,17 +317,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <button type="button" data-chamada="sair"
                     data-regiao="323,9,24,24"
                     aria-pressed="false">
-              <span class="chamada-num">5</span>
+              <span class="chamada-num"><span>5</span></span>
               <span class="chamada-nome">The way out</span>
               <span class="chamada-texto"><code>Escape</code> hides the window. The shortcut brings it back, list untouched.</span>
             </button>
           </li>
-        </ol>
+      </ol>
 
-        <!-- A frase da chamada escolhida. Marcada aria-hidden porque ela ja e
-             anunciada pelo proprio botao: um estado, uma voz. -->
-        <p class="chamada-explicacao" aria-hidden="true"></p>
-
+      <div class="janela-lado">
         <!-- O detalhe amplia 2:1 uma REGIAO DO ESPECIME, e a vidraca chega
              vazia: folha.js clona o especime aqui dentro e o escala. Ela e
              aria-hidden porque a chamada escolhida ja se anuncia pelo proprio
@@ -279,7 +337,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <div class="detalhe-vidro"></div>
         </figure>
 
-        <div class="ciclo">
+        <div class="ciclo desenha-alvo">
         <div class="ciclo-diagrama" aria-hidden="true">
           <span class="ciclo-numeral">2 s</span>
           <svg viewBox="0 0 460 34" width="460" height="34">
@@ -295,14 +353,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <span>written</span>
           </p>
         </div>
-          <button type="button" class="botao-varredura">Run the 2 seconds</button>
+          <button type="button" class="botao-varredura"><span>Run the 2 seconds</span></button>
         </div>
-      </section>
+      </div>
 
-      <div class="coluna-instalar">
-        <section id="instalar" aria-labelledby="h-instalar">
-          <h2 id="h-instalar">Install</h2>
-          <ol class="instalacoes">
+    </div>
+  </section>
+
+  <div class="par-pranchas">
+    <section id="instalar" class="prancha prancha-instalar" aria-labelledby="h-instalar">
+      <h2 id="h-instalar"><span class="vinco-id" aria-hidden="true">M-02</span>Install</h2>
+      <ol class="instalacoes">
         <li data-sistema="macos">
           <div class="instalar-cabeca">
             <span class="sistema-nome">macOS</span>
@@ -426,21 +487,21 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           </div>
           <p class="alternativa">Download it first: <a href="https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.deb">.deb</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom-0.5.0-1.x86_64.rpm">.rpm</a> · <a href="https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.AppImage">AppImage</a>.</p>
         </li>
-          </ol>
-        </section>
+      </ol>
+    </section>
 
-        <section class="zona-numeros" aria-labelledby="h-calibre">
-          <h2 id="h-calibre">In numbers</h2>
-          <div class="rolo">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">property</th>
-                  <th scope="col">value</th>
-                  <th scope="col">note</th>
-                </tr>
-              </thead>
-              <tbody>
+    <section class="prancha prancha-numeros" aria-labelledby="h-calibre">
+      <h2 id="h-calibre"><span class="vinco-id" aria-hidden="true">M-03</span>In numbers</h2>
+      <div class="rolo">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">property</th>
+              <th scope="col">value</th>
+              <th scope="col">note</th>
+            </tr>
+          </thead>
+          <tbody>
             <tr>
               <th scope="row">Price</th>
               <td class="valor">0</td>
@@ -481,20 +542,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <td class="valor">MIT</td>
               <td class="obs">open source</td>
             </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+          </tbody>
+        </table>
       </div>
-
-    </div>
+    </section>
   </div>
 
-  <section class="zona" aria-labelledby="h-notas">
-    <h2 id="h-notas">Notes</h2>
+  <section class="prancha prancha-notas" aria-labelledby="h-notas">
+    <h2 id="h-notas"><span class="vinco-id" aria-hidden="true">M-04</span>Notes</h2>
     <ol class="lista-notas">
       <li id="nota-1" class="nota-por-sistema">
-        <div class="nota-num">note 1</div>
+        <div class="nota-num"><span>note 1</span></div>
         <div class="nota-corpo">
           <h3>First launch</h3>
           <div data-sistema="macos">
@@ -509,7 +567,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
                     data-anuncio="Command copied."
                     data-anuncio-falhou="Could not copy. Select the line and copy it by hand."
                     data-anuncio-selecionado="Command selected. Copy it with your system shortcut."
-                    aria-label="copy: xattr -dr com.apple.quarantine "/Applications/NoCom.app"">
+                    aria-label="copy: xattr -dr com.apple.quarantine &quot;/Applications/NoCom.app&quot;">
               <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
                    stroke="currentColor" stroke-width="1">
                 <rect x="0.5" y="2.5" width="7" height="9" />
@@ -538,14 +596,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         </div>
       </li>
       <li id="nota-2">
-        <div class="nota-num">note 2</div>
+        <div class="nota-num"><span>note 2</span></div>
         <div class="nota-corpo">
           <h3>What it is not</h3>
           <p>Not a project manager: no due dates, priorities, subtasks, labels or collaboration. It is a list, and that is all.</p>
         </div>
       </li>
       <li id="nota-3">
-        <div class="nota-num">note 3</div>
+        <div class="nota-num"><span>note 3</span></div>
         <div class="nota-corpo">
           <h3>Where your tasks live</h3>
           <p>In a <code>todos.json</code> file on your machine. To delete everything, delete the file.</p>

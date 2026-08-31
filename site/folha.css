@@ -1,31 +1,24 @@
-/* A folha de cotas do NoCom.
- *
- * O mundo visual vem de `assets/marca/especificacao.html`, a folha que documenta
- * a marca -- pelicula cinza-fria, prancha um tom acima, fio de 1px, Archivo em
- * versalete tracked, Spectral no corpo e Azeret Mono em toda medida. A diferenca
- * de proposito e uma so, e ela decide tudo aqui: aquela folha mede a MARCA, esta
- * mede o PRODUTO.
- *
- * A cor de cota NAO e o azul daquela folha. E o `destructive` do proprio app
- * (`src/index.css`), porque a Regra do Pigmento Unico do `DESIGN.md` vale para o
- * projeto inteiro e nao so para dentro da janela: uma matiz, o vermelho, e
- * nenhuma outra. Cota em vermelho de revisao e nativa do desenho tecnico, entao
- * a autenticidade do mundo e a lei do produto pedem a mesma cor.
- *
- * DUAS DECISOES QUE PARECEM DETALHE E NAO SAO:
- *
- * 1. NAO HA SOMBRA E NAO HA CANTO ARREDONDADO em lugar nenhum desta folha, e agora
- *    isso nao tem excecao. Havia uma: o PNG do especime carregava dentro dele uma
- *    sombra simulada, herdada do `shadow-lg` do Tailwind, para nao sair com beirada
- *    dura num README sem moldura de sistema. Ela nunca pertenceu a esta folha -- no
- *    escuro ela sumia contra a pelicula e a janela dissolvia a aresta. Com o
- *    especime em DOM, quem separa a janela da pelicula e o fio de 1px do proprio
- *    cartao, que e exatamente o que o app desenha. O canto arredondado continua
- *    sendo do app, e nao da folha: ele e da janela retratada, nao do desenho.
- *
- * 2. NAO HA MANCHETE DE SECAO. Uma prancha de desenho nao tem titulos de 29px;
- *    tem rotulos de zona. O unico texto grande da pagina e o nome do produto, e
- *    e por isso que ele e o foco. */
+/* ==========================================================================
+   A FOLHA MIURA -- a landing page do NoCom.
+   ==========================================================================
+
+   O mundo visual: uma folha de dobra Miura. O campo atras e o padrao de vincos
+   em paralelogramo; cada secao e uma PRANCHA de papel fosco com o canto dobrado;
+   e a primeira dobra mostra o argumento inteiro do produto como geometria -- o
+   leque de facetas abrindo do pacote vermelho (o app fechado, ⌃⌥T) ate a janela
+   real de 360x480 (o app aberto). O que a pagina afirma, ela desdobra.
+
+   UMA MATIZ, a mesma regra do app: o vermelho `destructive`, e nada mais. Ele
+   pinta o pacote, a acao primaria e o realce escolhido; todo o resto e cinza de
+   croma zero. Matiz que nao seja a do vermelho e bug -- aqui como la.
+
+   TRES VOZES: Chakra Petch (display, caps -- os cantos chanfrados da fonte leem
+   como papel dobrado), Archivo (corpo), Azeret Mono (id de vinco, medida,
+   comando). A Geist e a quarta familia e nao pertence a folha: ela pertence ao
+   especime, ver abaixo.
+
+   Nada aqui pede a rede de terceiro: fontes auto-hospedadas, padrao de vinco em
+   data-URI, zero imagem externa. */
 
 /* --------------------------------------------------------------------------
    Fontes auto-hospedadas. Nenhuma requisicao de terceiro sai desta pagina: um
@@ -46,22 +39,9 @@
   font-display: swap;
 }
 @font-face {
-  font-family: "Spectral";
-  src: url("fontes/spectral-latin-400-normal.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Spectral";
-  src: url("fontes/spectral-latin-400-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Spectral";
-  src: url("fontes/spectral-latin-500-normal.woff2") format("woff2");
-  font-weight: 500;
+  font-family: "Chakra Petch";
+  src: url("fontes/chakra-petch-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
   font-display: swap;
 }
 
@@ -106,19 +86,35 @@
    -------------------------------------------------------------------------- */
 
 :root {
-  --pelicula: #e8ebee;
-  --prancha: #f6f7f9;
-  --tinta: #161a1f;
-  --tinta-fraca: #5c6672;
-  --fio: #c9cfd6;
-  --fio-forte: #adb6c0;
+  color-scheme: light;
 
-  /* O `destructive` do app, tema claro. Medido em 5.1:1 sobre a pelicula. */
+  /* CINZAS DE CROMA ZERO, por regra e nao por gosto: a Regra do Pigmento Unico
+     do app vale na folha inteira. Todo cinza daqui e RGB igual -- um canal
+     desigual e um cast azul entrando pela porta que ninguem olhou. */
+
+  /* O campo e o fundo atras das pranchas -- o papel por baixo do papel. */
+  --campo: #eaeaea;
+  --folha: #f8f8f8;
+  --tinta: #171717;
+  --tinta-fraca: #5d5d5d;
+
+  /* Dois pesos de vinco, como a dobra tem dois sentidos: vale (fraco) e
+     montanha (forte). */
+  --vinco: #cfcfcf;
+  --vinco-forte: #a9a9a9;
+
+  /* As duas luzes extremas do leque; cada faceta mistura as duas na proporcao
+     do proprio angulo (`--mix`, escrito pelo gerador). */
+  --faceta-a: #f1f1f1;
+  --faceta-b: #dcdcdc;
+  --faceta-fio: #bcbcbc;
+
+  /* O `destructive` do app, tema claro. Medido em 5.1:1 sobre o campo. */
   --cota: oklch(0.529 0.245 27.325);
   --cota-fraca: oklch(0.529 0.245 27.325 / 12%);
-  --halo: oklch(0.48 0 0);
+  --sobre-cota: #ffffff;
 
-  --serif: "Spectral", Georgia, "Times New Roman", serif;
+  --display: "Chakra Petch", "Archivo", "Helvetica Neue", Arial, sans-serif;
   --grot: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --mono: "Azeret Mono", ui-monospace, "SF Mono", Menlo, monospace;
   /* Os glifos de modificador (U+2303, U+2325) nao estao no subconjunto latino da
@@ -128,24 +124,41 @@
     "Noto Sans Symbols 2", Menlo, monospace;
 
   --margem: clamp(16px, 4vw, 56px);
-  --recuo-prancha: clamp(16px, 2.4vw, 28px);
+  --recuo-prancha: clamp(18px, 2.6vw, 36px);
+  /* O angulo da dobra, usado por botao, chanfro e padrao: uma geometria so. */
+  --tombo: -14deg;
+
+  --sombra-prancha: 0 14px 28px -22px rgb(0 0 0 / 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pelicula: #15181c;
-    --prancha: #1d2126;
-    --tinta: #e6e9ec;
-    --tinta-fraca: #909aa5;
-    --fio: #2e343b;
-    --fio-forte: #414951;
+    color-scheme: dark;
 
-    /* O `destructive` do app, tema escuro. Medido em 6.0:1 sobre a pelicula. */
+    --campo: #131313;
+    --folha: #1d1d1d;
+    --tinta: #e8e8e8;
+    --tinta-fraca: #a0a0a0;
+
+    --vinco: #303030;
+    --vinco-forte: #4f4f4f;
+
+    --faceta-a: #303030;
+    --faceta-b: #1f1f1f;
+    --faceta-fio: #4c4c4c;
+
+    /* O `destructive` do app, tema escuro. Medido em 6.0:1 sobre o campo. */
     --cota: oklch(0.704 0.191 22.216);
     --cota-fraca: oklch(0.704 0.191 22.216 / 14%);
-    --halo: oklch(0.72 0 0);
+    --sobre-cota: #1a0605;
+
+    --sombra-prancha: 0 14px 28px -20px rgb(0 0 0 / 0.72);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
 
 * { box-sizing: border-box; }
 
@@ -156,353 +169,279 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: var(--pelicula);
+  background-color: var(--campo);
+  /* O CAMPO DE VINCOS: o padrao Miura em data-URI -- duas fileiras de
+     paralelogramo com o tombo alternado, tracadas num cinza de meia-opacidade
+     que funciona sobre os dois temas sem um segundo arquivo. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='128'%3E%3Cg fill='none' stroke='rgba(138,138,138,0.14)' stroke-width='1'%3E%3Cpath d='M0 0h112M0 64h112M0 128h112'/%3E%3Cpath d='M20 0l16 64M76 0l16 64'/%3E%3Cpath d='M36 64l-16 64M92 64l-16 64'/%3E%3C/g%3E%3C/svg%3E");
   color: var(--tinta);
-  font-family: var(--serif);
-  font-size: 17px;
-  line-height: 1.6;
+  font-family: var(--grot);
+  font-size: 1rem;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
-/* As superficies que o navegador desenha e que ninguem lembra de vestir. */
 ::selection {
   background: var(--cota-fraca);
   color: var(--tinta);
 }
+
 :root {
   caret-color: var(--cota);
   accent-color: var(--cota);
-  scrollbar-color: var(--fio-forte) transparent;
-  scrollbar-width: thin;
+  scrollbar-color: var(--vinco-forte) transparent;
 }
-::-webkit-scrollbar { width: 11px; height: 11px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-thumb {
-  background: var(--fio-forte);
-  border: 3px solid var(--pelicula);
+  background: var(--vinco-forte);
+  border: 3px solid var(--campo);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--tinta-fraca); }
 
-:focus-visible {
-  /* A mesma lei do app: 2px solidos, por fora, sem deslocamento. */
-  outline: 2px solid var(--halo);
-  outline-offset: 2px;
-}
-
 a {
   color: var(--tinta);
-  text-decoration-color: var(--fio-forte);
+  text-decoration: underline;
+  text-decoration-color: var(--vinco-forte);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
-  transition: text-decoration-color 120ms ease-out;
 }
 a:hover { text-decoration-color: var(--cota); }
 
+:focus-visible {
+  outline: 2px solid var(--cota);
+  outline-offset: 2px;
+}
+
 code { font-family: var(--mono-atalho); font-size: 0.8235em; }
 
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Pular para a instalacao: invisivel ate o Tab chegar nele. */
 .pular {
   position: absolute;
-  left: -9999px;
-  top: 8px;
-  background: var(--prancha);
-  border: 1px solid var(--tinta);
-  padding: 8px 14px;
-  font-family: var(--grot);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  text-decoration: none;
+  left: 12px;
+  top: -48px;
   z-index: 10;
+  padding: 8px 14px;
+  background: var(--tinta);
+  color: var(--folha);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  text-decoration: none;
 }
-.pular:focus { left: 8px; }
+.pular:focus-visible { top: 12px; }
+
+/* Regiao viva dos anuncios de copia: presente para o leitor, sem tinta. */
+.aviso-vivo {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 .folha {
-  max-width: 1320px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(20px, 3.5vw, 44px) var(--margem) clamp(56px, 8vw, 104px);
+  padding: 0 var(--margem) 64px;
 }
 
 /* --------------------------------------------------------------------------
-   Bloco de titulo. O canto de uma prancha: marca em campo proprio, nome,
-   campos do desenho, e a linha de assunto do outro lado do eixo.
+   O topo: a marca, os campos da folha, a outra lingua.
    -------------------------------------------------------------------------- */
 
-.bloco-titulo {
-  /* Tres campos, como o canto de uma prancha de verdade: identidade, assunto, e
-     a tabela de campos do desenho. */
+.topo {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: clamp(20px, 3vw, 44px);
-  align-items: end;
-  padding-bottom: 20px;
-  border-bottom: 2px solid var(--tinta);
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 0 18px;
+  border-bottom: 1px solid var(--vinco-forte);
 }
 
-.bt-identidade {
+.topo-marca {
   display: flex;
-  align-items: flex-end;
-  gap: clamp(14px, 2vw, 22px);
+  align-items: center;
+  gap: 14px;
 }
 
-/* A marca sangra no seu proprio campo preto -- o compromisso de marca e um anel
-   branco de fio fino num campo preto, e ele nao vira anel de tinta na pelicula. */
 .bt-marca {
+  width: 40px;
+  height: 40px;
   display: block;
-  width: clamp(52px, 6vw, 74px);
-  height: clamp(52px, 6vw, 74px);
+  flex: none;
 }
 
-h1 {
-  font-family: var(--grot);
-  font-weight: 700;
-  font-size: clamp(38px, 5.6vw, 68px);
-  letter-spacing: -0.035em;
-  line-height: 0.92;
-  margin: 0 0 10px;
-}
-
-.bt-campos {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  gap: 12px clamp(18px, 2.2vw, 32px);
+.topo h1 {
   margin: 0;
-  text-align: right;
-  align-self: end;
-}
-.bt-campos div { min-width: 0; }
-.bt-campos dt {
-  font-family: var(--grot);
-  font-size: 0.6875rem;
+  font-family: var(--display);
   font-weight: 600;
-  letter-spacing: 0.13em;
+  font-size: 1.125rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--tinta-fraca);
 }
-.bt-campos dd {
-  margin: 2px 0 0;
+
+.topo-campos {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+}
+.topo-campos div { display: flex; gap: 8px; align-items: baseline; }
+.topo-campos dt {
   font-family: var(--mono);
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.bt-assunto { align-self: end; }
-.assunto {
-  font-family: var(--grot);
-  font-size: clamp(19px, 2vw, 25px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-  margin: 0;
-  max-width: 32ch;
-  text-wrap: balance;
-}
-.assunto-sub {
-  margin: 10px 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--tinta-fraca);
-  max-width: 46ch;
-}
-.assunto-sub em { color: var(--tinta); font-style: italic; }
-
-.idioma {
-  margin-top: 12px;
-  font-family: var(--grot);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--tinta-fraca);
 }
+.topo-campos dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.idioma { font-family: var(--mono); font-size: 0.8125rem; }
 .idioma a { color: var(--tinta-fraca); }
 .idioma a:hover { color: var(--tinta); }
 
-@media (max-width: 1100px) {
-  .bloco-titulo { grid-template-columns: minmax(0, 1fr) auto; }
-  .bt-identidade { grid-column: 1 / -1; }
-}
-@media (max-width: 700px) {
-  .bloco-titulo { grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .bt-campos {
-    justify-content: start;
-    text-align: left;
-  }
-}
-
 /* --------------------------------------------------------------------------
-   O seletor de sistema. A pagina inteira mostra so o que serve ao sistema
-   escolhido, entao ele fica no topo, antes de qualquer conteudo que ele filtra.
-
-   O escolhido e marcado por INVERSAO -- placa de tinta cheia com texto na cor da
-   prancha. E o sinal mais forte disponivel nesta folha sem abrir uma segunda
-   matiz, e a mesma economia que o app usa no checkbox marcado.
+   A primeira dobra: argumento a esquerda, implantacao a direita.
    -------------------------------------------------------------------------- */
 
+.dobra-abre {
+  display: grid;
+  grid-template-columns: minmax(340px, 5fr) minmax(0, 7fr);
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+  padding: clamp(28px, 5vh, 64px) 0 clamp(28px, 4vh, 48px);
+  min-height: min(88vh, 820px);
+}
+
+.argumento { max-width: 34rem; }
+
+.manchete {
+  margin: 0 0 18px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3.4vw, 2.9rem);
+  line-height: 1.14;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  position: relative;
+}
+/* O vinco que atravessa a manchete, como as letras riscadas da prancha de
+   especificacao: um traco de dobra, nao um sublinhado. */
+.manchete::after {
+  content: "";
+  position: absolute;
+  left: -18px;
+  bottom: -12px;
+  width: 92px;
+  height: 1px;
+  background: var(--vinco-forte);
+  transform: rotate(var(--tombo));
+  transform-origin: left center;
+}
+
+.assunto-sub {
+  margin: 26px 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--tinta-fraca);
+  max-width: 30rem;
+}
+.assunto-sub em { font-style: normal; font-family: var(--mono-atalho); font-size: 0.9em; }
+
+.acao { margin: 30px 0 0; }
+
+/* O botao primario e um paralelogramo com o tombo da dobra: a unica acao
+   vermelha da coluna. O conteudo destomba para o texto ficar em pe. */
+.botao-implantar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 30px;
+  background: var(--cota);
+  color: var(--sobre-cota);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: skewX(var(--tombo));
+  transition: filter 140ms ease-out;
+}
+/* Caixa tombada, letra em pe: todo paralelogramo destomba o proprio conteudo.
+   O texto vem embrulhado num <span> pelo gerador exatamente para isto. */
+.botao-implantar > *,
+.seletor-botoes button > span,
+.botao-varredura > span,
+.chamada-num > span,
+.nota-num > span {
+  display: inline-block;
+  transform: skewX(calc(var(--tombo) * -1));
+}
+.botao-implantar svg { transition: translate 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.botao-implantar:hover { filter: brightness(1.08); }
+.botao-implantar:hover svg { translate: 4px 0; }
+.botao-implantar:active { filter: brightness(0.94); }
+
+/* O seletor de sistema: tres celulas de dobra lado a lado. A escolhida vira
+   tinta cheia -- o sinal mais forte que existe sem abrir uma segunda matiz. */
 .seletor {
+  margin-top: 34px;
   display: flex;
   align-items: center;
-  gap: 10px clamp(12px, 2vw, 22px);
-  flex-wrap: wrap;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--fio);
+  gap: 16px;
 }
 .seletor-rotulo {
-  font-family: var(--grot);
+  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tinta-fraca);
 }
-.seletor-botoes {
-  display: flex;
-  border: 1px solid var(--fio-forte);
-}
+.seletor-botoes { display: flex; }
 .seletor-botoes button {
-  background: transparent;
-  border: 0;
-  border-left: 1px solid var(--fio-forte);
-  color: var(--tinta-fraca);
-  font-family: var(--grot);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  padding: 9px 18px;
-  cursor: pointer;
-  transition: color 120ms ease-out, background-color 120ms ease-out;
+  padding: 8px 18px;
+  background: var(--folha);
+  border: 1px solid var(--vinco-forte);
+  border-left-width: 0;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  transform: skewX(var(--tombo));
+  transition: background-color 120ms ease-out, color 120ms ease-out;
 }
-.seletor-botoes button:first-child { border-left: 0; }
-.seletor-botoes button:hover { color: var(--tinta); }
+.seletor-botoes button:first-child { border-left-width: 1px; }
+.seletor-botoes button { color: var(--tinta-fraca); }
+.seletor-botoes button:hover { color: var(--tinta); background: var(--faceta-a); }
 .seletor-botoes button[aria-pressed="true"] {
   background: var(--tinta);
-  color: var(--prancha);
+  border-color: var(--tinta);
+  color: var(--folha);
 }
-/* Sem JavaScript o seletor nao filtra nada, entao ele nao aparece -- e os tres
-   sistemas ficam visiveis, que e a pagina funcionando por inteiro. */
 .sem-js .seletor { display: none; }
 
 .aviso-movel {
-  margin: 0;
-  padding: 12px 14px;
-  border-left: 1px solid var(--cota);
+  margin: 22px 0 0;
+  padding: 12px 16px;
   background: var(--cota-fraca);
-  font-family: var(--grot);
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--tinta);
-  max-width: none;
-}
-.aviso-movel[hidden] { display: none; }
-
-/* --------------------------------------------------------------------------
-   Rotulo de zona. E o unico nivel de cabecalho que esta folha tem: Archivo em
-   versalete tracked sobre um fio, como a legenda de uma zona de prancha.
-   -------------------------------------------------------------------------- */
-
-.zona { margin-top: clamp(40px, 5vw, 64px); }
-
-h2 {
-  font-family: var(--grot);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  line-height: 1.3;
-  color: var(--tinta);
-  margin: 0;
-  padding-bottom: 7px;
-  border-bottom: 1px solid var(--fio-forte);
-}
-h3 {
-  /* 11px, o passo de rotulo -- e nao 12px. A 12 contra os 13 do rotulo de zona a
-     diferenca era invisivel, e titulo de nota e rotulo de zona pareciam o mesmo
-     nivel. A 11 o titulo desce para o mesmo tamanho do numero da nota, que e o
-     par a que ele pertence, e a zona volta a dominar. */
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  line-height: 1.3;
-  color: var(--tinta);
-  margin: 0 0 8px;
 }
 
-.sub {
-  margin: 14px 0 20px;
-  color: var(--tinta-fraca);
-  font-size: 0.9375rem;
-  max-width: 62ch;
-}
+/* ------------------------------------------------------------ a implantacao */
 
-p { max-width: 68ch; }
+.implantacao { min-width: 0; }
 
-/* --------------------------------------------------------------------------
-   A prancha do especime. Duas zonas lado a lado: o especime medido, e a tabela
-   de revisao -- que e a acao primaria, e por isso esta na primeira dobra e nao
-   no fim da pagina.
-
-   O palco tem geometria fixa em px porque as cotas apontam para arestas reais.
-   A imagem de 840x1080 entra a 420x540 (metade: foi capturada a 2x) na posicao
-   (100, 0) do palco de 600x520, e carrega 30px CSS de margem transparente em cada
-   lado -- entao a JANELA ocupa (130, 30) a (490, 510): exatamente 360 x 480,
-   escala 1:1. E por isso que o realce das chamadas aponta para 130/490/30/510 e
-   nao para as bordas da imagem.
-
-   NO ESTREITO a margem transparente e recortada nos DOIS eixos (`left: -30px` e
-   `top: -30px`), e nao so na horizontal: com `top: 0` a janela comecava em y=30 e
-   terminava em y=510, e as cotas -- desenhadas para uma janela em 0..480 --
-   ficavam 30px fora de lugar, com a cota de largura caindo por dentro do
-   especime. Recortar os dois eixos e o que faz a geometria estreita fechar.
-   -------------------------------------------------------------------------- */
-
-.especime-prancha { margin-top: clamp(24px, 3vw, 40px); }
-
-.prancha {
-  background: var(--prancha);
-  border: 1px solid var(--fio);
-  padding: var(--recuo-prancha);
-}
-
-.especime-grade {
-  display: grid;
-  grid-template-columns: 620px minmax(0, 1fr);
-  /* A goteira e `column-gap` e nao `padding` na coluna: com `box-sizing:
-     border-box`, um recuo dentro da trilha de 600px deixa o palco (600px) maior
-     que a caixa de conteudo, e o `overflow-x` corta o numeral da cota. */
-  column-gap: clamp(20px, 2.4vw, 40px);
-  /* `stretch` e nao `start`: e o que leva o fio de zona (o `border-left` da
-     coluna de revisao) ate o chao da prancha. Com `start` ele parava na altura do
-     conteudo mais curto e as duas zonas deixavam de ser uma composicao. */
-  align-items: stretch;
-}
-/* O fio entre as duas zonas: e o divisor de zona de uma prancha, e sem ele as
-   duas colunas parecem duas paginas encostadas. */
-.coluna-instalar {
-  border-left: 1px solid var(--fio);
-  padding-left: clamp(20px, 2.4vw, 40px);
-}
-@media (max-width: 1080px) {
-  .especime-grade { grid-template-columns: minmax(0, 1fr); }
-  .coluna-instalar {
-    border-left: 0;
-    border-top: 1px solid var(--fio);
-    padding-left: 0;
-    padding-top: 28px;
-    margin-top: 28px;
-  }
-}
-
-/* O PALCO NAO ROLA E NAO E FIXO.
-   Nao rola: `overflow-x: auto` faz o navegador computar `overflow-y: auto` junto,
-   e era dai que vinham as duas barras -- nao de conteudo transbordando.
-   Nao e fixo: `sticky` mantinha a janela no lugar e deixava a lista rolar POR
-   BAIXO dela, tapando a legenda e as primeiras linhas. Quem resolve o problema
-   real (realcar uma regiao que ja saiu da tela) e a fileira compacta de etiquetas
-   logo abaixo da janela: janela e controle cabem na tela juntos. */
-.palco-caixa { position: relative; }
+.palco-caixa { display: flex; justify-content: center; }
 
 .palco {
   position: relative;
@@ -511,35 +450,86 @@ p { max-width: 68ch; }
   margin: 0 auto;
 }
 
-/* O ESPECIME: A JANELA DE VERDADE, POUSADA NO PALCO.
-   Dentro dele mora uma shadow root com o DOM montado do app e o CSS do app -- ver
-   `especime()` em `scripts/site.mjs`. Aqui a folha declara so o que e dela: o
-   TAMANHO (o host e o quadro de 360x480 contra o qual o `h-full` do cartao
-   resolve), a POSICAO no palco, e o fato de que isto e um desenho.
+/* O leque desenha FORA do proprio viewBox de proposito: as facetas longas
+   sangram acima do palco e a direita dele, papel que nao coube na prancha. */
+.leque {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  z-index: 0;
+}
 
-   360x480 EXATOS, e sem margem em volta. O raster carregava 30px transparentes de
-   cada lado para a sombra simulada nao sair cortada; o especime nao tem sombra
-   para acomodar -- a folha de cotas e um mundo sem sombra, e quem separa a janela
-   da pelicula e o fio de 1px que o proprio cartao desenha, o mesmo que o app
-   desenha. A posicao (130, 30) e a que a janela ocupava antes, para a geometria dos
-   baloes continuar valendo sem uma segunda revisao.
+.faceta {
+  /* Cada faceta pega a luz do proprio angulo: o gerador escreve `--mix` por
+     faceta, e a cor sai da mistura das duas luzes extremas. O fill simples
+     antes do color-mix e o fallback de navegador antigo. */
+  fill: var(--faceta-a);
+  fill: color-mix(in oklab, var(--faceta-a), var(--faceta-b) var(--mix, 50%));
+  stroke: var(--faceta-fio);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  transform-box: view-box;
+  transform-origin: 84px 498px;
+}
 
-   `pointer-events: none` e `user-select: none`: e um DESENHO. Sem eles o ponteiro
-   acende o hover das linhas de uma janela que nao responde, e o cursor de texto
-   aparece sobre um campo que nao digita. O foco ja esta resolvido na extracao, que
-   poe `tabindex="-1"` em cada controle. */
-/* O desenho nao renderizado: so aparece em navegador sem shadow root declarativa,
-   porque um host sem <slot> nao renderiza filho de luz. Prosa dentro de um fio, na
-   caixa exata da janela -- na folha, uma vista que nao pode ser desenhada continua
-   sendo uma vista com moldura e legenda. */
-.especime-ausente {
-  margin: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--fio-forte);
-  font-family: var(--serif);
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--tinta-fraca);
+.leque-borda {
+  fill: none;
+  stroke: var(--vinco-forte);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+/* A borda espera o leque abrir: ela e a soma das facetas, e some com elas. */
+.js .leque-borda {
+  opacity: 0;
+  transition: opacity 420ms ease-out 900ms;
+}
+.js .desenhada .leque-borda { opacity: 1; }
+.js .palco.dobrado .leque-borda { opacity: 0; transition-delay: 0s; }
+
+.vinco-id-leque {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  fill: var(--tinta-fraca);
+}
+
+.pacote-campo { fill: var(--cota); }
+.pacote-anel { fill: none; stroke: var(--sobre-cota); stroke-width: 1.75; }
+.pacote-atalho {
+  font-family: var(--mono-atalho);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  fill: var(--tinta);
+}
+
+/* O CONTROLE do pacote: um botao invisivel sobre o desenho do pacote (que vive
+   dentro de um SVG aria-hidden e por isso nao pode ser ele mesmo o controle).
+   Foco, teclado e leitor de tela passam por aqui; o desenho so aparece. */
+.pacote-botao {
+  position: absolute;
+  left: 53px;
+  top: 463px;
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  transform: rotate(-8deg);
+  z-index: 2;
+  cursor: pointer;
+}
+.pacote-botao:focus-visible {
+  outline: 2px solid var(--cota);
+  outline-offset: 3px;
+}
+.sem-js .pacote-botao { display: none; }
+
+/* A janela viva: o especime e as chamadas, juntos, dobram e desdobram a partir
+   do pacote. Sem JavaScript tudo chega implantado. */
+.janela-viva {
+  position: absolute;
+  inset: 0;
+  transform-origin: 84px 498px;
 }
 
 .palco .especime {
@@ -549,211 +539,346 @@ p { max-width: 68ch; }
   top: 30px;
   width: 360px;
   height: 480px;
-  pointer-events: none;
-  user-select: none;
+  /* O papel da janela levanta da folha: e a unica sombra grande da pagina,
+     porque a janela e a unica coisa que flutua de verdade. */
+  box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.4);
 }
+.especime-ausente {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  padding: 24px;
+  border: 1px solid var(--vinco-forte);
+  background: var(--folha);
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
+}
+/* Quem prende a shadow root nunca ve o paragrafo (host sem <slot> nao renderiza
+   filho de luz); esta regra so pinta a caixa de quem NAO prendeu. */
+
+/* A ABERTURA. Estado fechado: cada faceta deitada sobre a espoca final
+   (`--fecha`), a janela recolhida no pacote. `.desenhada` (o observer da
+   entrada) abre tudo uma vez; `.dobrado` (⌃⌥T na pagina) refaz o gesto do app.
+   As transicoes correm nos DOIS sentidos -- dobrar e tao desenhado quanto
+   desdobrar. */
+.js .faceta {
+  transition:
+    transform 680ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i) * 34ms),
+    opacity 400ms ease-out calc(var(--i) * 34ms);
+}
+.js .janela-viva {
+  transition:
+    transform 640ms cubic-bezier(0.16, 1, 0.3, 1) 300ms,
+    opacity 420ms ease-out 300ms,
+    visibility 0s 0s;
+}
+.js .palco:not(.desenhada) .faceta,
+.js .palco.dobrado .faceta {
+  transform: rotate(var(--fecha));
+  opacity: 0;
+}
+.js .palco:not(.desenhada) .janela-viva,
+.js .palco.dobrado .janela-viva {
+  transform: scale(0.05);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 520ms cubic-bezier(0.5, 0, 0.75, 0.4),
+    opacity 380ms ease-in 80ms,
+    visibility 0s 520ms;
+}
+/* Dobrada, a folha some das facetas por ultimo: o leque fecha DEPOIS que a
+   janela recolheu, na ordem inversa da abertura. */
+.js .palco.dobrado .faceta {
+  transition:
+    transform 560ms cubic-bezier(0.5, 0, 0.75, 0.4) calc(220ms + (11 - var(--i)) * 24ms),
+    opacity 380ms ease-in calc(220ms + (11 - var(--i)) * 24ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Os estados fechados tem transicoes proprias e mais especificas que a base:
+     precisam ser desligados um a um, ou o ⌃⌥T ainda anima o recolhimento. */
+  .js .faceta,
+  .js .janela-viva,
+  .js .palco.dobrado .faceta,
+  .js .palco:not(.desenhada) .janela-viva,
+  .js .palco.dobrado .janela-viva { transition: none; }
+}
+
+.legenda-palco {
+  /* 46px e nao 26: o rotulo ⌃⌥T do pacote assenta 23px abaixo do palco, e a
+     legenda respira depois dele, nao por cima. */
+  margin: 46px auto 0;
+  max-width: 46ch;
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
+}
+.legenda-palco b {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tinta);
+  margin-right: 6px;
+}
+
+.puxao-dica {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--tinta-fraca);
+}
+.puxao-dica code {
+  padding: 2px 7px;
+  border: 1px solid var(--vinco-forte);
+  border-bottom-width: 2px;
+  background: var(--folha);
+  font-size: 0.8125rem;
+}
+.sem-js .puxao-dica { display: none; }
+
+/* A marca compacta do pacote para telas estreitas (o leque nao cabe la):
+   escondida por padrao, ligada no bloco de 720px. */
+.pacote-movel {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-family: var(--mono-atalho);
+  font-size: 0.8125rem;
+  color: var(--tinta-fraca);
+}
+.pacote-movel svg { display: block; transform: rotate(-8deg); }
+.pacote-movel .pacote-campo { fill: var(--cota); }
+.pacote-movel .pacote-anel { fill: none; stroke: var(--sobre-cota); stroke-width: 1.4; }
+
+/* --------------------------------------------------------------------------
+   As cotas do palco: baloes, linhas, setas, realces. A geometria vem medida do
+   gerador; aqui mora so a tinta.
+   -------------------------------------------------------------------------- */
 
 .cotas {
   position: absolute;
-  left: 0;
-  top: 0;
+  inset: 0;
   pointer-events: none;
 }
 .cotas-estreitas { display: none; }
 
 .cotas .linha,
-.cotas .extensao,
-.cotas .seta,
 .ciclo .linha,
-.ciclo .extensao,
-.ciclo .seta {
-  stroke: var(--cota);
+.ciclo .extensao {
   fill: none;
+  stroke: var(--vinco-forte);
   stroke-width: 1;
-  shape-rendering: geometricPrecision;
 }
-.cotas .extensao,
-.ciclo .extensao { opacity: 0.55; }
 .cotas .seta,
-.ciclo .seta { fill: var(--cota); stroke: none; }
+.ciclo .seta { fill: var(--vinco-forte); }
 
-.cotas text {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  fill: var(--cota);
-}
-/* --------------------------------------------------------------------------
-   As chamadas de detalhe. O balao numerado na goteira, a linha ate a aresta da
-   regiao, o realce sobre ela, e o detalhe ampliado embaixo.
-
-   A chamada NAO ESCOLHIDA nao desaparece: ela recua para 38%. Um desenho que
-   mostra so a chamada ativa perde a informacao de que existem cinco -- e e essa
-   informacao que faz a pessoa querer clicar na segunda.
-   -------------------------------------------------------------------------- */
-
-.cotas .balao {
-  fill: var(--prancha);
-  stroke: var(--cota);
+.balao {
+  fill: var(--folha);
+  stroke: var(--vinco-forte);
   stroke-width: 1;
+  transform: skewX(var(--tombo));
+  transform-box: fill-box;
+  transform-origin: center;
 }
-.chamada { opacity: 0.38; transition: opacity 140ms ease-out; }
-.chamada.acesa { opacity: 1; }
+.balao-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  fill: var(--tinta);
+}
+
+.chamada.acesa .balao { fill: var(--cota); stroke: var(--cota); }
+.chamada.acesa .balao-num { fill: var(--sobre-cota); }
+.chamada.acesa .linha { stroke: var(--cota); }
+.chamada.acesa .seta { fill: var(--cota); }
 
 .realce {
-  fill: none;
+  fill: var(--cota-fraca);
   stroke: var(--cota);
-  stroke-width: 1;
-  shape-rendering: geometricPrecision;
+  stroke-width: 1.25;
   opacity: 0;
-  transition: opacity 140ms ease-out;
+  transition: opacity 160ms ease-out;
 }
 .realce.acesa { opacity: 1; }
 
+/* O desenho acontece uma vez, quando o alvo entra na tela: cada traco recebe o
+   proprio comprimento em `--corrida` e corre ate zero. Setas e numeros esperam
+   o traco chegar. */
+.traco {
+  stroke-dasharray: var(--corrida);
+  stroke-dashoffset: var(--corrida);
+  transition: stroke-dashoffset 460ms cubic-bezier(0.16, 1, 0.3, 1) 620ms;
+}
+.js .cotas .seta,
+.js .cotas .balao,
+.js .cotas .balao-num,
+.js .ciclo .seta,
+.js .ciclo-numeral {
+  opacity: 0;
+  transition: opacity 300ms ease-out 900ms;
+}
+.desenhada .traco { stroke-dashoffset: 0; }
+.js .desenhada .seta,
+.js .desenhada .balao,
+.js .desenhada .balao-num,
+.js .ciclo.desenhada .ciclo-numeral { opacity: 1; }
+.js .chamada.acesa .balao,
+.js .chamada.acesa .balao-num { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .chamada,
-  .realce { transition: none; }
+  .traco { transition: none; stroke-dashoffset: 0; }
+  .js .cotas .seta, .js .cotas .balao, .js .cotas .balao-num,
+  .js .ciclo .seta, .js .ciclo-numeral { opacity: 1; transition: none; }
+}
+
+/* --------------------------------------------------------------------------
+   As pranchas: papel fosco com o canto dobrado.
+   -------------------------------------------------------------------------- */
+
+.prancha {
+  position: relative;
+  margin-top: 30px;
+  padding: var(--recuo-prancha);
+  background-color: var(--folha);
+  /* O dente do papel fosco: ruido de croma zero por feTurbulence, cinza sobre
+     qualquer tema -- clareia de leve no escuro, escurece de leve no claro. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23d)'/%3E%3C/svg%3E");
+  border: 1px solid var(--vinco-forte);
+  box-shadow: var(--sombra-prancha);
+}
+/* O canto dobrado: o triangulo mostra o campo atras, e o vinco diagonal e a
+   dobra -- a 60 graus, o angulo da tesselacao (caixa 16x28: atan(28/16)).
+   Papel de verdade dobra para tras, nao arredonda. */
+.prancha::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 16px;
+  height: 28px;
+  background: var(--campo);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+.prancha::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 16px;
+  height: 28px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), var(--vinco-forte) calc(50% - 1px), var(--vinco-forte) 50%, transparent 50%);
+}
+
+.prancha h2 {
+  margin: 0 0 22px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.1875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.vinco-id {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--cota);
+}
+
+/* ------------------------------------------------------- M-01 · a janela */
+
+.janela-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: clamp(20px, 3vw, 44px);
+  align-items: start;
 }
 
 .chamadas {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 16px 0 0;
+  margin: 0;
   padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
 }
 .chamadas button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 2px;
+  align-items: start;
+  padding: 12px 14px;
+  text-align: left;
   background: transparent;
-  border: 1px solid var(--fio-forte);
-  padding: 7px 12px 7px 8px;
-  cursor: pointer;
-  color: var(--tinta-fraca);
-  font-family: var(--grot);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: color 120ms ease-out, border-color 120ms ease-out;
+  border: 1px solid var(--vinco);
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
 }
-.chamadas button:hover { color: var(--tinta); }
+.chamadas button:hover { border-color: var(--vinco-forte); background: var(--faceta-a); }
 .chamadas button[aria-pressed="true"] {
-  color: var(--tinta);
   border-color: var(--cota);
+  background: var(--cota-fraca);
 }
-
-/* O escolhido acende o proprio numero, e nao o fundo da etiqueta: cinco etiquetas
-   trocando de fundo a cada `mouseenter` piscariam a fileira inteira. */
 .chamada-num {
-  display: inline-block;
-  min-width: 1.25rem;
-  text-align: center;
-  border: 1px solid var(--fio-forte);
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  border: 1px solid var(--vinco-forte);
   font-family: var(--mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--tinta-fraca);
-  padding: 1px 0;
-  transition: background-color 120ms ease-out, color 120ms ease-out,
-    border-color 120ms ease-out;
+  font-size: 0.8125rem;
+  transform: skewX(var(--tombo));
 }
 .chamadas button[aria-pressed="true"] .chamada-num {
   background: var(--cota);
   border-color: var(--cota);
-  color: var(--prancha);
+  color: var(--sobre-cota);
 }
-
-/* A frase mora dentro do botao para leitor de tela, e fora dele para o olho. */
-.chamada-texto {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.chamada-explicacao {
-  margin: 12px 0 0;
-  min-height: 3em;
-  max-width: 58ch;
-  font-size: 0.9375rem;
-  color: var(--tinta);
-}
-
-/* Sem JavaScript a fileira volta a ser lista: as frases saem de dentro dos botoes
-   para a tela, o slot unico desaparece (nada o preencheria), e o detalhe tambem --
-   ele ficaria parado numa regiao que ninguem escolheu. Nenhuma informacao se perde;
-   o que se perde e a interacao. */
-.sem-js .chamadas { display: block; }
-.sem-js .chamadas button {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  gap: 3px 12px;
-  width: 100%;
-  text-align: left;
-  border: 0;
-  border-top: 1px solid var(--fio);
-  padding: 11px 0;
-  cursor: default;
-  color: var(--tinta);
-  font-family: var(--serif);
-  font-size: 0.9375rem;
-  font-weight: 400;
-}
-.sem-js .chamada-nome {
-  font-family: var(--grot);
-  font-size: 0.8125rem;
+.chamada-nome {
+  font-family: var(--display);
   font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-.sem-js .chamada-texto {
-  position: static;
-  width: auto;
-  height: auto;
-  overflow: visible;
-  clip-path: none;
-  white-space: normal;
-  grid-column: 2;
+.chamada-texto {
+  font-size: 0.9375rem;
+  line-height: 1.5;
   color: var(--tinta-fraca);
 }
-.sem-js .chamada-explicacao,
-.sem-js .detalhe { display: none; }
+.chamadas button[aria-pressed="true"] .chamada-texto { color: var(--tinta); }
 
-/* O detalhe: o MESMO especime, clonado por `folha.js` e ampliado 2:1.
-   `transform: scale(2)` sobre DOM amplia texto vetorial, entao o detalhe e nitido
-   em 2:1 como e em 1:1 -- e continuaria nitido em 4:1.
+.janela-lado { min-width: 0; }
 
-   ISTO ERA O PIOR DEFEITO DA FOLHA, e era do formato. O detalhe recortava o PNG de
-   840x1080 com `background-size` no tamanho natural dele: ampliar 2:1 um raster 2x
-   gasta exatamente toda a resolucao que existe -- um pixel de imagem por pixel de
-   tela --, e numa pagina feita de fio de 1px e tipografia vetorial o especime era o
-   unico objeto borrado. Num telefone 3x era pior ainda. */
 .detalhe {
-  margin: 20px 0 0;
-  max-width: 560px;
+  margin: 0;
 }
+.sem-js .detalhe { display: none; }
 .detalhe figcaption {
-  font-family: var(--grot);
+  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tinta-fraca);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .detalhe-vidro {
   position: relative;
-  height: 80px;
-  border: 1px solid var(--fio-forte);
-  background-color: var(--pelicula);
+  height: 132px;
+  border: 1px solid var(--vinco-forte);
+  background-color: var(--campo);
   overflow: hidden;
 }
-/* O clone. `transform-origin: 0 0` com `left`/`top` negativos e o que faz o
-   recorte: `folha.js` calcula os dois em coordenadas JA ampliadas. O tema nao e
-   declarado aqui nem la -- ele vem do `prefers-color-scheme` que atravessa a
-   shadow root, o mesmo mecanismo pelo qual o app segue o sistema. */
 .detalhe-vidro .especime {
   position: absolute;
   width: 360px;
@@ -761,90 +886,32 @@ p { max-width: 68ch; }
   transform: scale(2);
   transform-origin: 0 0;
   pointer-events: none;
-  user-select: none;
+  transition: left 220ms cubic-bezier(0.16, 1, 0.3, 1), top 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-/* A cota que se desenha: um momento autoral, uma vez, causado pela entrada da
-   prancha na tela. A linha corre e a seta assenta por ultimo. Nada aqui volta a
-   se mexer depois. O estado inicial depende da classe `js`: sem JavaScript nada
-   fica escondido por temporizacao. */
-.js .traco {
-  stroke-dasharray: var(--corrida);
-  stroke-dashoffset: var(--corrida);
-  transition: stroke-dashoffset 460ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.js .cotas .seta,
-.js .cotas text,
-.js .ciclo .seta,
-.js .ciclo-numeral,
-.js .ciclo-rotulos {
-  opacity: 0;
-  transition: opacity 180ms ease-out 380ms;
-}
-/* O estado desenhado precisa de especificidade MAIOR que o estado inicial, e nao
-   apenas vir depois dele: `.desenhada text` (0,1,1) perdia de `.js .cotas text`
-   (0,2,1), e o numeral ficava invisivel para sempre. */
-.js .desenhada .traco { stroke-dashoffset: 0; }
-.js .desenhada .cotas .seta,
-.js .desenhada .cotas text,
-.js .desenhada .ciclo .seta,
-.js .desenhada .ciclo-numeral,
-.js .desenhada .ciclo-rotulos { opacity: 1; }
-
 @media (prefers-reduced-motion: reduce) {
-  .js .traco { transition: none; stroke-dashoffset: 0; }
-  .js .cotas .seta,
-  .js .cotas text,
-  .js .ciclo .seta,
-  .js .ciclo-numeral,
-  .js .ciclo-rotulos { transition: none; opacity: 1; }
+  .detalhe-vidro .especime { transition: none; }
 }
 
-.legenda-palco {
-  margin: 18px 0 0;
-  max-width: 60ch;
-  font-size: 0.9375rem;
-  color: var(--tinta-fraca);
-}
-.legenda-palco b {
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--tinta);
-}
-
-/* O ciclo de 2 s, fora do palco: ele mede o gesto, nao a janela. */
-.ciclo { margin-top: 18px; }
-.ciclo-diagrama { max-width: 460px; }
-.ciclo-diagrama svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-/* Acima da linha, no fluxo, centrado: a largura do numeral e a mesma da linha,
-   entao `text-align: center` acerta o meio dela em qualquer escala -- sem
-   percentual vertical, que e fragil numa caixa que escala, e sem placa opaca,
-   que tapava a varredura. */
+/* O ciclo dos 2 segundos: a unica coisa cronometrada da folha, e ela nao
+   comeca sozinha -- a pessoa pede. */
+.ciclo { margin-top: 26px; }
+.ciclo-diagrama { position: relative; }
 .ciclo-numeral {
   display: block;
   text-align: center;
-  margin-bottom: 3px;
   font-family: var(--mono);
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--cota);
+  font-size: 0.8125rem;
+  color: var(--tinta);
+  margin-bottom: 4px;
 }
+.ciclo-diagrama svg { width: 100%; height: auto; display: block; }
 .ciclo-rotulos {
   display: flex;
   justify-content: space-between;
-  margin: 8px 0 0;
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--tinta-fraca);
 }
@@ -854,7 +921,7 @@ p { max-width: 68ch; }
   stroke-linecap: butt;
   stroke-dasharray: 458;
   stroke-dashoffset: 458;
-  opacity: 0.3;
+  opacity: 0.35;
 }
 .ciclo.correndo .varredura { animation: varrer 2000ms linear; }
 @keyframes varrer {
@@ -866,353 +933,303 @@ p { max-width: 68ch; }
 }
 
 .botao-varredura {
-  margin-top: 10px;
+  margin-top: 12px;
+  padding: 8px 18px;
   background: transparent;
-  border: 1px solid var(--fio-forte);
+  border: 1px solid var(--vinco-forte);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
   color: var(--tinta);
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  padding: 7px 13px;
-  cursor: pointer;
-  transition: border-color 120ms ease-out, color 120ms ease-out;
+  transform: skewX(var(--tombo));
+  transition: background-color 120ms ease-out;
 }
-.botao-varredura:hover { border-color: var(--cota); color: var(--cota); }
-.botao-varredura[aria-disabled="true"] {
-  color: var(--tinta-fraca);
-  border-color: var(--fio);
-  cursor: default;
+.botao-varredura:hover { background: var(--faceta-a); }
+.botao-varredura[aria-disabled="true"] { color: var(--tinta-fraca); cursor: default; }
+
+/* ---------------------------------------------- M-02 e M-03, lado a lado */
+
+.par-pranchas {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 30px;
+  align-items: start;
 }
+.par-pranchas .prancha { margin-top: 30px; }
 
-/* No estreito a janela encosta nas arestas do palco: ela passa a ocupar o palco
-   inteiro, e a escala 1:1 se mantem em 360px de largura.
-
-   Antes isto era um recorte -- `left: -30px; top: -30px` puxava a imagem para tirar
-   da vista a margem transparente que o raster carregava para a sombra. O especime
-   nao tem margem nenhuma, entao o estreito e so uma reorigem. */
-@media (max-width: 720px) {
-  .cotas-largas { display: none; }
-  .cotas-estreitas { display: block; }
-  /* A tabela dos numeros recupera o recuo da prancha: dentro dela ela perdeu 32px
-     e a coluna de observacao voltou a ser cortada. A caixa sangra ate a borda da
-     prancha, e o RECUO volta nas celulas das pontas -- entao o texto continua
-     alinhado com o rotulo da zona e a coluna cabe de novo. */
-  .zona-numeros .rolo {
-    margin-left: calc(var(--recuo-prancha) * -1);
-    margin-right: calc(var(--recuo-prancha) * -1);
-  }
-  .zona-numeros thead th:first-child,
-  .zona-numeros tbody th:first-child { padding-left: var(--recuo-prancha); }
-  .zona-numeros thead th:last-child,
-  .zona-numeros tbody td:last-child { padding-right: var(--recuo-prancha); }
-
-  .palco { width: 360px; height: 480px; overflow: clip; }
-  .palco .especime { left: 0; top: 0; }
-  /* A prancha sangra ate a borda da viewport, e e isso que da lugar aos 360px da
-     janela em 1:1 numa tela de 390 sem uma unica barra de rolagem. */
-  .especime-prancha {
-    margin-left: calc(var(--margem) * -1);
-    margin-right: calc(var(--margem) * -1);
-    border-left: 0;
-    border-right: 0;
-  }
-  .palco-caixa {
-    margin-left: calc(var(--recuo-prancha) * -1);
-    margin-right: calc(var(--recuo-prancha) * -1);
-  }
-}
-
-/* --------------------------------------------------------------------------
-   O bloco de instalacao. Um sistema por vez, escolhido no seletor do topo, e em
-   bloco empilhado e nao em tabela: os comandos precisam de largura, e uma tabela
-   que rola na horizontal e o pior lugar possivel para a acao primaria da pagina.
-   -------------------------------------------------------------------------- */
+/* ------------------------------------------------------ M-02 · instalar */
 
 .instalacoes {
-  list-style: none;
-  margin: 14px 0 0;
+  margin: 0;
   padding: 0;
+  list-style: none;
 }
-.instalacoes > li {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--fio);
-}
-.instalacoes > li:first-child { padding-top: 0; }
-.instalacoes > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.instalacoes > li + li { margin-top: 26px; }
+/* Com JavaScript um sistema por vez; sem, os tres empilhados -- que era a
+   pagina de duas versoes atras, e ela funcionava. */
+.instalacoes > li[hidden] { display: none; }
 
 .instalar-cabeca {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 .sistema-nome {
-  font-family: var(--grot);
-  font-size: 1.0625rem;
+  font-family: var(--display);
   font-weight: 600;
-  letter-spacing: -0.015em;
+  font-size: 0.9375rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .via {
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 0.75rem;
   color: var(--tinta-fraca);
 }
-.alternativa,
-.ref-nota {
-  margin: 10px 0 0;
-  font-size: 0.875rem;
-  color: var(--tinta-fraca);
-  max-width: 54ch;
-}
-.ref-nota a { color: var(--cota); }
-
-/* --------------------------------------------------------------------------
-   Comando: a linha que a pessoa copia. Nao e enfeite tecnico -- e codigo, e o
-   mono existe por isso.
-   -------------------------------------------------------------------------- */
 
 .comando {
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--fio-forte);
-  background: var(--pelicula);
-  max-width: 62ch;
+  border: 1px solid var(--vinco-forte);
+  background: var(--campo);
+  margin-top: 8px;
 }
-.comando + .comando { margin-top: 5px; }
 .comando code {
   flex: 1 1 auto;
   min-width: 0;
+  padding: 11px 14px;
   font-size: 0.8125rem;
-  padding: 8px 11px;
+  line-height: 1.5;
   overflow-x: auto;
-  white-space: pre;
-  scrollbar-width: none;
+  white-space: nowrap;
+  scrollbar-width: thin;
 }
-.comando code::-webkit-scrollbar { display: none; }
-
 .copiar {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
+  gap: 7px;
+  padding: 0 14px;
+  background: var(--folha);
   border: 0;
-  border-left: 1px solid var(--fio-forte);
-  color: var(--tinta-fraca);
-  font-family: var(--grot);
+  border-left: 1px solid var(--vinco-forte);
+  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 0 11px;
-  cursor: pointer;
+  color: var(--tinta-fraca);
   transition: color 120ms ease-out, background-color 120ms ease-out;
 }
-.copiar:hover { color: var(--tinta); background: var(--cota-fraca); }
-.copiar svg { width: 12px; height: 12px; flex: none; }
+.copiar:hover { color: var(--tinta); background: var(--faceta-a); }
+.copiar svg { width: 12px; height: 12px; }
 .copiar .marca-copiado { display: none; }
-.copiar.copiado { color: var(--cota); }
 .copiar.copiado .marca-copiar { display: none; }
-.copiar.copiado .marca-copiado { display: inline; }
-
-/* Sem JavaScript o botao nao existe e o texto continua selecionavel. */
+.copiar.copiado .marca-copiado { display: inline; color: var(--cota); }
+.copiar.copiado { color: var(--cota); }
 .sem-js .copiar { display: none; }
 
-/* --------------------------------------------------------------------------
-   A tabela de numeros: unidades identicas repetidas, lidas por varredura. Ela
-   vive DENTRO da prancha, encostada na instalacao -- ver `.zona-numeros` acima.
-   -------------------------------------------------------------------------- */
-
-/* A zona dos numeros mora dentro da prancha, encostada na instalacao: os zeros
-   sao o argumento de venda, e o lugar deles e ao lado da acao. O fio de cima os
-   separa da instalacao sem abrir uma segunda caixa. */
-.zona-numeros {
-  margin-top: 26px;
-  padding-top: 22px;
-  border-top: 1px solid var(--fio);
+.alternativa {
+  margin: 12px 0 0;
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
+}
+.ref-nota {
+  margin: 6px 0 0;
+  font-size: 0.9375rem;
+  color: var(--tinta-fraca);
 }
 
-.rolo {
-  overflow-x: auto;
-  margin-top: 14px;
-}
+/* ---------------------------------------------------- M-03 · em numeros */
 
-.zona-numeros table { min-width: 0; }
-/* Dentro da coluna a caracteristica cede largura para a observacao, que e a que
-   explica o zero -- e o zero sem explicacao nao vende nada. */
-.zona-numeros tbody th { width: 36%; }
-.zona-numeros thead th:first-child,
-.zona-numeros tbody th:first-child { padding-left: 0; }
-.zona-numeros thead th:last-child,
-.zona-numeros tbody td:last-child { padding-right: 0; }
+.rolo { overflow-x: auto; }
 
 table {
-  border-collapse: collapse;
   width: 100%;
-  font-family: var(--mono);
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
+  border-collapse: collapse;
 }
-
 thead th {
-  text-align: left;
-  font-family: var(--grot);
+  font-family: var(--mono);
+  font-weight: 500;
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tinta-fraca);
-  padding: 13px 16px 9px;
-  border-bottom: 1px solid var(--fio-forte);
-  white-space: nowrap;
-  margin: 0;
-}
-
-tbody td,
-tbody th {
   text-align: left;
-  font-weight: 400;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--fio);
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--vinco-forte);
+}
+tbody th,
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vinco);
   vertical-align: baseline;
 }
-tbody tr:last-child td,
-tbody tr:last-child th { border-bottom: 0; }
-
+tbody tr:last-child th,
+tbody tr:last-child td { border-bottom: 0; }
 tbody th {
-  /* 17px, o corpo da folha -- e nao 16px. Serifa a 15, 16 e 17 seriam tres passos
-     vizinhos sem justificativa, que e o ruido que a Regra dos Dois Passos Vizinhos
-     recusa. A caracteristica e o que se varre, entao ela fica no corpo cheio. */
-  font-family: var(--serif);
-  font-size: 17px;
-  color: var(--tinta);
-  text-transform: none;
-  letter-spacing: normal;
-  margin: 0;
-}
-
-/* Todo valor medido desta folha usa a cor de cota, aqui e no especime: a tabela
-   de calibre e uma cotacao em forma de lista, e nao um quadro de destaques. */
-.valor {
   font-weight: 500;
-  white-space: nowrap;
-  color: var(--cota);
-}
-
-/* No estreito a tabela para de rolar e passa a envolver: com 500px de largura
-   minima, a coluna de observacao caia inteira fora da caixa de rolagem, e as
-   explicacoes dos sete zeros -- que sao o argumento do produto -- ficavam
-   invisiveis no telefone. Envolver em vez de rolar preserva a semantica de
-   tabela, que `display: block` destruiria para leitor de tela. */
-@media (max-width: 700px) {
-  thead th,
-  tbody td,
-  tbody th { padding: 9px 10px; }
-  tbody th { font-size: 0.9375rem; }
-}
-/* A coluna de observacao e PROSA, nao medida: serif, e nao o mono das outras
-   duas colunas. O mono existe nesta folha para codigo, dado e medida, e uma nota
-   em mono ainda cobra a largura de uma medida -- era o que empurrava a coluna
-   para fora da caixa de rolagem no telefone. O `<code>` de dentro dela continua
-   mono, porque ali e nome de arquivo. */
-.obs {
-  color: var(--tinta-fraca);
-  font-family: var(--serif);
   font-size: 0.9375rem;
-  hyphens: auto;
+  text-align: left;
+}
+td.valor {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+td.obs {
+  font-size: 0.875rem;
+  color: var(--tinta-fraca);
 }
 
-/* --------------------------------------------------------------------------
-   Notas gerais. Numeradas porque a tabela de revisao aponta para elas.
-   -------------------------------------------------------------------------- */
+/* -------------------------------------------------------- M-04 · notas */
 
 .lista-notas {
-  list-style: none;
-  margin: 20px 0 0;
+  margin: 0;
   padding: 0;
-  border-top: 1px solid var(--fio);
+  list-style: none;
+  display: grid;
+  gap: 26px;
 }
 .lista-notas > li {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
-  gap: 0 clamp(12px, 2vw, 24px);
-  padding: 22px 0;
-  border-bottom: 1px solid var(--fio);
-}
-@media (max-width: 560px) {
-  .lista-notas > li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 .nota-num {
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--cota);
-  padding-top: 4px;
+  border: 1px solid var(--vinco-forte);
+  padding: 5px 10px;
+  text-align: center;
+  transform: skewX(var(--tombo));
+  margin-top: 2px;
 }
-.nota-corpo > :first-child { margin-top: 0; }
-.nota-corpo > :last-child { margin-bottom: 0; }
-.nota-corpo p { margin: 0 0 12px; }
-.nota-corpo p:last-child { margin-bottom: 0; }
-.nota-corpo .depois-do-comando { margin-top: 12px; }
+.nota-corpo { max-width: 62ch; }
+.nota-corpo h3 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.nota-corpo p { margin: 10px 0 0; font-size: 0.9375rem; }
+.nota-corpo [data-sistema][hidden] { display: none; }
 
 blockquote.sistema {
-  margin: 0 0 14px;
-  padding: 11px 15px;
-  border-left: 1px solid var(--cota);
-  background: var(--cota-fraca);
-  font-family: var(--grot);
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--vinco);
+  background: var(--campo);
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--tinta);
-  max-width: 56ch;
+  font-style: italic;
 }
 blockquote.sistema cite {
   display: block;
-  margin-top: 5px;
-  font-family: var(--grot);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+  margin-top: 6px;
+  font-family: var(--mono);
   font-style: normal;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.depois-do-comando { color: var(--tinta-fraca); }
+
+/* ------------------------------------------------------------ o carimbo */
+
+.carimbo {
+  margin-top: 44px;
+  padding-top: 26px;
+  /* Dois fios, como a dobra dupla que fecha uma folha de verdade. */
+  border-top: 1px solid var(--vinco-forte);
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.carimbo::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--vinco);
+}
+.carimbo h3 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.carimbo p {
+  margin: 0;
+  font-size: 0.9375rem;
   color: var(--tinta-fraca);
 }
 
 /* --------------------------------------------------------------------------
-   Carimbo: o pe da folha. Estado do projeto na voz de quem o escreveu.
+   Respiro por largura.
    -------------------------------------------------------------------------- */
 
-.carimbo {
-  margin-top: clamp(48px, 6vw, 80px);
-  padding-top: 22px;
-  border-top: 2px solid var(--tinta);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: clamp(22px, 3vw, 40px);
+@media (max-width: 1080px) {
+  .dobra-abre {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 40px;
+  }
+  .argumento { max-width: 40rem; }
+  .janela-grade { grid-template-columns: minmax(0, 1fr); }
+  .par-pranchas { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
-.carimbo p {
-  margin: 0 0 9px;
-  font-size: 0.9375rem;
-  color: var(--tinta-fraca);
-  max-width: 40ch;
-}
-.carimbo p:last-child { margin-bottom: 0; }
-.carimbo strong { color: var(--tinta); font-weight: 500; }
-.carimbo .conjunto { font-variant-numeric: tabular-nums; }
 
-.aviso-vivo {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+@media (max-width: 860px) {
+  .topo { grid-template-columns: minmax(0, 1fr) auto; }
+  .topo-campos { display: none; }
+}
+
+@media (max-width: 720px) {
+  .cotas-largas { display: none; }
+  .cotas-estreitas { display: block; }
+  .leque { display: none; }
+  .pacote-botao { display: none; }
+  .puxao-dica { display: none; }
+  /* O pacote nao some da historia: a marca compacta acima da janela guarda a
+     origem do gesto que o leque contava na tela larga. */
+  .pacote-movel { display: flex; }
+  .palco { width: 360px; height: 480px; overflow: clip; }
+  .palco .especime { left: 0; top: 0; box-shadow: 0 16px 32px -18px rgb(0 0 0 / 0.4); }
+  /* Sem leque nao ha origem para dobrar: a janela chega implantada e o atalho
+     nao dobra nada (nao ha teclado fisico garantido aqui, de todo modo). */
+  .js .palco:not(.desenhada) .janela-viva,
+  .js .palco.dobrado .janela-viva {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .manchete { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .seletor { flex-wrap: wrap; }
+  .legenda-palco { margin-top: 26px; }
+
+  thead th { padding: 0 10px 9px; }
+  tbody th, tbody td { padding: 9px 10px; }
+
+  .lista-notas > li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .nota-num { justify-self: start; }
+  .carimbo { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+}
+
+@media (max-width: 420px) {
+  /* A prancha sangra ate a borda da viewport, e e isso que da lugar aos 360px
+     da janela em 1:1 numa tela de 390 sem uma unica barra de rolagem. */
+  .folha { padding-inline: 12px; }
+  .prancha { padding: 18px 14px; }
 }

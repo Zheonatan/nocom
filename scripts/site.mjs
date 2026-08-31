@@ -58,9 +58,9 @@ const COPIAS = [
   // Fontes auto-hospedadas. Latin basta: o portugues cabe inteiro nele.
   ["node_modules/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2", "fontes/archivo-latin-wght-normal.woff2"],
   ["node_modules/@fontsource-variable/azeret-mono/files/azeret-mono-latin-wght-normal.woff2", "fontes/azeret-mono-latin-wght-normal.woff2"],
-  ["node_modules/@fontsource/spectral/files/spectral-latin-400-normal.woff2", "fontes/spectral-latin-400-normal.woff2"],
-  ["node_modules/@fontsource/spectral/files/spectral-latin-400-italic.woff2", "fontes/spectral-latin-400-italic.woff2"],
-  ["node_modules/@fontsource/spectral/files/spectral-latin-500-normal.woff2", "fontes/spectral-latin-500-normal.woff2"],
+  /* A voz de exibicao da folha: cantos chanfrados que leem como papel dobrado.
+     Um peso so -- uma voz. */
+  ["node_modules/@fontsource/chakra-petch/files/chakra-petch-latin-600-normal.woff2", "fontes/chakra-petch-latin-600-normal.woff2"],
   /* A QUARTA FAMILIA, e ela nao e escolha de gosto: e a tipografia do APP.
      Enquanto o especime era um PNG, a Geist viajava como pixel dentro dele. Agora
      que ele e DOM, a folha precisa da fonte de verdade -- sem ela o desenho da
@@ -146,6 +146,9 @@ const pt = {
     },
   },
   botao_varredura: "Correr os 2 segundos",
+  puxao_dica:
+    "Experimente aqui mesmo: <code>⌃⌥T</code> esconde a janela e traz de volta.",
+  puxao_botao_rotulo: "Dobrar ou desdobrar a janela (⌃⌥T)",
 
   instalar_h2: "Instalar",
   copiar: "copiar",
@@ -300,6 +303,9 @@ const en = {
     },
   },
   botao_varredura: "Run the 2 seconds",
+  puxao_dica:
+    "Try it right here: <code>⌃⌥T</code> hides the window and brings it back.",
+  puxao_botao_rotulo: "Fold or unfold the window (⌃⌥T)",
 
   instalar_h2: "Install",
   copiar: "copy",
@@ -643,7 +649,7 @@ function listaDeChamadas(d, chamadas) {
             <button type="button" data-chamada="${c.chave}"
                     data-regiao="${(c.detalhe || c.regiao).join(",")}"
                     aria-pressed="${i === 0 ? "true" : "false"}">
-              <span class="chamada-num">${i + 1}</span>
+              <span class="chamada-num"><span>${i + 1}</span></span>
               <span class="chamada-nome">${texto.nome}</span>
               <span class="chamada-texto">${texto.texto}</span>
             </button>
@@ -683,8 +689,112 @@ function cotaCiclo(d) {
 }
 
 /* ==========================================================================
+   3b. O leque de implantacao
+   ==========================================================================
+
+   O palco largo ganhou um FUNDO: o leque de facetas que abre do pacote ate a
+   janela -- a folha Miura se desdobrando. Ele e calculado aqui (o gerador roda
+   em node, e coordenada calculada nao diverge de coordenada copiada) e desenhado
+   em coordenadas do PROPRIO PALCO (600x520), com `overflow: visible` no CSS
+   para as facetas longas sangrarem acima e a direita, como papel que nao coube
+   na prancha.
+
+   A GEOMETRIA. Origem no centro do pacote (84, 498), abaixo e a esquerda da
+   janela -- a regiao que as chamadas nao usam. Doze facetas entre -100 e -6 graus
+   (as primeiras inclinam um pouco alem da vertical, para o leque preencher o vao
+   entre as colunas), raios alternando longo/curto: a silhueta externa vira o
+   zigue-zague da dobra.
+   Cada faceta carrega `--i` (a ordem na abertura) e `--fecha` (quantos graus ela
+   roda para deitar sobre a ultima espoca, fechada no pacote): o CSS anima a
+   abertura uma vez, e o JavaScript dobra e desdobra com o proprio atalho do app.
+
+   O PACOTE e desenhado no mesmo SVG para nunca sair do lugar da origem. Ele e a
+   unica tinta vermelha do palco alem do realce: o fecho do leque, com a marca em
+   branco e o atalho por extenso embaixo. */
+
+/* Raio longo em 600: o bastante para a borda em zigue-zague contornar a janela
+   por cima e pela direita, e nao tanto que a sangria alcance o topo da pagina
+   (o palco fica a ~116px do fio do cabecalho, e 600 - 498 = 102 de sangria). */
+const LEQUE = { ox: 84, oy: 498, n: 12, a0: -100, a1: -6, rLongo: 600, rCurto: 520 };
+
+function leque() {
+  const { ox, oy, n, a0, a1, rLongo, rCurto } = LEQUE;
+  const rad = (g) => (g * Math.PI) / 180;
+  const ponto = (a, r) => [ox + r * Math.cos(rad(a)), oy + r * Math.sin(rad(a))];
+  const arred = (v) => Math.round(v * 10) / 10;
+
+  const espocas = [];
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + ((a1 - a0) * i) / n;
+    espocas.push({ a, p: ponto(a, i % 2 ? rCurto : rLongo) });
+  }
+
+  const facetas = espocas.slice(0, -1).map((e, i) => {
+    const prox = espocas[i + 1];
+    const pontos = [[ox, oy], e.p, prox.p]
+      .map(([x, y]) => arred(x) + "," + arred(y))
+      .join(" ");
+    /* `--fecha` deita a faceta sobre a espoca final; a abertura e o caminho
+       inverso. `--i` conta a partir da ULTIMA (a mais deitada abre primeiro,
+       como um leque de verdade abre a partir do fecho). */
+    const fecha = arred(a1 - e.a);
+    /* `--mix` e a luz da faceta: a alternancia montanha/vale da o salto, e o
+       angulo escurece devagar rumo a horizontal -- cada face pega a luz do
+       proprio plano, em vez de duas tintas chapadas se revezando. */
+    const mix = Math.round((i % 2 ? 68 : 16) + 18 * (i / (n - 1)));
+    return `      <polygon class="faceta" style="--i:${n - 1 - i};--fecha:${fecha}deg;--mix:${mix}%" points="${pontos}" />`;
+  }).join("\n");
+
+  /* Ids de vinco nas facetas que ficam a mostra: acima da janela (espocas
+     ingremes, alem do topo do palco) e a direita dela (espocas deitadas, alem
+     da aresta). Sao gramatica da forma, nao conteudo: iguais nas duas linguas. */
+  const ids = [
+    { a: espocas[1].a, r: 560, id: "V-02" },
+    { a: espocas[3].a, r: 575, id: "M-05" },
+    { a: espocas[5].a, r: 596, id: "V-11" },
+    { a: espocas[10].a, r: 560, id: "M-08" },
+  ].map(({ a, r, id }) => {
+    const [x, y] = ponto(a, r);
+    return `      <text class="vinco-id-leque" x="${arred(x)}" y="${arred(y)}">${id}</text>`;
+  }).join("\n");
+
+  /* A borda em zigue-zague: a silhueta externa da folha, num traco continuo.
+     E ela que faz as pontas soltas lerem como UMA folha dobrada, mesmo com o
+     meio do leque escondido atras da janela. */
+  const borda = espocas
+    .map(({ p: [x, y] }) => arred(x) + "," + arred(y))
+    .join(" ");
+
+  return `          <svg class="leque" viewBox="0 0 600 520" width="600" height="520" aria-hidden="true">
+    <g class="leque-facetas">
+${facetas}
+    </g>
+    <polyline class="leque-borda" points="${borda}" />
+    <g class="leque-ids">
+${ids}
+    </g>
+    <g class="pacote" transform="rotate(-8 ${ox} ${oy})">
+      <rect class="pacote-campo" x="${ox - 27}" y="${oy - 27}" width="54" height="54" />
+      <circle class="pacote-anel" cx="${ox}" cy="${oy}" r="16.7" />
+    </g>
+    <text class="pacote-atalho" x="${ox}" y="${oy + 45}" text-anchor="middle">⌃⌥T</text>
+  </svg>`;
+}
+
+/* ==========================================================================
    4. O template
    ========================================================================== */
+
+/* Texto que entra em ATRIBUTO precisa escapar as proprias aspas: o comando do
+   xattr carrega `"` e, cru, terminava o aria-label no meio -- HTML invalido e
+   um rotulo truncado no leitor de tela. */
+function escaparAtributo(texto) {
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 function comando(id, linhas, d) {
   return linhas
@@ -696,7 +806,7 @@ function comando(id, linhas, d) {
                     data-anuncio="${d.anuncio_copiado}"
                     data-anuncio-falhou="${d.anuncio_falhou}"
                     data-anuncio-selecionado="${d.anuncio_selecionado}"
-                    aria-label="${d.copiar}: ${linha}">
+                    aria-label="${escaparAtributo(d.copiar + ": " + linha)}">
               <svg class="marca-copiar" viewBox="0 0 12 12" aria-hidden="true" fill="none"
                    stroke="currentColor" stroke-width="1">
                 <rect x="0.5" y="2.5" width="7" height="9" />
@@ -791,6 +901,7 @@ ${n.comando ? comando("cmd-liberar-" + chave, [n.comando], d) + "\n" : ""}${
      requisicao de terceiro, e nao ha "preconnect" para lugar nenhum. -->
 <link rel="preload" href="${base}fontes/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${base}fontes/azeret-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${base}fontes/chakra-petch-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${base}folha.css">
 <!-- OS @property DO TAILWIND, E ELES PRECISAM ESTAR AQUI E NAO NO ESPECIME.
      A regra @property e do DOCUMENTO: dentro de uma shadow root ela e ignorada. O
@@ -804,19 +915,24 @@ ${n.comando ? comando("cmd-liberar-" + chave, [n.comando], d) + "\n" : ""}${
 </head>
 <body>
 <!--
-IMPECCABLE DIRECTION CONTRACT · seed 0108210e
-THESIS: Nada e afirmado, tudo e medido. A folha recusa o heroi escuro com brilho
-difuso e a captura flutuando em moldura arredondada.
-OWN-WORLD: Pelicula cinza-fria, prancha um tom acima, fio de 1px, zero sombra e
-zero canto arredondado. Uma matiz so, o vermelho do proprio app, reservada as
-cotas. Archivo em versalete tracked, Spectral no corpo, Azeret Mono em toda
-medida. Sem manchete de secao: a folha tem rotulo de zona.
-STORY: A visitante escolhe o sistema no topo, ve a janela medida em 1:1, e instala
-com o comando do sistema dela -- sem ler uma linha que sirva a outro sistema.
-FIRST VIEWPORT: Bloco de titulo com a marca no seu campo preto e a linha de
-assunto a direita; o seletor de sistema logo abaixo; e uma prancha de duas zonas,
-especime de 360x480 cotado a esquerda e a instalacao (a acao primaria) a direita.
-FORM: Folha de cotas, candidato 4 da lista aterrada, registro safer, seed 0108210e.
+IMPECCABLE DIRECTION CONTRACT · seed 9139ab9b
+THESIS: O app abre num puxao, e a pagina e a folha Miura que o prova: um pacote
+de bolso que se desdobra na janela inteira. Recusa o heroi de SaaS com screenshot
+emoldurado e grade de features -- e recusa polir a folha de cotas anterior.
+OWN-WORLD: Folha branca fosca sobre campo de vincos em paralelogramo; facetas e
+vincos em cinzas croma-0, montanha mais forte que vale; UMA matiz, o vermelho
+destructive do app, no pacote, na acao primaria e no realce. Chakra Petch caps no
+display, Archivo no corpo, Azeret Mono em id de vinco, medida e comando. Paineis
+com canto chanfrado a 60 graus, botoes em paralelogramo com seta.
+STORY: A visitante ve a janela real implantada de um pacote vermelho marcado
+⌃⌥T, entende que o app abre num gesto, testa o atalho na propria pagina, e
+instala com o comando do sistema dela.
+FIRST VIEWPORT: Duas colunas: a esquerda a manchete em display, o subtitulo, o
+botao vermelho INSTALAR e o seletor de sistema; a direita o palco -- o leque de
+facetas cinzas abrindo do pacote ate a janela de 360x480 em escala 1:1. A
+interacao-assinatura: ⌃⌥T dobra e desdobra a janela na pagina, uma vez por gesto.
+FORM: O Pacote Miura, desafiante competitivo do catalogo
+(paper-folds-pleats-deployable-miura-orbit-sheet), vencedor da rodada; seed 9139ab9b.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 -->
 <a class="pular" href="#instalar">${d.pular}</a>
@@ -824,8 +940,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 <div class="folha">
 
-  <header class="bloco-titulo">
-    <div class="bt-identidade">
+  <header class="topo">
+    <div class="topo-marca">
       <!-- A marca sangra no proprio campo preto: o compromisso e um anel branco
            de fio fino num campo preto, com o diametro a 0,62 do campo e o traco a
            campo/64. As fracoes sao as de assets/marca/nocom.svg. -->
@@ -835,65 +951,90 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </svg>
       <h1>NoCom</h1>
     </div>
-    <div class="bt-assunto">
-      <p class="assunto">${d.assunto}</p>
-      <p class="assunto-sub">${d.assunto_sub}</p>
-      <nav class="idioma"><a href="${linkOutraLingua}" hreflang="${
-    d.lang === "pt-BR" ? "en" : "pt-BR"
-  }">${d.outra_lingua}</a></nav>
-    </div>
-    <dl class="bt-campos">
+    <dl class="topo-campos">
 ${d.bt_campos
   .map(([rotulo, valor]) => `      <div><dt>${rotulo}</dt><dd>${valor}</dd></div>`)
   .join("\n")}
     </dl>
+    <nav class="idioma"><a href="${linkOutraLingua}" hreflang="${
+    d.lang === "pt-BR" ? "en" : "pt-BR"
+  }">${d.outra_lingua}</a></nav>
   </header>
 
-  <!-- O seletor de sistema usa role=group com aria-pressed, e nao um tablist:
-       a pagina nao cumpre a navegacao por setas que um tablist promete, e anunciar
-       semantica que a interface nao cumpre e o que o DESIGN.md do app proibe. -->
-  <div class="seletor" role="group" aria-label="${d.seletor_rotulo}">
-    <span class="seletor-rotulo">${d.seletor_rotulo}</span>
-    <div class="seletor-botoes">
+  <!-- A PRIMEIRA DOBRA: o argumento a esquerda, a implantacao a direita. A
+       manchete e um <p> com id porque a hierarquia de headings e a mesma de
+       antes (h1 NoCom, h2 por secao) e a manchete e assunto, nao secao. -->
+  <section class="dobra-abre" aria-labelledby="h-assunto">
+    <div class="argumento">
+      <p class="manchete" id="h-assunto">${d.assunto}</p>
+      <p class="assunto-sub">${d.assunto_sub}</p>
+      <p class="acao">
+        <a class="botao-implantar" href="#instalar"><span>${d.instalar_h2}</span><svg viewBox="0 0 18 10" width="18" height="10" aria-hidden="true"><path d="M0 5h15M11 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
+      </p>
+
+      <!-- O seletor de sistema usa role=group com aria-pressed, e nao um tablist:
+           a pagina nao cumpre a navegacao por setas que um tablist promete, e
+           anunciar semantica que a interface nao cumpre e o que o DESIGN.md do
+           app proibe. -->
+      <div class="seletor" role="group" aria-label="${d.seletor_rotulo}">
+        <span class="seletor-rotulo">${d.seletor_rotulo}</span>
+        <div class="seletor-botoes">
 ${d.sistemas
   .map(
     (s) =>
-      `      <button type="button" data-escolha="${s.chave}" aria-pressed="false">${s.nome}</button>`
+      `          <button type="button" data-escolha="${s.chave}" aria-pressed="false"><span>${s.nome}</span></button>`
   )
   .join("\n")}
+        </div>
+      </div>
+
+      <p class="aviso-movel" id="aviso-movel" hidden>${d.aviso_movel}</p>
     </div>
-  </div>
 
-  <p class="aviso-movel" id="aviso-movel" hidden>${d.aviso_movel}</p>
-
-  <div class="prancha especime-prancha">
-    <div class="especime-grade">
-
-      <section class="coluna-palco desenha-alvo" aria-labelledby="h-especime">
-        <h2 id="h-especime">${d.especime_h2}</h2>
-        <div class="palco-caixa">
-          <div class="palco">
+    <div class="implantacao">
+      <!-- A marca compacta do pacote, so para telas estreitas: o leque nao
+           cabe la, mas a origem do gesto continua contada. -->
+      <p class="pacote-movel" aria-hidden="true">
+        <svg viewBox="0 0 34 34" width="34" height="34">
+          <rect class="pacote-campo" x="2" y="2" width="30" height="30" />
+          <circle class="pacote-anel" cx="17" cy="17" r="9.3" />
+        </svg>
+        <span>⌃⌥T</span>
+      </p>
+      <div class="palco-caixa">
+        <div class="palco desenha-alvo">
+${leque()}
+          <div class="janela-viva">
 ${especime(d, d.lang)}
 ${chamadasLargas(chamadas)}
 ${chamadasEstreitas(chamadas)}
           </div>
+          <!-- O controle de verdade do pacote: o desenho vive num SVG
+               aria-hidden, entao quem recebe foco, teclado e leitor de tela e
+               este botao invisivel por cima dele. -->
+          <button type="button" class="pacote-botao" aria-pressed="false" aria-label="${escaparAtributo(d.puxao_botao_rotulo)}"></button>
         </div>
-        <p class="legenda-palco">
-          <b>${d.legenda_titulo}</b> ${d.legenda}
-        </p>
+      </div>
+      <p class="legenda-palco">
+        <b>${d.legenda_titulo}</b> ${d.legenda}
+      </p>
+      <p class="puxao-dica">${d.puxao_dica}</p>
+    </div>
+  </section>
 
-        <!-- As chamadas sao os controles: escolher uma realca a regiao na janela
-             acima e move o detalhe ampliado abaixo. Sem JavaScript elas continuam
-             legiveis como lista numerada, e o detalhe desaparece em vez de ficar
-             parado numa regiao que ninguem escolheu. -->
-        <ol class="chamadas">
+  <section class="prancha prancha-janela" aria-labelledby="h-especime">
+    <h2 id="h-especime"><span class="vinco-id" aria-hidden="true">M-01</span>${d.especime_h2}</h2>
+    <div class="janela-grade">
+
+      <!-- As chamadas sao os controles: escolher uma realca a regiao na janela
+           da primeira dobra e move o detalhe ampliado ao lado. Sem JavaScript
+           elas continuam legiveis como lista numerada, e o detalhe desaparece em
+           vez de ficar parado numa regiao que ninguem escolheu. -->
+      <ol class="chamadas">
 ${listaDeChamadas(d, chamadas)}
-        </ol>
+      </ol>
 
-        <!-- A frase da chamada escolhida. Marcada aria-hidden porque ela ja e
-             anunciada pelo proprio botao: um estado, uma voz. -->
-        <p class="chamada-explicacao" aria-hidden="true"></p>
-
+      <div class="janela-lado">
         <!-- O detalhe amplia 2:1 uma REGIAO DO ESPECIME, e a vidraca chega
              vazia: folha.js clona o especime aqui dentro e o escala. Ela e
              aria-hidden porque a chamada escolhida ja se anuncia pelo proprio
@@ -906,59 +1047,59 @@ ${listaDeChamadas(d, chamadas)}
           <div class="detalhe-vidro"></div>
         </figure>
 
-        <div class="ciclo">
+        <div class="ciclo desenha-alvo">
 ${cotaCiclo(d)}
-          <button type="button" class="botao-varredura">${d.botao_varredura}</button>
+          <button type="button" class="botao-varredura"><span>${d.botao_varredura}</span></button>
         </div>
-      </section>
-
-      <div class="coluna-instalar">
-        <section id="instalar" aria-labelledby="h-instalar">
-          <h2 id="h-instalar">${d.instalar_h2}</h2>
-          <ol class="instalacoes">
-${instalacoes}
-          </ol>
-        </section>
-
-        <section class="zona-numeros" aria-labelledby="h-calibre">
-          <h2 id="h-calibre">${d.calibre_h2}</h2>
-          <div class="rolo">
-            <table>
-              <thead>
-                <tr>
-${d.calibre_th.map((t) => `                  <th scope="col">${t}</th>`).join("\n")}
-                </tr>
-              </thead>
-              <tbody>
-${calibre}
-              </tbody>
-            </table>
-          </div>
-        </section>
       </div>
 
     </div>
+  </section>
+
+  <div class="par-pranchas">
+    <section id="instalar" class="prancha prancha-instalar" aria-labelledby="h-instalar">
+      <h2 id="h-instalar"><span class="vinco-id" aria-hidden="true">M-02</span>${d.instalar_h2}</h2>
+      <ol class="instalacoes">
+${instalacoes}
+      </ol>
+    </section>
+
+    <section class="prancha prancha-numeros" aria-labelledby="h-calibre">
+      <h2 id="h-calibre"><span class="vinco-id" aria-hidden="true">M-03</span>${d.calibre_h2}</h2>
+      <div class="rolo">
+        <table>
+          <thead>
+            <tr>
+${d.calibre_th.map((t) => `              <th scope="col">${t}</th>`).join("\n")}
+            </tr>
+          </thead>
+          <tbody>
+${calibre}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <section class="zona" aria-labelledby="h-notas">
-    <h2 id="h-notas">${d.notas_h2}</h2>
+  <section class="prancha prancha-notas" aria-labelledby="h-notas">
+    <h2 id="h-notas"><span class="vinco-id" aria-hidden="true">M-04</span>${d.notas_h2}</h2>
     <ol class="lista-notas">
       <li id="nota-1" class="nota-por-sistema">
-        <div class="nota-num">${d.nota_palavra} 1</div>
+        <div class="nota-num"><span>${d.nota_palavra} 1</span></div>
         <div class="nota-corpo">
           <h3>${d.nota1_titulo}</h3>
 ${avisos}
         </div>
       </li>
       <li id="nota-2">
-        <div class="nota-num">${d.nota_palavra} 2</div>
+        <div class="nota-num"><span>${d.nota_palavra} 2</span></div>
         <div class="nota-corpo">
           <h3>${d.nota2_titulo}</h3>
           <p>${d.nota2}</p>
         </div>
       </li>
       <li id="nota-3">
-        <div class="nota-num">${d.nota_palavra} 3</div>
+        <div class="nota-num"><span>${d.nota_palavra} 3</span></div>
         <div class="nota-corpo">
           <h3>${d.nota3_titulo}</h3>
           <p>${d.nota3}</p>

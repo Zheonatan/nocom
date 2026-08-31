@@ -8,7 +8,9 @@
  *   2. avisar quem abriu no celular que o NoCom e app de computador;
  *   3. copiar um comando;
  *   4. desenhar as cotas uma vez, quando a prancha entra na tela;
- *   5. correr a varredura de 2 s, so a pedido.
+ *   5. correr a varredura de 2 s, so a pedido;
+ *   6. dobrar e desdobrar a janela com o proprio atalho do app (⌃⌥T), ou com
+ *      um clique no pacote -- a demonstracao que a primeira dobra promete.
  *
  * Nada fala com a rede. A pagina nao tem uma unica requisicao de terceiro, e isso
  * e um requisito do produto e nao uma preferencia tecnica. */
@@ -207,8 +209,6 @@
     var botoes = lista.querySelectorAll("button[data-chamada]");
     if (!botoes.length) return;
 
-    var explicacao = doc.querySelector(".chamada-explicacao");
-
     function mostrar(chave, regiao) {
       Array.prototype.forEach.call(botoes, function (b) {
         b.setAttribute("aria-pressed", b.getAttribute("data-chamada") === chave ? "true" : "false");
@@ -220,15 +220,6 @@
         r.classList.toggle("acesa", r.getAttribute("data-realce") === chave);
       });
       if (vidro && regiao) recortar(vidro, clone, regiao);
-
-      /* A frase visivel vem da copia sr-only do proprio botao: uma fonte de texto,
-         nao duas. `innerHTML` e nao `textContent` porque ela carrega <code>. */
-      if (explicacao) {
-        var fonte = lista.querySelector(
-          'button[data-chamada="' + chave + '"] .chamada-texto'
-        );
-        if (fonte) explicacao.innerHTML = fonte.innerHTML;
-      }
     }
 
     Array.prototype.forEach.call(botoes, function (botao) {
@@ -384,6 +375,38 @@
     );
   }
 
+  /* ------------------------------------------------------------- 7. o puxao
+     A primeira dobra promete que ⌃⌥T esconde a janela e traz de volta, e a
+     pagina cumpre NELA MESMA: o atalho do app dobra a janela de volta no pacote
+     e desdobra de novo. O clique no pacote faz o mesmo gesto, para quem chegou
+     de mouse. Nada disso e conteudo -- sem JavaScript a dica nem aparece (ver
+     `.sem-js .puxao-dica` no CSS) e a janela chega implantada. */
+
+  function ligarPuxao() {
+    var palco = doc.querySelector(".palco");
+    if (!palco) return;
+
+    var botao = palco.querySelector(".pacote-botao");
+
+    function puxar() {
+      /* Antes da entrada desenhar o palco, o puxao nao tem o que dobrar. */
+      if (!palco.classList.contains("desenhada")) return;
+      var dobrado = palco.classList.toggle("dobrado");
+      /* O botao anuncia o estado que ele mesmo produziu: pressionado quando a
+         janela esta dobrada no pacote. */
+      if (botao) botao.setAttribute("aria-pressed", dobrado ? "true" : "false");
+    }
+
+    doc.addEventListener("keydown", function (evento) {
+      if (evento.ctrlKey && evento.altKey && evento.code === "KeyT") {
+        evento.preventDefault();
+        puxar();
+      }
+    });
+
+    if (botao) botao.addEventListener("click", puxar);
+  }
+
   ligarSeletor();
   /* As datas ANTES das chamadas: `ligarChamadas` clona o especime para a vidraca do
      detalhe, e o clone precisa nascer com a data ja corrigida. */
@@ -392,4 +415,5 @@
   ligarCopia();
   prepararCotas();
   ligarVarredura();
+  ligarPuxao();
 })();

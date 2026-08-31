@@ -9,7 +9,10 @@
 Aparece com um atalho de teclado, some com `Escape`, e guarda tudo no seu
 computador. Sem conta, sem nuvem, sem sincronização.
 
+**Português** · [English](README.en.md)
+
 [![Download](https://img.shields.io/github/v/release/Zheonatan/nocom?label=download&style=for-the-badge)](https://github.com/Zheonatan/nocom/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/Zheonatan/nocom/ci.yml?style=for-the-badge&label=CI)](https://github.com/Zheonatan/nocom/actions/workflows/ci.yml)
 [![Licença MIT](https://img.shields.io/github/license/Zheonatan/nocom?style=for-the-badge&label=licen%C3%A7a)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoiar-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/zheos)
 
@@ -307,7 +310,9 @@ e `libxdo-dev`.
 
 Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê),
 [`CONTRACT.md`](CONTRACT.md) (comportamento normativo e fronteira IPC) e
-[`DESIGN.md`](DESIGN.md) (decisões de interface).
+[`DESIGN.md`](DESIGN.md) (decisões de interface). O que cada versão mudou está
+no [`CHANGELOG.md`](CHANGELOG.md), e como contribuir, no
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 **Publicar uma versão é um comando:**
 
@@ -315,17 +320,19 @@ Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê
 npm run publicar -- 0.5.0
 ```
 
-Ele sobe o número nos seis arquivos que o citam (`package.json`, `Cargo.toml`,
-`Cargo.lock`, `tauri.conf.json`, os links de download aqui do README e o IPC
+Ele sobe o número nos sete arquivos que o citam (`package.json`, `Cargo.toml`,
+`Cargo.lock`, `tauri.conf.json`, os links de download dos dois READMEs e o IPC
 falso da vitrine), comita, cria a tag `v0.5.0` e empurra. Se qualquer arquivo
 tiver mudado de forma, ele para antes de comitar em vez de subir uma versão pela
-metade. `--sem-push` para antes de empurrar, para conferir o commit.
+metade — e ele se recusa a publicar uma versão sem seção no
+[`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
+`--sem-push` para antes de empurrar, para conferir o commit.
 
 Da tag em diante o [workflow](.github/workflows/release.yml) faz o resto sozinho:
 
 | Workflow / job | O que faz |
 | --- | --- |
-| [`release.yml`](.github/workflows/release.yml) → `build` | Compila as quatro plataformas, cria a release e sobe os instaladores mais o `latest.json` que o botão de atualizar consulta |
+| [`release.yml`](.github/workflows/release.yml) → `build` | Compila as quatro plataformas, cria a release com a seção do CHANGELOG no corpo, e sobe os instaladores mais o `latest.json` que o botão de atualizar consulta |
 | [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `homebrew` | Calcula os `sha256` dos DMGs e comita a versão nova no cask de [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap) |
 | [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `winget` | Roda `wingetcreate update` e abre o PR do manifesto em [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) |
 

@@ -5,8 +5,8 @@
 //   npm run publicar -- 0.4.0 --sem-push  para antes de empurrar, para conferir
 //
 // **Por que um script, e não `git tag && git push`.** O número da versão vive em
-// cinco arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`
-// e os seis links de download do README. Esquecer um não quebra o build —
+// seis arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`
+// e os seis links de download dos dois READMEs. Esquecer um não quebra o build —
 // quebra em silêncio, semanas depois: o README oferecendo um arquivo que a
 // release nova não tem. Aqui ou todos sobem, ou o comando falha sem tocar em
 // nada.
@@ -59,6 +59,12 @@ function regras(antiga) {
       busca: solta,
       vezes: null,
     },
+    {
+      // A tradução carrega os mesmos links de download, então envelhece igual.
+      arquivo: 'README.en.md',
+      busca: solta,
+      vezes: null,
+    },
     // **A vitrine e a landing page não entram aqui, e não é esquecimento.**
     // `scripts/vitrine/stub.js` e `scripts/site.mjs` leem a versão do
     // `package.json` em tempo de execução, então não há número para trocar —
@@ -69,7 +75,7 @@ function regras(antiga) {
 }
 
 /** Arquivos onde NENHUMA menção à versão antiga pode sobrar depois da troca. */
-const SEM_SOBRA = ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'README.md']
+const SEM_SOBRA = ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'README.md', 'README.en.md']
 
 const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -105,6 +111,13 @@ if (ramo !== 'main') morrer(`você está em "${ramo}", e a release sai da main`)
 
 const tag = `v${nova}`
 if (git('tag', '--list', tag)) morrer(`a tag ${tag} já existe`)
+
+// A release nasce com as notas do CHANGELOG.md: o workflow copia a seção da
+// versão para o corpo dela. Sem a seção escrita, a release sairia com um corpo
+// genérico — então o esquecimento para aqui, antes de tocar em qualquer arquivo.
+if (!new RegExp(`^## ${escapar(nova)} `, 'm').test(readFileSync(join(RAIZ, 'CHANGELOG.md'), 'utf8'))) {
+  morrer(`o CHANGELOG.md não tem a seção "## ${nova} — <data>" — escreva as notas da versão antes de publicar`)
+}
 
 // ------------------------------------------------------------------- a troca
 

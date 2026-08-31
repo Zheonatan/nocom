@@ -13,7 +13,8 @@ vulnerabilidade de segurança, **não** abra issue — ver o
 
 ## Antes de escrever código
 
-**Leia [O que ele não é](README.md#o-que-ele-não-é) primeiro.** O NoCom tem
+**Leia [O que ele não é](README.pt-BR.md#o-que-ele-não-é) primeiro** (em
+inglês, [What it isn't](README.md#what-it-isnt)). O NoCom tem
 não-objetivos declarados — prazos, prioridades, subtarefas, etiquetas,
 colaboração, sincronização — e um PR que cruza essa linha será recusado mesmo
 bem escrito. Não é juízo sobre o código: é o produto se mantendo pequeno de
@@ -23,8 +24,8 @@ custa uma tarde.
 
 ## Rodando o projeto
 
-Os pré-requisitos e os comandos estão em
-[Para desenvolvedores](README.md#para-desenvolvedores), no README. O resumo:
+Os pré-requisitos e os comandos estão no
+[`DEVELOPMENT.md`](DEVELOPMENT.md). O resumo:
 
 ```sh
 npm install
@@ -56,5 +57,5 @@ npm run tauri dev
    o commit faz ("Corrige…", "Acrescenta…"), com o porquê no corpo quando ele
    não é óbvio. `git log` é o melhor exemplo do formato.
 
-Mexeu na interface? `npm run vitrine` regera as fotos do README e o espécime da
-landing page — nenhuma imagem do repositório é editada à mão.
+Mexeu na interface? `npm run vitrine` regera as fotos dos dois READMEs e o
+espécime da landing page — nenhuma imagem do repositório é editada à mão.

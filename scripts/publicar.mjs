@@ -5,8 +5,9 @@
 //   npm run publicar -- 0.4.0 --sem-push  para antes de empurrar, para conferir
 //
 // **Por que um script, e não `git tag && git push`.** O número da versão vive em
-// seis arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`
-// e os seis links de download dos dois READMEs. Esquecer um não quebra o build —
+// sete arquivos: `package.json`, `Cargo.toml`, `Cargo.lock`, `tauri.conf.json`,
+// os links de download dos dois READMEs e os exemplos do `DEVELOPMENT.md`.
+// Esquecer um não quebra o build —
 // quebra em silêncio, semanas depois: o README oferecendo um arquivo que a
 // release nova não tem. Aqui ou todos sobem, ou o comando falha sem tocar em
 // nada.
@@ -60,8 +61,14 @@ function regras(antiga) {
       vezes: null,
     },
     {
-      // A tradução carrega os mesmos links de download, então envelhece igual.
-      arquivo: 'README.en.md',
+      // O README em português carrega os mesmos links, então envelhece igual.
+      arquivo: 'README.pt-BR.md',
+      busca: solta,
+      vezes: null,
+    },
+    {
+      // Os exemplos do `npm run publicar` e do wingetcreate citam a versão.
+      arquivo: 'DEVELOPMENT.md',
       busca: solta,
       vezes: null,
     },
@@ -75,7 +82,14 @@ function regras(antiga) {
 }
 
 /** Arquivos onde NENHUMA menção à versão antiga pode sobrar depois da troca. */
-const SEM_SOBRA = ['package.json', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'README.md', 'README.en.md']
+const SEM_SOBRA = [
+  'package.json',
+  'src-tauri/tauri.conf.json',
+  'src-tauri/Cargo.toml',
+  'README.md',
+  'README.pt-BR.md',
+  'DEVELOPMENT.md',
+]
 
 const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 

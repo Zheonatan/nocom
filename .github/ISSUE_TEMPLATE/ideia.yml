@@ -9,7 +9,8 @@ body:
     attributes:
       value: |
         Antes de escrever, vale ler
-        [O que ele não é](https://github.com/Zheonatan/nocom#o-que-ele-não-é) no README:
+        [O que ele não é](https://github.com/Zheonatan/nocom/blob/main/README.pt-BR.md#o-que-ele-não-é)
+        ([What it isn't](https://github.com/Zheonatan/nocom#what-it-isnt)) no README:
         prazos, prioridades, subtarefas, etiquetas, colaboração e sincronização estão
         fora de propósito, e uma ideia nessa direção será recusada mesmo sendo boa.
         Pode escrever em português ou em inglês. *Feel free to write in English.*

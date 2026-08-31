@@ -4,51 +4,53 @@
 
 # NoCom
 
-**Uma lista de tarefas que vive por cima do seu trabalho.**
+**A todo list that lives on top of your work.**
 
-Aparece com um atalho de teclado, some com `Escape`, e guarda tudo no seu
-computador. Sem conta, sem nuvem, sem sincronização.
+Shows up on a keyboard shortcut, hides on `Escape`, and keeps everything on
+your computer. No account, no cloud, no sync.
 
-**Português** · [English](README.en.md)
+**English** · [Português](README.pt-BR.md)
 
 [![Download](https://img.shields.io/github/v/release/Zheonatan/nocom?label=download&style=for-the-badge)](https://github.com/Zheonatan/nocom/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/Zheonatan/nocom/ci.yml?style=for-the-badge&label=CI)](https://github.com/Zheonatan/nocom/actions/workflows/ci.yml)
-[![Licença MIT](https://img.shields.io/github/license/Zheonatan/nocom?style=for-the-badge&label=licen%C3%A7a)](LICENSE)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoiar-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/zheos)
+[![MIT License](https://img.shields.io/github/license/Zheonatan/nocom?style=for-the-badge&label=license)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/zheos)
 
-<!-- Duas fotos da mesma janela, uma por tema, e o GitHub escolhe pela
-     `prefers-color-scheme` de quem está lendo -- o app segue o tema do sistema, e
-     uma foto clara num README escuro anunciaria um app que ele não é. O PNG tem
-     fundo transparente, então o canto arredondado da janela assenta nos dois. -->
+<!-- Two photos of the same window, one per theme, and GitHub picks by the
+     reader's `prefers-color-scheme` -- the app follows the system theme, and a
+     light photo in a dark README would advertise an app it isn't. The PNG has a
+     transparent background, so the window's rounded corner sits well on both.
+     The `-en` pair: the app follows the system language too, so this README
+     shows the window an English-speaking reader would actually get. -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/telas/janela-escura.png">
-  <img src="assets/telas/janela-clara.png" width="420"
-       alt="A janela do NoCom: as abas Trabalho e Casa, um campo de nova tarefa e
-            sete tarefas. Duas têm a data numa coluna à direita, e a de hoje está
-            destacada em vermelho.">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/telas/janela-escura-en.png">
+  <img src="assets/telas/janela-clara-en.png" width="420"
+       alt="The NoCom window: the Work and Home tabs, a new-task field and seven
+            tasks. Two have their date in a column on the right, and today's is
+            highlighted in red.">
 </picture>
 
 </div>
 
 ---
 
-## O problema
+## The problem
 
-Você está no meio de outra coisa — código, planilha, reunião — e lembra de uma
-tarefa. Anotar não deveria custar trocar de aplicativo, esperar carregamento e
-perder o fio da meada.
+You're in the middle of something else — code, a spreadsheet, a meeting — and a
+task comes to mind. Writing it down shouldn't cost switching apps, waiting for
+a load screen and losing your train of thought.
 
-O NoCom existe para esse instante. O ciclo completo é:
+NoCom exists for that instant. The full cycle is:
 
 ```
-⌃⌥T  →  digitar  →  Enter  →  ⌃⌥T
+⌃⌥T  →  type  →  Enter  →  ⌃⌥T
 ```
 
-Dois segundos, a mão nunca sai do teclado.
+Two seconds, and your hand never leaves the keyboard.
 
-## Baixar
+## Download
 
-### macOS — pelo Homebrew (recomendado)
+### macOS — via Homebrew (recommended)
 
 ```sh
 brew tap Zheonatan/tap
@@ -56,39 +58,37 @@ brew trust --cask Zheonatan/tap/nocom
 brew install --cask nocom
 ```
 
-Atualizar depois é só `brew upgrade --cask nocom`.
+Updating later is just `brew upgrade --cask nocom`.
 
-**Uma ressalva antes de instalar:** o `brew` carimba quarentena em tudo que
-instala, então na primeira abertura o macOS vai bloquear o NoCom e oferecer
-"Mover para o Lixo". Não clique nesse botão — a explicação e o comando de uma
-linha que resolve estão em
-[Primeira execução](#primeira-execução-o-aviso-do-sistema).
+**One caveat before installing:** `brew` stamps a quarantine flag on everything
+it installs, so on first launch macOS will block NoCom and offer "Move to
+Trash". Don't click that button — the explanation and the one-line command that
+fixes it are in [First launch](#first-launch-the-system-warning).
 
-**Por que o `brew trust`?** Sem ele o `brew` recusa a instalação com
-*"Refusing to load cask from untrusted tap"*. Não é sinal de problema com o
-NoCom: desde o Homebrew 6 qualquer repositório que não seja oficial exige que
-você diga explicitamente que confia nele, uma vez, antes do primeiro uso. O
-comando acima confia **apenas neste cask** — nada mais que eu publicar no tap
-entra de carona.
+**Why the `brew trust`?** Without it, `brew` refuses the install with
+*"Refusing to load cask from untrusted tap"*. It's not a sign of a problem with
+NoCom: since Homebrew 6, any tap that isn't official requires you to say
+explicitly, once, that you trust it. The command above trusts **this cask
+only** — nothing else I publish on the tap rides along.
 
-### Windows — pelo winget (recomendado)
+### Windows — via winget (recommended)
 
 ```sh
 winget install Zheonatan.NoCom
 ```
 
-Atualizar depois é só `winget upgrade Zheonatan.NoCom`.
+Updating later is just `winget upgrade Zheonatan.NoCom`.
 
-**Por aqui o SmartScreen não aparece.** O aviso *"o Windows protegeu seu PC"* vem
-de uma marca que o **navegador** carimba em todo arquivo baixado; o winget baixa
-e executa o instalador por fora do navegador, conferindo o `sha256` publicado no
-manifesto. Baixando o `.exe` na mão o aviso continua — e a causa é a mesma de
-sempre: o instalador ainda não é assinado. Veja
-[Primeira execução](#primeira-execução-o-aviso-do-sistema).
+**No SmartScreen warning this way.** The *"Windows protected your PC"* notice
+comes from a mark the **browser** stamps on every downloaded file; winget
+downloads and runs the installer outside the browser, checking the `sha256`
+published in the manifest. Downloading the `.exe` by hand, the warning remains —
+and the cause is the usual one: the installer isn't signed yet. See
+[First launch](#first-launch-the-system-warning).
 
-### Download direto
+### Direct download
 
-| Sistema | Arquivo |
+| System | File |
 | --- | --- |
 | **macOS** (Apple Silicon) | [NoCom_0.5.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_aarch64.dmg) |
 | **macOS** (Intel) | [NoCom_0.5.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64.dmg) |
@@ -97,304 +97,227 @@ sempre: o instalador ainda não é assinado. Veja
 | **Linux** (.rpm) | [NoCom-0.5.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom-0.5.0-1.x86_64.rpm) |
 | **Linux** (AppImage) | [NoCom_0.5.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.AppImage) |
 
-Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
+Every version is always in [Releases](https://github.com/Zheonatan/nocom/releases).
 
-### Primeira execução: o aviso do sistema
+### First launch: the system warning
 
-O app **não é assinado com um certificado de desenvolvedor pago**, e no macOS
-também não é notarizado pela Apple, então seu sistema vai avisar que não
-conhece o programa. É esperado. No Windows acontece uma vez só; no macOS, uma
-vez por instalação pelo `brew` — o porquê está logo abaixo.
+The app is **not signed with a paid developer certificate**, and on macOS it
+isn't notarized by Apple either, so your system will warn that it doesn't know
+the program. That's expected. On Windows it happens once; on macOS, once per
+`brew` install — the why is right below.
 
 <details>
-<summary><b>macOS</b> — o sistema bloqueia a primeira abertura</summary>
+<summary><b>macOS</b> — the system blocks the first launch</summary>
 
-> **Não foi possível abrir o "NoCom" — a Apple não consegue verificar se ele
-> está livre de malware.**
+> **"NoCom" can't be opened — Apple could not verify it is free of malware.**
 >
-> ou, nas versões anteriores:
+> or, on earlier versions:
 >
-> **"NoCom" está danificado e não pode ser aberto. Você deve movê-lo para o
-> Lixo.**
+> **"NoCom" is damaged and can't be opened. You should move it to the Trash.**
 
-**Nunca clique em "Mover para o Lixo"** — esse botão apaga o app.
+**Never click "Move to Trash"** — that button deletes the app.
 
-O NoCom sai do build com uma assinatura *ad-hoc*: ela é válida e sela o pacote,
-mas não tem um certificado de desenvolvedor por trás, e o app não é notarizado
-pela Apple. O Gatekeeper então bloqueia a primeira abertura. Um comando resolve,
-tirando a marca de quarentena que o download deixou:
+NoCom leaves the build with an *ad-hoc* signature: it's valid and it seals the
+bundle, but there's no developer certificate behind it, and the app isn't
+notarized by Apple. Gatekeeper then blocks the first launch. One command fixes
+it, removing the quarantine mark the download left behind:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/NoCom.app"
 ```
 
-Depois disso ele abre normalmente. Sem terminal também dá: em **Ajustes do
-Sistema › Privacidade e Segurança**, role até o fim e clique em **Abrir Mesmo
-Assim** no aviso sobre o NoCom, uma vez por instalação.
+After that it opens normally. It also works without a terminal: in **System
+Settings › Privacy & Security**, scroll to the bottom and click **Open Anyway**
+on the notice about NoCom, once per install.
 
-**Sobre a segunda mensagem:** o app não estava danificado, nem o download vinha
-corrompido. O build saía com uma assinatura incompleta, que o Gatekeeper
-reprovava antes mesmo de avaliar a política — e "danificado" é a frase que o
-macOS usa nesse caso. O `xattr` acima resolve os dois.
+**About the second message:** the app wasn't damaged, and the download wasn't
+corrupted. The build used to ship with an incomplete signature, which
+Gatekeeper rejected before even evaluating policy — and "damaged" is the phrase
+macOS uses in that case. The `xattr` above fixes both.
 
-**Instalando pelo Homebrew, repita esse comando a cada `brew upgrade`.** Quem
-carimba a quarentena é o próprio `brew`, em toda instalação, e desde o Homebrew
-6 não há como desligar: o `--no-quarantine` foi removido e não tem substituto.
-Atualizar de dentro do app não passa por isso — o app troca o próprio pacote
-sem carimbar nada, e é por isso que ele é o caminho mais liso no macOS.
+**Installing via Homebrew, repeat that command on every `brew upgrade`.** It's
+`brew` itself that stamps the quarantine, on every install, and since Homebrew 6
+there's no way to turn it off: `--no-quarantine` was removed with no
+replacement. Updating from inside the app skips all of this — the app swaps its
+own bundle without stamping anything, which is why it's the smoothest path on
+macOS.
 </details>
 
 <details>
-<summary><b>Windows</b> — "o Windows protegeu seu PC"</summary>
+<summary><b>Windows</b> — "Windows protected your PC"</summary>
 
-Clique em **Mais informações** e depois em **Executar assim mesmo**.
+Click **More info** and then **Run anyway**.
 
-Quem avisa é o SmartScreen, e ele avisa porque o instalador não é assinado com
-um certificado Authenticode — uma assinatura que custa por ano e que o projeto
-ainda não tem. Não é um defeito do arquivo nem sinal de que algo foi detectado:
-é o Windows dizendo que não conhece quem assinou, e ninguém assinou.
+The warning comes from SmartScreen, and it warns because the installer isn't
+signed with an Authenticode certificate — a signature that costs money per year
+and that the project doesn't have yet. It's not a defect in the file, nor a
+sign that something was detected: it's Windows saying it doesn't know who
+signed it, and nobody did.
 
-Para pular o aviso de vez, instale
-[pelo winget](#windows--pelo-winget-recomendado).
+To skip the warning for good, install [via winget](#windows--via-winget-recommended).
 </details>
 
-## Atualizar
+## Updating
 
-Abra a engrenagem dentro do app e clique em **Verificar se há versão nova**. Se
-houver, o botão passa a oferecer **Atualizar e reiniciar**: o app baixa a versão
-nova, confere a assinatura, se substitui e volta sozinho. Você não precisa achar
-a release, escolher o arquivo da sua arquitetura, arrastar para `/Applications`
-nem repetir o `xattr`.
+Open the gear inside the app and click **Check for a new version**. If there is
+one, the button switches to **Update and restart**: the app downloads the new
+version, verifies its signature, replaces itself and comes back on its own. You
+don't have to find the release, pick the file for your architecture, drag it to
+`/Applications` or repeat the `xattr`.
 
-Não há verificação automática, de propósito — ver
-[Suas tarefas ficam com você](#suas-tarefas-ficam-com-você).
+There is no automatic check, on purpose — see
+[Your tasks stay with you](#your-tasks-stay-with-you).
 
-No Windows há um passo visível a mais: o app fecha, o instalador aparece com uma
-barra de progresso por alguns segundos e o app volta sozinho. É assim porque um
-programa em execução não pode se sobrescrever no Windows — não pede senha nem
-confirmação, e não passa pelo aviso do SmartScreen.
+On Windows there's one extra visible step: the app closes, the installer shows
+up with a progress bar for a few seconds and the app comes back on its own. It
+works that way because a running program can't overwrite itself on Windows — it
+asks for no password, no confirmation, and doesn't go through the SmartScreen
+warning.
 
-Duas ressalvas honestas:
+A few honest caveats:
 
-- **No Linux só o AppImage se atualiza.** Quem instalou pelo `.deb` ou pelo
-  `.rpm` continua atualizando pelo gerenciador de pacotes: o botão vai dizer que
-  não conseguiu verificar, e nada no app é alterado.
-- **Pelo Homebrew, os dois caminhos funcionam, mas não custam o mesmo.**
-  Atualizar de dentro do app deixa o `brew` achando que você está na versão
-  anterior até o próximo `brew upgrade --cask nocom`, que apenas reinstala a
-  mesma versão. Nada quebra, e suas tarefas não estão em `/Applications`. Só
-  que **todo `brew upgrade` recarimba a quarentena**, e aí o macOS volta a
-  bloquear o app até você repetir o `xattr -dr com.apple.quarantine`. Pelo
-  botão de dentro do app isso não acontece.
-- **Pelo winget vale o mesmo.** Atualizar de dentro do app deixa o
-  `winget upgrade` achando que há uma versão nova por instalar até você rodá-lo
-  uma vez. Ele reinstala a mesma versão, e nada se perde.
+- **On Linux, only the AppImage updates itself.** If you installed the `.deb`
+  or the `.rpm`, keep updating through your package manager: the button will
+  say it couldn't check, and nothing in the app is changed.
+- **Via Homebrew both paths work, but they don't cost the same.** Updating from
+  inside the app leaves `brew` thinking you're on the previous version until
+  the next `brew upgrade --cask nocom`, which merely reinstalls the same
+  version. Nothing breaks, and your tasks aren't in `/Applications`. But
+  **every `brew upgrade` re-stamps the quarantine**, and macOS goes back to
+  blocking the app until you repeat the `xattr -dr com.apple.quarantine`.
+  Through the button inside the app, that doesn't happen.
+- **The same goes for winget.** Updating from inside the app leaves
+  `winget upgrade` thinking there's a new version to install until you run it
+  once. It reinstalls the same version, and nothing is lost.
 
-## Usando
+## Using it
 
-Abra o app uma vez. A partir daí ele fica em segundo plano, no ícone da bandeja.
+Open the app once. From then on it stays in the background, in the tray icon.
 
-| Ação | Como |
+| Action | How |
 | --- | --- |
-| Mostrar / esconder a janela | `⌃⌥T` no macOS, `Ctrl+Alt+T` no Windows e Linux |
-| Esconder a janela | `Escape` |
-| Criar tarefa | digite e `Enter` |
-| Concluir tarefa | clique no círculo |
-| Trazer de volta sem o teclado | clique no ícone da bandeja |
-| Ver quantas faltam sem abrir | passe o mouse no ícone da bandeja |
-| Trocar o atalho | engrenagem, dentro do app |
-| Anotar uma data | escreva no título: `pagar boleto 20/08` |
+| Show / hide the window | `⌃⌥T` on macOS, `Ctrl+Alt+T` on Windows and Linux |
+| Hide the window | `Escape` |
+| Create a task | type and `Enter` |
+| Complete a task | click the circle |
+| Bring it back without the keyboard | click the tray icon |
+| See how many are left without opening | hover the tray icon |
+| Change the shortcut | the gear, inside the app |
+| Jot down a date | write it in the title: `pay the bill 08/20` |
 
-### Abas são contextos
+### Tabs are contexts
 
-Trabalho, casa, um projeto específico. Cada aba é uma lista separada, criada e
-nomeada no mesmo gesto — sem diálogo, sem tela nova. A aba em que você estava
-continua aberta na próxima vez.
+Work, home, a specific project. Each tab is a separate list, created and named
+in a single gesture — no dialog, no new screen. The tab you were on is still
+open next time.
 
-### A data que você escreveu
+### The date you wrote
 
-Escreva a data no meio do texto, como faria num papel: **pagar boleto 20/08**. O app
-reconhece a data, destaca ela e — quando ela está no fim do título — leva para uma
-**coluna à direita**, deixando o texto à esquerda:
+Write the date in the middle of the text, like you would on paper: **pay the
+bill 08/20**. The app recognizes the date, highlights it and — when it sits at
+the end of the title — moves it to a **column on the right**, leaving the text
+on the left:
 
 ```
-☐ pagar boleto              20/08
-☐ TESTE                     19/10
-☐ reuniao 19/10 com o time
+☐ pay the bill              08/20
+☐ TEST                      10/19
+☐ meeting 10/19 with the team
 ```
 
-Toda data fica com um destaque cinza. **No dia dela, o destaque fica vermelho pastel** —
-e volta ao cinza no dia seguinte, sozinho, mesmo com o app semanas aberto.
+Every date gets a gray highlight. **On its day, the highlight turns pastel
+red** — and goes back to gray the next day, on its own, even with the app open
+for weeks.
 
-A data só vai para a direita quando o título tem **uma** data e ela está no **fim**. Data
-no meio de uma frase, ou duas datas na mesma tarefa ("de 19/10 a 25/10"), ficam onde
-estão, com o texto intacto — o app nunca reescreve o que você digitou.
+The date only moves right when the title has **one** date and it's at the
+**end**. A date in the middle of a sentence, or two dates in the same task
+("from 10/19 to 10/25"), stay where they are, text untouched — the app never
+rewrites what you typed.
 
-Vale `20/08`, `20/08/26` e `20/08/2026`, com um ou dois dígitos (`6/9` funciona). A ordem
-de dia e mês é a do **formato regional do seu sistema**, não a do idioma: quem usa o
-sistema em inglês morando no Brasil continua escrevendo `20/08`.
+`08/20`, `08/20/26` and `08/20/2026` all work, with one or two digits (`6/9`
+works). The day/month order follows your **system's regional format**, not its
+language: someone using their system in English while living in Brazil keeps
+writing `20/08`.
 
-Duas coisas que ele **não** faz: não avisa quando a data passa, e uma data de ontem fica
-igual a uma de amanhã. Não é prazo — ver [O que ele não é](#o-que-ele-não-é).
+Two things it does **not** do: it doesn't alert you when the date passes, and
+yesterday's date looks the same as tomorrow's. It's not a deadline — see
+[What it isn't](#what-it-isnt).
 
-### Nada se perde por acidente
+### Nothing is lost by accident
 
-Todo gesto destrutivo — remover tarefa, fechar aba, limpar concluídas — pode ser
-desfeito na hora. Nunca há caixa de confirmação no caminho.
+Every destructive gesture — removing a task, closing a tab, clearing completed —
+can be undone on the spot. There's never a confirmation box in the way.
 
-## O que ele não é
+## What it isn't
 
-Um não-objetivo é tão parte do produto quanto uma funcionalidade. O NoCom
-não tem prazos, prioridades, subtarefas, etiquetas, anexos, colaboração nem
-sincronização. Ele não vai virar um gerenciador de projetos.
+A non-goal is as much a part of the product as a feature. NoCom has no
+deadlines, priorities, subtasks, labels, attachments, collaboration or sync.
+It's not going to become a project manager.
 
-**"Sem prazos" continua valendo mesmo com a coluna de datas.** O app **lê** a data que
-você escreveu e diz "é hoje" no dia certo. Ele não **gerencia** vencimento: não ordena por
-data, não avisa quando passa, não conta os dias que faltam e não tem campo "para quando".
+**"No deadlines" still holds even with the date column.** The app **reads** the
+date you wrote and says "it's today" on the right day. It doesn't **manage**
+due dates: it doesn't sort by date, doesn't alert when one passes, doesn't
+count remaining days and has no "due when" field.
 
-O vermelho marca **coincidência, não urgência** — é o dia da data, não "atrasado". Uma
-data de ontem fica cinza, igual a uma de amanhã, porque o app não guarda data nenhuma
-para poder comparar depois.
+The red marks **coincidence, not urgency** — it's the date's day, not
+"overdue". Yesterday's date stays gray, same as tomorrow's, because the app
+doesn't store any date to compare against later.
 
-## Suas tarefas ficam com você
+## Your tasks stay with you
 
-Tudo em um arquivo de texto simples no seu computador, que nunca sai dele:
+Everything in one plain text file on your computer, which never leaves it:
 
-| Sistema | Onde |
+| System | Where |
 | --- | --- |
 | macOS | `~/Library/Application Support/com.nocom.app/todos.json` |
 | Windows | `%APPDATA%\com.nocom.app\todos.json` |
 | Linux | `~/.local/share/com.nocom.app/todos.json` |
 
-Sem telemetria e sem conta. A **única** requisição de rede que o app faz é a
-verificação de atualização, e ela sai de um clique seu dentro da engrenagem —
-nunca na abertura, nunca por temporizador, nunca em segundo plano. Sem esse
-clique, nada sai desta máquina.
+No telemetry and no account. The **only** network request the app makes is the
+update check, and it comes from a click of yours inside the gear — never on
+launch, never on a timer, never in the background. Without that click, nothing
+leaves this machine.
 
-Para levar suas tarefas para outra máquina, copie esse arquivo.
+To take your tasks to another machine, copy that file.
 
-O idioma (português ou inglês) e o tema claro/escuro seguem o seu sistema — não
-há seletor para nenhum dos dois.
+Language (Portuguese or English) and light/dark theme follow your system —
+there's no selector for either.
 
-## Para desenvolvedores
+## For developers
 
 Tauri v2 (Rust) + React 19 + TypeScript + Tailwind + shadcn/ui.
 
 ```sh
 npm install
-npm run tauri dev      # desenvolvimento
-npm run tauri build    # instaladores para a plataforma atual
-npm test               # testes do frontend (node --test, sem dependência extra)
-cd src-tauri && cargo test   # testes do backend
-
-npm run marca          # regera os ícones a partir de assets/marca/nocom.svg
-npm run vitrine        # regera as fotos (assets/telas/) e o espécime (assets/especime/)
+npm run tauri dev
 ```
 
-Os dois últimos existem para que nenhuma imagem do projeto seja um arquivo órfão:
-mudou a interface, `npm run vitrine` refaz as fotos deste README nos dois temas,
-com dados de exemplo e a data de hoje calculada na hora — e refaz também o
-**espécime** que a [landing page](https://zheonatan.github.io/nocom) mostra, que
-não é foto nenhuma: é o DOM montado do app, extraído com o CSS dele e com as
-regiões das chamadas medidas, para a página desenhar a janela em vetor em vez de
-em pixel. O raster fica porque o GitHub não renderiza mais que isso; a página, que
-pode, deixou de usá-lo. O porquê está no cabeçalho de `scripts/vitrine/captura.mjs`. Ele precisa de um
-navegador baseado em Chromium — se o seu não estiver no lugar de sempre, aponte
-com `CHROME=/caminho/para/chrome npm run vitrine`.
+Everything else — prerequisites, tests, the image pipeline and how a release
+ships — lives in [`DEVELOPMENT.md`](DEVELOPMENT.md). It is in Portuguese, the
+project's working language, like [`PRODUCT.md`](PRODUCT.md) (what the product
+is and why), [`CONTRACT.md`](CONTRACT.md) (normative behavior and the IPC
+boundary) and [`DESIGN.md`](DESIGN.md) (interface decisions). Each version's
+changes are in the [`CHANGELOG.md`](CHANGELOG.md), and
+[`CONTRIBUTING.md`](CONTRIBUTING.md) says what a PR needs to land — issues and
+PRs in English are just as welcome.
 
-**Pré-requisitos:** Node 22.18+ (o `npm test` usa o apagador de tipos nativo do
-Node, sem transpilador), Rust estável e as
-[dependências de sistema do Tauri](https://tauri.app/start/prerequisites/).
-No Linux: `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
-e `libxdo-dev`.
+## Project status
 
-Documentos do projeto: [`PRODUCT.md`](PRODUCT.md) (o que o produto é e por quê),
-[`CONTRACT.md`](CONTRACT.md) (comportamento normativo e fronteira IPC) e
-[`DESIGN.md`](DESIGN.md) (decisões de interface). O que cada versão mudou está
-no [`CHANGELOG.md`](CHANGELOG.md), e como contribuir, no
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+Version 0.5.0 — functional and in use, but not yet signed by Apple or
+Microsoft, and the bundled icon is provisional. Found something odd?
+[Open an issue](https://github.com/Zheonatan/nocom/issues).
 
-**Publicar uma versão é um comando:**
+## Support the project
 
-```sh
-npm run publicar -- 0.5.0
-```
-
-Ele sobe o número nos sete arquivos que o citam (`package.json`, `Cargo.toml`,
-`Cargo.lock`, `tauri.conf.json`, os links de download dos dois READMEs e o IPC
-falso da vitrine), comita, cria a tag `v0.5.0` e empurra. Se qualquer arquivo
-tiver mudado de forma, ele para antes de comitar em vez de subir uma versão pela
-metade — e ele se recusa a publicar uma versão sem seção no
-[`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
-`--sem-push` para antes de empurrar, para conferir o commit.
-
-Da tag em diante o [workflow](.github/workflows/release.yml) faz o resto sozinho:
-
-| Workflow / job | O que faz |
-| --- | --- |
-| [`release.yml`](.github/workflows/release.yml) → `build` | Compila as quatro plataformas, cria a release com a seção do CHANGELOG no corpo, e sobe os instaladores mais o `latest.json` que o botão de atualizar consulta |
-| [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `homebrew` | Calcula os `sha256` dos DMGs e comita a versão nova no cask de [Zheonatan/homebrew-tap](https://github.com/Zheonatan/homebrew-tap) |
-| [`gerenciadores.yml`](.github/workflows/gerenciadores.yml) → `winget` | Roda `wingetcreate update` e abre o PR do manifesto em [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) |
-
-O `gerenciadores.yml` roda **só em tag** — um `workflow_dispatch` de teste no
-`release.yml` não mexe no que os usuários instalam. E o PR do winget ainda passa
-pela validação automática e pela revisão da Microsoft, então a versão nova
-costuma aparecer no `winget install` algumas horas depois da release.
-
-**Quando um dos dois falha, não precisa refazer a release.** O
-`gerenciadores.yml` também aceita disparo manual pela aba Actions, pedindo só a
-tag de uma release já publicada — ele relê os instaladores de lá. Serve para
-token expirado, PR do winget recusado, rede caindo no meio, ou para conferir um
-secret novo sem esperar a próxima versão. Repetir é seguro: reescrever o cask
-com os mesmos valores não gera commit, e o `wingetcreate` não reabre PR de uma
-versão que já entrou.
-
-**Três secrets do repositório sustentam isso**, além dos dois de assinatura logo
-abaixo:
-
-| Secret | Para quê | Escopo |
-| --- | --- | --- |
-| `TAP_TOKEN` | Comitar no tap, que é outro repositório e o `GITHUB_TOKEN` não alcança | Fine-grained, `contents: write`, só em `Zheonatan/homebrew-tap` |
-| `WINGET_TOKEN` | Abrir o PR no winget-pkgs pelo fork da sua conta | Clássico, escopo `public_repo` |
-
-**A primeira versão no winget é manual**, uma vez só: `wingetcreate update`
-precisa que o pacote já exista. Com o `.exe` de uma release publicada:
-
-```powershell
-wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe
-```
-
-Responda `Zheonatan.NoCom` como identificador — é o que o job procura. Da
-segunda release em diante o CI cuida.
-
-**A chave de assinatura das atualizações** é o que faz o app aceitar um pacote.
-Gerada uma vez com `npm run tauri signer generate -- -w ~/.tauri/nocom.key`: a
-metade pública vai em `plugins.updater.pubkey` no `tauri.conf.json`, e a privada
-em dois secrets do repositório, `TAURI_SIGNING_PRIVATE_KEY` e
-`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
-
-Guarde a privada fora da máquina. **Perdê-la significa que ninguém que já
-instalou volta a atualizar de dentro do app** — trocar o `pubkey` obriga todo
-mundo a reinstalar na mão uma última vez.
-
-## Estado do projeto
-
-Versão 0.5.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
-Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
-[Abra uma issue](https://github.com/Zheonatan/nocom/issues).
-
-## Apoiar
-
-O NoCom é gratuito, sem conta, sem nuvem e sem telemetria — e vai continuar
-assim. Se ele te economiza alguns segundos por dia e você quiser retribuir —
-por Pix no LivePix, ou por cartão no Ko-fi:
+NoCom is free, with no account, no cloud and no telemetry — and it will stay
+that way. If it saves you a few seconds a day and you'd like to give back — by
+Pix on LivePix, or by card on Ko-fi:
 
 <a href="https://livepix.gg/zheo">
-  <img alt="Apoiar via LivePix" src="https://img.shields.io/badge/LivePix-Apoiar%20o%20projeto-14539A?style=for-the-badge&logo=pix&logoColor=white" />
+  <img alt="Support via LivePix" src="https://img.shields.io/badge/LivePix-Support%20the%20project-14539A?style=for-the-badge&logo=pix&logoColor=white" />
 </a>
 <a href="https://ko-fi.com/zheos">
-  <img alt="Apoiar via Ko-fi" src="https://img.shields.io/badge/Ko--fi-Apoiar%20o%20projeto-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" />
+  <img alt="Support via Ko-fi" src="https://img.shields.io/badge/Ko--fi-Support%20the%20project-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" />
 </a>
 
-Contribuir com código, relatar um bug ou só contar como você usa o app vale o
-mesmo. Nada aqui é atrás de paywall.
+Contributing code, reporting a bug or just telling me how you use the app is
+worth the same. Nothing here sits behind a paywall.

@@ -1,6 +1,6 @@
 // Posa a interface real do app e grava as DUAS formas em que ela é publicada:
 //
-//   assets/telas/janela-{clara,escura}.png   dois PNGs, para o README
+//   assets/telas/janela-{clara,escura}[-en].png   quatro PNGs, um par por README
 //   assets/especime/janela-{pt-BR,en}.html   o DOM montado, para a folha de cotas
 //   assets/especime/janela.css               o CSS do app, purgado ao espécime
 //   assets/especime/janela.propriedades.css  os @property do Tailwind, para o <head>
@@ -88,9 +88,12 @@ const TEMAS = [
 ]
 
 /**
- * As línguas do espécime da folha. O README é só em português, então o PNG sai
- * numa língua só; a folha tem duas páginas e agora cada uma mostra a janela na
- * língua dela.
+ * As línguas — do espécime da folha e das fotos. A folha tem duas páginas e
+ * cada uma mostra a janela na língua dela; e desde que o README principal é o
+ * inglês (com o português em README.pt-BR.md), as fotos também saem nas duas:
+ * o app segue o idioma do sistema, e um README inglês com a janela em
+ * português anunciaria um app que, para aquele leitor, ele não é. O par
+ * inglês ganha o sufixo `-en` no nome do arquivo.
  */
 const IDIOMAS = ['pt-BR', 'en']
 
@@ -343,7 +346,8 @@ async function conferirHoje(aba, contexto) {
   }
 }
 
-async function capturar(base, servidorUrl, tema) {
+async function capturar(base, servidorUrl, tema, idioma) {
+  const arquivo = idioma === 'pt-BR' ? tema.arquivo : tema.arquivo.replace('.png', `-${idioma}.png`)
   const aba = await abrirAba(base)
   try {
     await aba.cmd('Page.enable')
@@ -364,17 +368,19 @@ async function capturar(base, servidorUrl, tema) {
     })
 
     const carregou = aba.esperarEvento('Page.loadEventFired')
-    await aba.cmd('Page.navigate', { url: `${servidorUrl}/scripts/vitrine/index.html` })
+    await aba.cmd('Page.navigate', {
+      url: `${servidorUrl}/scripts/vitrine/index.html?lang=${encodeURIComponent(idioma)}`,
+    })
     await carregou
     await esperarPronta(aba)
-    await conferirHoje(aba, tema.arquivo)
+    await conferirHoje(aba, arquivo)
 
     const { data } = await aba.cmd('Page.captureScreenshot', { format: 'png', fromSurface: true })
     const bytes = Buffer.from(data, 'base64')
     mkdirSync(SAIDA, { recursive: true })
-    const caminho = join(SAIDA, tema.arquivo)
+    const caminho = join(SAIDA, arquivo)
     writeFileSync(caminho, bytes)
-    return `  ${tema.arquivo.padEnd(20)} ${(JANELA.largura + 2 * FOLGA) * ESCALA}x${(JANELA.altura + 2 * FOLGA) * ESCALA}  ${(bytes.length / 1024).toFixed(1)} kB`
+    return `  ${arquivo.padEnd(23)} ${(JANELA.largura + 2 * FOLGA) * ESCALA}x${(JANELA.altura + 2 * FOLGA) * ESCALA}  ${(bytes.length / 1024).toFixed(1)} kB`
   } finally {
     await aba.fechar()
   }
@@ -676,8 +682,10 @@ try {
   chrome = await subirChrome()
 
   const linhas = []
-  for (const tema of TEMAS) {
-    linhas.push(await capturar(chrome.base, servidorUrl, tema))
+  for (const idioma of IDIOMAS) {
+    for (const tema of TEMAS) {
+      linhas.push(await capturar(chrome.base, servidorUrl, tema, idioma))
+    }
   }
   console.log(`${SAIDA}:`)
   console.log(linhas.join('\n'))

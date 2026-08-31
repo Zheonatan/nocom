@@ -77,6 +77,25 @@ jobs:
       - name: Instalar dependências do front
         run: npm ci
 
+      # As notas da release vêm do CHANGELOG.md, escrito ANTES de publicar —
+      # o `npm run publicar` recusa uma versão sem seção lá. Aqui só se copia:
+      # o awk recorta do `## <versão> ` até o `## ` seguinte, e a versão vem do
+      # `package.json` porque um `workflow_dispatch` não tem tag para ler. Se a
+      # seção não existir (um dispatch de teste numa árvore antiga), cai no
+      # corpo genérico em vez de derrubar um build que custa meia hora.
+      - name: Notas da release (CHANGELOG.md)
+        id: notas
+        shell: bash
+        run: |
+          VERSAO=$(node -p "require('./package.json').version")
+          NOTAS=$(awk -v v="$VERSAO" '$0 ~ "^## " v " " {dentro=1; next} /^## / {dentro=0} dentro' CHANGELOG.md)
+          : "${NOTAS:=Instaladores para Windows, macOS e Linux gerados automaticamente.}"
+          {
+            echo 'corpo<<FIM_DAS_NOTAS'
+            echo "$NOTAS"
+            echo 'FIM_DAS_NOTAS'
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -124,7 +143,7 @@ jobs:
           args: --target ${{ matrix.target }}
           tagName: v__VERSION__
           releaseName: NoCom v__VERSION__
-          releaseBody: "Instaladores para Windows, macOS e Linux gerados automaticamente."
+          releaseBody: ${{ steps.notas.outputs.corpo }}
           # Publica direto: um draft não tem URL estável, e o cask do Homebrew
           # baixa de /releases/download/v<versão>/.
           releaseDraft: false

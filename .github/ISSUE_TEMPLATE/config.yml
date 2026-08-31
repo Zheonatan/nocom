@@ -1,0 +1,10 @@
+# Issue em branco continua permitida: "contar como você usa o app" é uma issue
+# legítima e não cabe em template nenhum.
+blank_issues_enabled: true
+contact_links:
+  - name: Vulnerabilidade de segurança / Security vulnerability
+    url: https://github.com/Zheonatan/nocom/security/advisories/new
+    about: Relate em privado, nunca por issue pública. / Report privately, never in a public issue.
+  - name: Site do projeto
+    url: https://zheonatan.github.io/nocom
+    about: A página do NoCom, com download e o tour da janela.

@@ -1,0 +1,32 @@
+# O campo do "instante de uso" vem antes do campo da sugestão de propósito: o
+# produto decide por dor concreta, não por lista de features — e uma ideia que
+# cruza os não-objetivos do README será recusada com carinho, mas recusada.
+name: Ideia
+description: Uma sugestão para o app / A feature suggestion
+labels: ["ideia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de escrever, vale ler
+        [O que ele não é](https://github.com/Zheonatan/nocom#o-que-ele-não-é) no README:
+        prazos, prioridades, subtarefas, etiquetas, colaboração e sincronização estão
+        fora de propósito, e uma ideia nessa direção será recusada mesmo sendo boa.
+        Pode escrever em português ou em inglês. *Feel free to write in English.*
+
+  - type: textarea
+    id: instante
+    attributes:
+      label: O instante que dói hoje
+      description: Descreva a situação concreta em que o app te deixa na mão — o que você estava fazendo, o que tentou.
+      placeholder: "Estava no meio de ... e precisei ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: sugestao
+    attributes:
+      label: A sugestão
+      description: Como você imagina que o app poderia resolver esse instante.
+    validations:
+      required: true

@@ -1,0 +1,67 @@
+# O template pede pouco de propósito: sistema, versão e o caminho até o
+# problema é o que transforma "não funciona" em algo reproduzível. Pode ser
+# preenchido em português ou em inglês.
+name: Bug
+description: Algo não se comportou como o README promete / Something didn't behave as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar. Pode escrever em português ou em inglês.
+        *Feel free to write in English.*
+
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux (.deb)
+        - Linux (.rpm)
+        - Linux (AppImage)
+    validations:
+      required: true
+
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do NoCom
+      description: A engrenagem dentro do app mostra ("Você está na 0.5.0").
+      placeholder: "0.5.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: instalacao
+    attributes:
+      label: Como instalou
+      options:
+        - Homebrew
+        - winget
+        - Download direto da release
+        - Compilei da fonte
+    validations:
+      required: true
+
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu
+      description: O que você fez, o que esperava e o que o app fez no lugar.
+      placeholder: |
+        1. Abri o app com ⌃⌥T
+        2. ...
+        Esperava que ... — em vez disso, ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto extra
+      description: Se ajudar — captura de tela, mensagem de erro, idioma e tema do sistema.
+    validations:
+      required: false

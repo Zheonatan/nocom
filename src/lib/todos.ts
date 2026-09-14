@@ -17,6 +17,9 @@ export type { Repeat, Reminder };
 export { isMac, isLinux, hasModKey } from "@/lib/platform";
 export { clampLength, lengthOf } from "@/lib/text";
 export { nextTabName, neighbourTabId } from "@/lib/tabs";
+// A ordem de exibição saiu daqui para `lib/order.ts` (Adendo 15), que o
+// `node --test` consegue carregar — o reexport mantém o importador.
+export { byDisplayOrder } from "@/lib/order";
 
 /**
  * Limite de título do contrato (Adendo 1). O backend valida de novo — aqui o
@@ -513,15 +516,6 @@ export function byCreatedAt(
   return a.created_at - b.created_at;
 }
 
-/**
- * Ordem de EXIBIÇÃO (Adendo 4): pendentes primeiro, concluídas depois, cada grupo
- * por `created_at`. É regra só da tela — o estado continua na ordem canônica, e o
- * backend nunca vê esta ordenação. Numa janela que mostra poucas linhas, uma
- * concluída no meio empurra trabalho para baixo da dobra.
- */
-export function byDisplayOrder(a: Todo, b: Todo): number {
-  if (a.done !== b.done) return a.done ? 1 : -1;
-  return a.created_at - b.created_at;
-}
+// `byDisplayOrder` mora em `lib/order.ts` (reexportado no topo).
 
 // `nextTabName` e `neighbourTabId` moram em `lib/tabs.ts` (reexportados no topo).

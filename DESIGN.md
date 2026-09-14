@@ -1290,8 +1290,9 @@ aparência.
   entre linhas — 2px de intervalo bastam.
 - **Divisão de gestos:** o checkbox alterna, o **duplo clique no título** edita, o × remove.
   Três gestos, três alvos, sem sobreposição.
-- **Ordem de exibição:** pendentes primeiro, concluídas depois, cada grupo por data de
-  criação. É regra de exibição, aplicada só na borda da renderização.
+- **Ordem de exibição:** pendentes com data primeiro (a mais próxima no topo),
+  depois as sem data por criação, concluídas no fim por criação. É regra de
+  exibição, aplicada só na borda da renderização — o estado continua canônico.
 - **Movimento — viajar.** Marcar uma tarefa a manda para o fim da lista, e ela
   **desliza** 180ms até o novo lugar em vez de saltar (FLIP: `offsetTop` antes do
   reflow, `translateY` depois). Vale igual para o buraco que uma remoção deixa: as

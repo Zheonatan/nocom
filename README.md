@@ -228,6 +228,10 @@ Every date gets a gray highlight. **On its day, the highlight turns pastel
 red** — and goes back to gray the next day, on its own, even with the app open
 for weeks.
 
+**Tasks with a date rise in the list.** Among pending tasks, dated ones sit
+above undated ones, nearest first — completed tasks stay at the bottom, in
+creation order.
+
 The date only moves right when the title has **one** date and it's at the
 **end**. A date in the middle of a sentence, or two dates in the same task
 ("from 10/19 to 10/25"), stay where they are, text untouched — the app never
@@ -239,7 +243,8 @@ language: someone using their system in English while living in Brazil keeps
 writing `20/08`.
 
 Two things it does **not** do: it doesn't alert you when the date passes, and
-yesterday's date looks the same as tomorrow's. It's not a deadline — see
+yesterday's date keeps the same gray as tomorrow's — a past date rises in the
+list, but stays gray. It's not a deadline — see
 [What it isn't](#what-it-isnt).
 
 ### Nothing is lost by accident
@@ -255,8 +260,10 @@ It's not going to become a project manager.
 
 **"No deadlines" still holds even with the date column.** The app **reads** the
 date you wrote and says "it's today" on the right day. It doesn't **manage**
-due dates: it doesn't sort by date, doesn't alert when one passes, doesn't
-count remaining days and has no "due when" field.
+due dates: it doesn't alert when one passes, doesn't count remaining days and
+has no "due when" field. What it does with the date, besides showing it, is
+**sort the display**: a pending task with a date sits above undated ones,
+nearest first.
 
 The red marks **coincidence, not urgency** — it's the date's day, not
 "overdue". Yesterday's date stays gray, same as tomorrow's, because the app

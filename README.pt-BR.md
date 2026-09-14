@@ -226,6 +226,10 @@ reconhece a data, destaca ela e — quando ela está no fim do título — leva 
 Toda data fica com um destaque cinza. **No dia dela, o destaque fica vermelho pastel** —
 e volta ao cinza no dia seguinte, sozinho, mesmo com o app semanas aberto.
 
+**Tarefas com data sobem na lista.** Entre as pendentes, as que têm data ficam acima
+das que não têm, da mais próxima para a mais distante — concluídas continuam no fim,
+na ordem em que foram criadas.
+
 A data só vai para a direita quando o título tem **uma** data e ela está no **fim**. Data
 no meio de uma frase, ou duas datas na mesma tarefa ("de 19/10 a 25/10"), ficam onde
 estão, com o texto intacto — o app nunca reescreve o que você digitou.
@@ -235,7 +239,8 @@ de dia e mês é a do **formato regional do seu sistema**, não a do idioma: que
 sistema em inglês morando no Brasil continua escrevendo `20/08`.
 
 Duas coisas que ele **não** faz: não avisa quando a data passa, e uma data de ontem fica
-igual a uma de amanhã. Não é prazo — ver [O que ele não é](#o-que-ele-não-é).
+com a mesma cor de uma de amanhã — a data passada sobe na lista, mas continua cinza.
+Não é prazo — ver [O que ele não é](#o-que-ele-não-é).
 
 ### Nada se perde por acidente
 
@@ -249,8 +254,10 @@ não tem prazos, prioridades, subtarefas, etiquetas, anexos, colaboração nem
 sincronização. Ele não vai virar um gerenciador de projetos.
 
 **"Sem prazos" continua valendo mesmo com a coluna de datas.** O app **lê** a data que
-você escreveu e diz "é hoje" no dia certo. Ele não **gerencia** vencimento: não ordena por
-data, não avisa quando passa, não conta os dias que faltam e não tem campo "para quando".
+você escreveu e diz "é hoje" no dia certo. Ele não **gerencia** vencimento: não avisa
+quando passa, não conta os dias que faltam e não tem campo "para quando". O que ele faz
+com a data, além de mostrar, é **ordenar a exibição**: pendente com data fica acima das
+sem data, da mais próxima para a mais distante.
 
 O vermelho marca **coincidência, não urgência** — é o dia da data, não "atrasado". Uma
 data de ontem fica cinza, igual a uma de amanhã, porque o app não guarda data nenhuma

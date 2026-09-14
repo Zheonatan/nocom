@@ -9,6 +9,17 @@ Este arquivo também é a fonte das notas de release: o
 o corpo da release no GitHub, e o `npm run publicar` se recusa a publicar uma
 versão que ainda não tenha seção aqui.
 
+## 0.6.0 — 2026-09-14
+
+**Tarefas com data sobem na lista.** Entre as pendentes, as que têm data no
+título ficam acima das que não têm, da mais próxima para a mais distante.
+Concluídas continuam no fim, na ordem em que foram criadas. E a data passada
+sobe — mas continua cinza: a cor marca o dia, não atraso.
+
+**Busca local.** `⌘F`/`Ctrl+F` abre uma banda que filtra a aba atual na hora,
+conta os resultados e avisa quando há correspondência em outras abas, com
+atalho para pular até elas. Fechar a busca volta tudo ao normal.
+
 ## 0.5.0 — 2026-08-25
 
 **Lembretes sobre a data do título.** Uma tarefa com data agora aceita, pelo

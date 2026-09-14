@@ -2206,3 +2206,85 @@ repetiria o recado a cada aviso vencido).
   título apaga o lembrete e o sino some.
 - Renomear a tarefa **sem** mexer na data não rearma um lembrete já disparado.
 - Concluir uma tarefa antes da hora do aviso a faz não notificar.
+
+# Adendo 15 — pendentes com data sobem pela data do título (2026-09-14)
+
+Pedido pelo usuário nestas palavras: *"fazer os itens com data ficarem na ordem
+da data"*, com a data mais próxima no topo e o resto como está.
+
+Uma mudança só, e ela **atravessa outra linha que o PRODUCT.md tinha traçado
+com todas as letras** ("não ordena por data", Adendo 11). Como no Adendo 14, o
+registro da linha movida está lá, e este adendo registra a regra e as decisões —
+inclusive as que existem para manter a linha nova o mais estreita possível.
+
+## A regra
+
+Regra **de exibição, no frontend** — o estado continua na ordem canônica
+(`created_at` crescente) e o backend não muda:
+
+1. Pendentes COM data única e válida, em ordem **crescente de data** — a mais
+   próxima no topo.
+2. Pendentes SEM data, por `created_at` crescente (a ordem de sempre).
+3. Concluídas, por `created_at` crescente (a ordem de sempre).
+
+Concluída não reordena por data: resolvido é estado com menos contraste, e uma
+posição derivada da data ali diria "isto ainda exige ação" numa linha riscada.
+
+## O que conta como "ter data"
+
+O `soleDate` de `lib/dates.ts` — a mesma régua do lembrete, pelo mesmo motivo.
+Uma data única e válida no calendário conta; duas datas ("de 19/10 a 25/10")
+ou uma impossível (`31/02`) contam como sem data. Empate de data desempatada
+por `created_at`.
+
+**Sobe vencida, por construção.** Crescente põe o passado antes do futuro,
+então uma data de ontem fica acima de uma de amanhã — é o preço assumido da
+ordem pedida, e está dito em voz alta porque o Adendo 11 prometia o contrário
+("uma data passada fica igual a uma futura"). A promessa que continua valendo
+é a da tinta: a cor segue cinza igual, ontem e amanhã.
+
+**Sem ano, o ano é o de hoje** — a mesma definição de `soleDate`. `05/01`
+escrito em agosto é janeiro DESTE ano: passado, e portanto no topo.
+
+## Onde mora
+
+`src/lib/order.ts`, puro e sem `@/` — `dateKey` (a data como `ano * 10000 +
+mês * 100 + dia), `withDates` + `compareDated` (o caminho da lista) e
+`byDisplayOrder` (o atalho de uma comparação, reexportado por `lib/todos.ts`
+para nenhum importador mudar). Testes em `order.test.ts`, no padrão dos de
+`dates.ts`.
+
+A lista resolve as chaves UMA vez por tarefa: o comparador roda O(n log n)
+vezes, e cada leitura é uma regex no título. `today` e `dayFirst` são
+dependências do `useMemo` porque a chave depende deles — a lista reordena
+junto na meia-noite, sem gesto. A viagem FLIP existente cobre a troca de
+posição sem código novo.
+
+## O que impede isto de virar prazo
+
+O não-objetivo não some — ele fica **mais estreito**, e são quatro condições
+concretas que o sustentam:
+
+1. **Nada é derivado além da posição.** Não há "atrasada", não há contagem de
+   dias, não há aviso quando passa, não há campo "para quando".
+2. **A data continua fora do modelo de dados.** Nenhum campo novo em `Todo`,
+   nenhum comando novo: a data é lida do título na renderização e descartada
+   no mesmo quadro, como desde o Adendo 11.
+3. **Concluir desliga a data.** A linha concluída nem destaca (`TodoRow`, Regra
+   do Desbotamento) nem reordena por ela — as duas metades da mesma decisão.
+4. **Sem data válida, sem posição especial.** Intervalo e data impossível ficam
+   com as sem data, por criação: o app continua sem adivinhar intenção.
+
+O teste para trabalho futuro é o mesmo dos adendos 11, 13 e 14: se uma tarefa
+com data começar a parecer *resolvida de outro jeito* — cor de atraso,
+contador, aviso não pedido —, o app virou gerenciador de prazo, e isso volta
+ao PRODUCT.md antes de voltar ao código.
+
+## Definição de pronto (adicional)
+
+- `npm run build` e `npm test` passam limpos.
+- Pendente com `19/10` acima de pendente com `25/10`; sem data abaixo das duas,
+  por criação; concluída com data de hoje no fim, por criação (fixado em teste).
+- `31/02` e "de 19/10 a 25/10" contam como sem data (fixado em teste).
+- Renomear trocando a data move a linha com a viagem FLIP, sem salto seco.
+- À meia-noite, com o app aberto, a lista reordena sozinha junto das pílulas.

@@ -57,9 +57,11 @@ virou gerenciador de prazo, e isso volta a este documento antes de voltar ao có
 **Onde fica a linha do "sem prazos"** (Adendo 11, e o teste de qualquer trabalho futuro
 nesta área): o app **lê** a data que você escreveu no título, mostra ela numa coluna à
 direita da linha e a marca em vermelho pastel **no dia**. E **não gerencia vencimento**:
-não ordena por data, não conta quantos dias faltam, e não tem campo "para quando". Desde o
-Adendo 14 ele **avisa**, e só quando alguém pede tarefa por tarefa — ver a linha do
-lembrete, logo abaixo.
+não conta quantos dias faltam, não avisa quando passa e não tem campo "para quando".
+Desde o Adendo 14 ele **avisa**, e só quando alguém pede tarefa por tarefa — ver a linha do
+lembrete, logo abaixo. E desde o Adendo 15 ele **ordena a exibição pela data lida**:
+pendente com data sobe acima das sem data, a mais próxima no topo — ver a linha da
+ordem, logo abaixo.
 
 A garantia é estrutural e não uma promessa: a data **não existe no modelo de dados** — é
 lida do título na renderização e descartada no mesmo quadro. A única operação sobre ela é
@@ -92,12 +94,23 @@ O teste para trabalho futuro: se uma tarefa com lembrete começar a parecer *dif
 uma sem — mais alta na lista, em outra cor, com um contador —, o app virou gerenciador de
 prazo, e isso volta a este documento antes de voltar ao código.
 
+**Onde fica a linha da ordem** (Adendo 15, pedido pelo usuário nestas palavras —
+"fazer os itens com data ficarem na ordem da data"). **Esta é a segunda linha que se
+move, e o registro é honesto:** os parágrafos acima diziam "não ordena por data", e a
+partir daqui a lista ordena a exibição pela data lida do título — pendente com data
+acima das sem data, a mais próxima no topo, concluídas no fim como sempre. O que
+sustenta o não-objetivo, mais estreito: **nada é derivado além da posição** — não há
+"atrasada", não há contagem de dias, não há aviso quando passa, não há campo "para
+quando" — e **a data continua fora do modelo de dados**, lida do título a cada
+renderização e descartada no mesmo quadro.
+
 **Esta linha ficou mais fina, e o registro é honesto:** uma coluna de datas à direita com
 o dia de hoje em vermelho é visualmente vizinha de uma coluna de prazos, e vermelho é a
 cor de *atrasado* em quase todo app de tarefas. O que sustenta o não-objetivo são duas
 coisas concretas — **a cor marca coincidência, não urgência** (ontem é cinza, igual a
-amanhã), e **nada é derivado além da igualdade com hoje**. O teste para trabalho futuro:
-se uma data passada começar a parecer diferente de uma futura, o app virou gerenciador de
+amanhã), e **nada é derivado além da igualdade com hoje e da posição**. O teste para trabalho futuro:
+se uma data passada começar a parecer diferente de uma futura em COR, contador ou aviso —
+posição à parte, que é a ordem assumida do Adendo 15 —, o app virou gerenciador de
 prazo, e isso volta a este documento antes de voltar ao código.
 
 ## Positioning

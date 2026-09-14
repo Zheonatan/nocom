@@ -60,6 +60,21 @@ const pt = {
     one: "1 pendente",
     other: "{n} pendentes",
   },
+  "search.placeholder": "Buscar…",
+  "search.label": "Buscar nas tarefas",
+  "search.clear": "Limpar busca",
+  "search.noResults": 'Nenhum resultado para "{query}".',
+  "search.count": {
+    one: "1 de {total}",
+    other: "{n} de {total}",
+  },
+  "search.open": "Buscar",
+  "search.openWithShortcut": "Buscar ({shortcut})",
+  "search.otherHint": {
+    one: "1 em outra aba",
+    other: "{n} em outras abas",
+  },
+  "search.jumpToTab": 'Ir para "{name}"',
   "footer.allDone": "Tudo em dia",
   // A mesma frase com o atalho pendurado (Adendo 12): passada a faixa de 6
   // segundos, este é o único lugar permanente onde a combinação fica legível —
@@ -440,6 +455,21 @@ const en: Record<MessageKey, Entry> = {
     one: "1 pending",
     other: "{n} pending",
   },
+  "search.placeholder": "Search…",
+  "search.label": "Search tasks",
+  "search.clear": "Clear search",
+  "search.noResults": 'No results for "{query}".',
+  "search.count": {
+    one: "1 of {total}",
+    other: "{n} of {total}",
+  },
+  "search.open": "Search",
+  "search.openWithShortcut": "Search ({shortcut})",
+  "search.otherHint": {
+    one: "1 in another tab",
+    other: "{n} in other tabs",
+  },
+  "search.jumpToTab": 'Go to "{name}"',
   "footer.allDone": "All clear",
   "footer.allDoneHint": "All clear — {shortcut} hides",
   "footer.clearCompleted": "Clear completed",

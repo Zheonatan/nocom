@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Settings, X } from "lucide-react";
+import { Search, Settings, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,13 @@ import { useToday } from "@/hooks/use-today";
 import { soleDate } from "@/lib/dates";
 import { t, type MessageKey } from "@/lib/i18n";
 import { hasAddedTask, markTaskAdded } from "@/lib/onboarding";
+import { compareDated, withDates } from "@/lib/order";
 import { dueIds } from "@/lib/recurrence";
 import { remindAt, sameDate, stillAhead } from "@/lib/reminders";
 import { DEFAULT_SHORTCUT_LABEL } from "@/lib/shortcut";
 import {
   addTodo,
   byCreatedAt,
-  byDisplayOrder,
   clampLength,
   clearCompleted,
   closeTab,
@@ -42,6 +42,7 @@ import {
   hasModKey,
   hideWindow,
   isLinux,
+  isMac,
   lengthOf,
   listPendingCounts,
   listRecurring,
@@ -333,6 +334,17 @@ function App() {
    * e é por isso que as teclas de aba ficam desligadas ali embaixo.
    */
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /**
+   * Busca local por substring no título. Sem IPC, sem persistência, sem custo de
+   * altura permanente: a banda mede 0 fechada e 40px aberta (a mesma animação da
+   * faixa de aviso, `grid-rows`), então a Regra do Custo de Altura continua valendo.
+   */
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  /** Todos de TODAS as abas, só quando há busca ativa — para avisar de resultados em outras abas. */
+  const [searchAllTodos, setSearchAllTodos] = useState<Todo[] | null>(null);
+  const searchFetchRef = useRef(0);
 
   const listRef = useRef<HTMLUListElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -440,13 +452,47 @@ function App() {
   const allDone = todos.length > 0 && pending === 0;
 
   // O estado fica sempre na ordem canônica do contrato; a ordem de exibição é
-  // aplicada só aqui, na borda da renderização.
-  const visible = useMemo(() => [...todos].sort(byDisplayOrder), [todos]);
+  // aplicada só aqui, na borda da renderização. A busca filtra ANTES de ordenar,
+  // para a animação FLIP continuar valendo sobre o subconjunto visível.
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase();
+    if (q === "") return todos;
+    return todos.filter((item) => item.title.toLocaleLowerCase().includes(q));
+  }, [todos, searchQuery]);
+  const isSearching = searchOpen && searchQuery.trim() !== "";
+  /** Resultados da busca em TODAS as abas (para avisar de outras abas). */
+  const globalFiltered = useMemo(() => {
+    if (!isSearching || searchAllTodos === null) return [];
+    const q = searchQuery.trim().toLocaleLowerCase();
+    return searchAllTodos.filter((item) => item.title.toLocaleLowerCase().includes(q));
+  }, [isSearching, searchAllTodos, searchQuery]);
+  const otherFiltered = useMemo(
+    () => globalFiltered.filter((item) => item.tab_id !== activeTabId),
+    [globalFiltered, activeTabId],
+  );
+  const otherByTab = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of otherFiltered) map.set(item.tab_id, (map.get(item.tab_id) ?? 0) + 1);
+    return map;
+  }, [otherFiltered]);
 
   // O dia de hoje, para a linha achar no título a data que é hoje. Um só para a
   // lista inteira, e ele vira sozinho na meia-noite — o app fica semanas aberto
   // na bandeja (ver `useToday`).
   const today = useToday();
+
+  // A ordem de exibição (Adendo 15), aplicada só aqui, na borda da
+  // renderização: pendentes com data primeiro (a mais próxima no topo), depois
+  // as sem data por criação, concluídas no fim por criação. Fica DEPOIS de
+  // `today` de propósito — sem ano, o ano lido é o de hoje, então a chave
+  // depende dele, e a lista reordena junto na meia-noite. As chaves são
+  // resolvidas UMA vez por tarefa (`withDates`): o comparador roda O(n log n)
+  // vezes, e cada leitura é uma regex no título.
+  const visible = useMemo(() => {
+    const dated = withDates(filtered, today, dayFirst);
+    dated.sort(compareDated);
+    return dated.map((entry) => entry.todo);
+  }, [filtered, today, dayFirst]);
 
   // A linha em edição pode sumir sem passar por `onCancelEdit`: remover a tarefa
   // ou limpar as concluídas desmonta o editor por baixo. `editingId` ficava
@@ -574,6 +620,32 @@ function App() {
         fail(err, "error.shortcutRead");
       });
   }, [shortcut, fail]);
+
+  const handleToggleSearch = useCallback(() => {
+    setSearchOpen((aberto) => {
+      const proximo = !aberto;
+      if (proximo) {
+        // Abre e foca: `setTimeout` deixa o input montar antes do focus
+        // (a banda anima `grid-rows`, e o input ainda está com altura 0 no mesmo quadro).
+        requestAnimationFrame(() => searchRef.current?.focus());
+      } else {
+        setSearchQuery("");
+        requestAnimationFrame(() => draftRef.current?.focus());
+      }
+      return proximo;
+    });
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+    searchRef.current?.focus();
+  }, []);
+
+  const handleCloseSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    requestAnimationFrame(() => draftRef.current?.focus());
+  }, []);
 
   /**
    * Carrega a lista de uma aba. O selo (`loadRef`) faz valer só a carga mais
@@ -797,6 +869,41 @@ function App() {
       .catch(() => {});
   }, [todos, tabs]);
 
+  // Busca global: quando há query, carrega TODAS as abas para avisar de resultados
+  // em outras abas. Sem IPC novo — só `list_todos` por aba, que já existe. A lista
+  // da aba ativa já está em `todos`, então a busca local continua barata; esta
+  // segunda leitura só existe enquanto a busca está aberta, e some quando fecha
+  // (custo zero no uso normal).
+  useEffect(() => {
+    if (!isSearching) {
+      setSearchAllTodos(null);
+      return;
+    }
+    if (tabs.length === 0) return;
+    const token = (searchFetchRef.current += 1);
+    void Promise.all(tabs.map((tab) => listTodos(tab.id)))
+      .then((listas) => {
+        if (searchFetchRef.current !== token) return;
+        setSearchAllTodos(listas.flat());
+      })
+      .catch(() => {
+        if (searchFetchRef.current === token) setSearchAllTodos([]);
+      });
+  }, [isSearching, tabs]);
+
+  // Mantém a fatia da aba ativa dentro do cache global fresca enquanto a busca
+  // está aberta: uma mutação (add/toggle) muda `todos` mas o `searchAllTodos`
+  // carregado antes ficaria com a cópia velha daquela aba. Em vez de recarregar
+  // todas as abas por um IPC extra, troca só a fatia.
+  useEffect(() => {
+    if (!isSearching || activeTabId === null) return;
+    setSearchAllTodos((prev) => {
+      if (prev === null) return prev;
+      const others = prev.filter((item) => item.tab_id !== activeTabId);
+      return [...others, ...todos];
+    });
+  }, [todos, isSearching, activeTabId]);
+
   /**
    * A volta das recorrentes (Adendo 13): lê todas as recorrentes, calcula quais
    * venceram o período (`lib/recurrence.ts` — o calendário local é daqui) e
@@ -887,6 +994,21 @@ function App() {
         setSettingsOpen(false);
         return;
       }
+      // A busca é a camada logo abaixo do painel: Escape limpa e depois fecha.
+      // Primeiro toque limpa o texto (mantendo a banda aberta para nova tentativa);
+      // segundo toque fecha a banda e devolve o foco ao campo. É o gesto que `⌘F`
+      // abriu, então `Escape` é o que o desfaz — sem roubar o `Escape` que esconde
+      // a janela quando a busca não está aberta.
+      if (searchOpen) {
+        if (searchQuery !== "") {
+          setSearchQuery("");
+          searchRef.current?.focus();
+        } else {
+          setSearchOpen(false);
+          requestAnimationFrame(() => draftRef.current?.focus());
+        }
+        return;
+      }
       // Lido do DOM (o campo é controlado, o valor espelha o estado) para o
       // `draft` ficar FORA das dependências: com ele lá, este listener era
       // removido e reassinado a cada tecla digitada — o padrão que o listener
@@ -905,7 +1027,34 @@ function App() {
     // do React, com o estado que valia quando a tecla foi apertada.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [editing, editingTab, fail, settingsOpen]);
+  }, [editing, editingTab, fail, settingsOpen, searchOpen, searchQuery]);
+
+  // `⌘F` / `Ctrl+F` abre e foca a busca. É o atalho de buscar que já se
+  // sabe (mesma razão do `⌘T` nas abas), e sem ele a busca só teria caminho de
+  // mouse numa janela cujo ciclo é de teclado (`⌃⌥T → digitar`). Não abre com
+  // edição inline ou painel do atalho abertos — a mesma posse que as teclas de
+  // aba respeitam — e é engolido para não disparar o Buscar nativo da webview.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (editing !== null || editingTab !== null || settingsOpen) return;
+      if (!hasModKey(e) || e.altKey || e.shiftKey) return;
+      if (e.key.toLowerCase() !== "f") return;
+      e.preventDefault();
+      // Já aberta: só foca. Fechada: abre e foca no próximo quadro.
+      if (searchOpen) {
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      } else {
+        setSearchOpen(true);
+        requestAnimationFrame(() => {
+          searchRef.current?.focus();
+          searchRef.current?.select();
+        });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editing, editingTab, settingsOpen, searchOpen]);
 
   // `data-tauri-drag-region` sozinho não move a janela no macOS com
   // `decorations: false` + `transparent: true` (Adendo 1). O atributo fica como
@@ -1789,6 +1938,20 @@ function App() {
           type="button"
           variant="ghost"
           size="icon-xs"
+          aria-label={t("search.open")}
+          aria-expanded={searchOpen}
+          title={t("search.openWithShortcut", {
+            shortcut: isMac() ? "⌘F" : "Ctrl+F",
+          })}
+          onClick={handleToggleSearch}
+          className={searchOpen ? "bg-muted text-foreground" : undefined}
+        >
+          <Search />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
           aria-label={t("shortcut.open")}
           aria-expanded={settingsOpen}
           title={t("shortcut.open")}
@@ -1935,6 +2098,83 @@ function App() {
         )}
       </div>
 
+      {/* Busca local. Mesma técnica da faixa de aviso: `grid-rows` anima a altura
+          e `opacity` o aparecimento, sem altura permanente — fechada mede 0, aberta
+          mede o conteúdo. `inert` fechada tira da tabulação e da árvore de
+          acessibilidade, pela mesma razão da faixa. Não divide altura com o aviso:
+          as duas são passageiras e somam quando as duas estão abertas, que é o
+          comportamento que o usuário espera (a lista encolhe o mínimo necessário). */}
+      <div
+        data-open={searchOpen ? "true" : undefined}
+        inert={!searchOpen || settingsOpen}
+        className={[
+          "grid shrink-0 grid-rows-[0fr] opacity-0 ease-settle",
+          "transition-[grid-template-rows,opacity] duration-150",
+          "data-open:grid-rows-[1fr] data-open:opacity-100 data-open:duration-200",
+          "motion-reduce:transition-opacity",
+        ].join(" ")}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 pt-1 pb-2">
+            <div className="relative flex-1">
+              <Input
+                ref={searchRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (searchQuery !== "") {
+                      setSearchQuery("");
+                    } else {
+                      handleCloseSearch();
+                    }
+                  }
+                }}
+                placeholder={t("search.placeholder")}
+                aria-label={t("search.label")}
+                dir="auto"
+                className="h-8 pr-8 text-body"
+              />
+              {searchQuery !== "" && (
+                <button
+                  type="button"
+                  aria-label={t("search.clear")}
+                  onClick={handleClearSearch}
+                  className="absolute top-1/2 right-1 -translate-y-1/2 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+            {/* Contador: só com busca ativa, para não virar mobília quando a banda
+                está aberta mas vazia. */}
+            {isSearching && (
+              <span
+                aria-live="polite"
+                className="shrink-0 text-micro tabular-nums text-muted-foreground"
+              >
+                {t("search.count", {
+                  n: filtered.length,
+                  total: todos.length,
+                })}
+              </span>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={t("notice.dismiss")}
+              title={t("notice.dismiss")}
+              onClick={handleCloseSearch}
+            >
+              <X />
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* A faixa está SEMPRE montada, mesmo antes do primeiro aviso, e é isso
           que faz a altura poder ser animada: um elemento que nasce já aberto
           nasce sem transição. Fechada, ela mede exatamente 0 — o `px-3 pb-2` foi
@@ -2045,6 +2285,118 @@ function App() {
               // a bandeja (Adendo 12) — nunca uma tecla que não faz nada.
               shortcutActive={shortcutActive}
             />
+          ) : isSearching ? (
+            <>
+              {filtered.length === 0 ? (
+                <p
+                  role="status"
+                  className="arrive px-2 py-6 text-center text-xs text-muted-foreground"
+                >
+                  {t("search.noResults", { query: searchQuery.trim() })}
+                </p>
+              ) : (
+                <ul
+                  ref={listRef}
+                  onKeyDown={handleListKeys}
+                  className="flex flex-col gap-0.5"
+                >
+                  {visible.map((todo) => (
+                    <TodoRow
+                      key={todo.id}
+                      todo={todo}
+                      tabs={tabs}
+                      today={today}
+                      dayFirst={dayFirst}
+                      pending={todo.id.startsWith(OPTIMISTIC_PREFIX)}
+                      editing={editing === todo.id}
+                      onToggle={handleToggle}
+                      onDelete={handleDelete}
+                      onStartEdit={setEditingId}
+                      onCancelEdit={handleCancelEdit}
+                      onRename={handleRename}
+                      onMove={handleMove}
+                      onSetRepeat={handleSetRepeat}
+                      onSetReminder={handleSetReminder}
+                    />
+                  ))}
+                </ul>
+              )}
+              {otherFiltered.length > 0 && (
+                <div className="arrive mt-3 border-t border-border pt-2">
+                  <p className="px-2 text-micro text-muted-foreground">
+                    {t("search.otherHint", { n: otherFiltered.length })}
+                  </p>
+                  <ul className="mt-1 flex flex-col gap-0.5">
+                    {otherFiltered.slice(0, 8).map((todo) => {
+                      const tab = tabs.find((item) => item.id === todo.tab_id);
+                      return (
+                        <li
+                          key={todo.id}
+                          className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60"
+                        >
+                          <span
+                            dir="auto"
+                            title={todo.title}
+                            className="min-w-0 flex-1 truncate text-body text-muted-foreground"
+                          >
+                            {todo.title}
+                          </span>
+                          <span
+                            dir="auto"
+                            className="max-w-[7rem] shrink-0 truncate rounded-md bg-muted px-1.5 py-0.5 text-micro text-muted-foreground"
+                          >
+                            {tab?.name ?? ""}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            title={t("search.jumpToTab", { name: tab?.name ?? "" })}
+                            aria-label={t("search.jumpToTab", { name: tab?.name ?? "" })}
+                            onClick={() => {
+                              handleSelectTab(todo.tab_id);
+                              // Mantém a busca aberta e foca para refinar
+                              requestAnimationFrame(() => searchRef.current?.select());
+                            }}
+                            className="shrink-0 text-xs"
+                          >
+                            →
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {otherFiltered.length > 8 && (
+                    <p className="mt-1 px-2 text-micro text-muted-foreground">
+                      +{otherFiltered.length - 8}
+                    </p>
+                  )}
+                  {/* Lista por aba para descobrir onde estão */}
+                  {otherByTab.size > 1 && (
+                    <div className="mt-2 flex flex-wrap gap-1 px-2">
+                      {Array.from(otherByTab.entries()).map(([tabId, count]) => {
+                        const tab = tabs.find((item) => item.id === tabId);
+                        if (!tab) return null;
+                        return (
+                          <button
+                            key={tabId}
+                            type="button"
+                            title={t("search.jumpToTab", { name: tab.name })}
+                            onClick={() => {
+                              handleSelectTab(tabId);
+                              requestAnimationFrame(() => searchRef.current?.select());
+                            }}
+                            className="rounded-md bg-muted px-1.5 py-0.5 text-micro text-muted-foreground hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {tab.name} · {count}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             <ul
               ref={listRef}
@@ -2055,24 +2407,11 @@ function App() {
                 <TodoRow
                   key={todo.id}
                   todo={todo}
-                  // Para o "Mover para" do menu de contexto (Adendo 13). O
-                  // estado `tabs` só muda em mutação de aba, então o `memo`
-                  // continua barrando as teclas digitadas no campo.
                   tabs={tabs}
-                  // O mesmo dia para todas as linhas, e ele vira sozinho à
-                  // meia-noite — ver `useToday`. String, então o `memo` da linha
-                  // continua valendo: muda uma vez por dia.
                   today={today}
-                  // A ordem de dia e mês do sistema, lida uma vez na abertura.
-                  // Booleano, e some do caminho do `memo` pelo mesmo motivo que o
-                  // dia: muda no máximo uma vez por execução.
                   dayFirst={dayFirst}
                   pending={todo.id.startsWith(OPTIMISTIC_PREFIX)}
                   editing={editing === todo.id}
-                  // Sem wrappers inline: uma arrow nova por render mudaria as
-                  // props de todas as linhas e anularia o `memo` do TodoRow. A
-                  // Promise que os handlers devolvem é descartada como o `void`
-                  // descartava — os erros já são tratados dentro deles.
                   onToggle={handleToggle}
                   onDelete={handleDelete}
                   onStartEdit={setEditingId}

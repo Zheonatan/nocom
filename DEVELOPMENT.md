@@ -51,13 +51,13 @@ no [`CHANGELOG.md`](CHANGELOG.md).
 **É um comando:**
 
 ```sh
-npm run publicar -- 0.5.0
+npm run publicar -- 0.6.0
 ```
 
 Ele sobe o número nos sete arquivos que o citam (`package.json`, `Cargo.toml`,
 `Cargo.lock`, `tauri.conf.json`, os links de download dos dois READMEs e os
 exemplos deste documento — o IPC falso da vitrine lê a versão do `package.json`
-em tempo de execução), comita, cria a tag `v0.5.0` e empurra. Se qualquer
+em tempo de execução), comita, cria a tag `v0.6.0` e empurra. Se qualquer
 arquivo tiver mudado de forma, ele para antes de comitar em vez de subir uma
 versão pela metade — e ele se recusa a publicar uma versão sem seção no
 [`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
@@ -98,7 +98,7 @@ abaixo:
 precisa que o pacote já exista. Com o `.exe` de uma release publicada:
 
 ```powershell
-wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe
+wingetcreate new https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_x64-setup.exe
 ```
 
 Responda `Zheonatan.NoCom` como identificador — é o que o job procura. Da

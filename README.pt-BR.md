@@ -90,12 +90,12 @@ sempre: o instalador ainda não é assinado. Veja
 
 | Sistema | Arquivo |
 | --- | --- |
-| **macOS** (Apple Silicon) | [NoCom_0.5.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_aarch64.dmg) |
-| **macOS** (Intel) | [NoCom_0.5.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64.dmg) |
-| **Windows** | [NoCom_0.5.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe) |
-| **Linux** (.deb) | [NoCom_0.5.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.deb) |
-| **Linux** (.rpm) | [NoCom-0.5.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom-0.5.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [NoCom_0.5.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.6.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.6.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_x64.dmg) |
+| **Windows** | [NoCom_0.6.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.6.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.6.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom-0.6.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.6.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_amd64.AppImage) |
 
 Todas as versões estão sempre em [Releases](https://github.com/Zheonatan/nocom/releases).
 
@@ -302,7 +302,7 @@ no [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Estado do projeto
 
-Versão 0.5.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
+Versão 0.6.0 — funcional e em uso, mas ainda não assinado pela Apple nem pela
 Microsoft, e o ícone empacotado é provisório. Encontrou algo estranho?
 [Abra uma issue](https://github.com/Zheonatan/nocom/issues).
 

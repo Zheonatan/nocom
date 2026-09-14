@@ -90,12 +90,12 @@ and the cause is the usual one: the installer isn't signed yet. See
 
 | System | File |
 | --- | --- |
-| **macOS** (Apple Silicon) | [NoCom_0.5.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_aarch64.dmg) |
-| **macOS** (Intel) | [NoCom_0.5.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64.dmg) |
-| **Windows** | [NoCom_0.5.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_x64-setup.exe) |
-| **Linux** (.deb) | [NoCom_0.5.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.deb) |
-| **Linux** (.rpm) | [NoCom-0.5.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom-0.5.0-1.x86_64.rpm) |
-| **Linux** (AppImage) | [NoCom_0.5.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.5.0/NoCom_0.5.0_amd64.AppImage) |
+| **macOS** (Apple Silicon) | [NoCom_0.6.0_aarch64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_aarch64.dmg) |
+| **macOS** (Intel) | [NoCom_0.6.0_x64.dmg](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_x64.dmg) |
+| **Windows** | [NoCom_0.6.0_x64-setup.exe](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_x64-setup.exe) |
+| **Linux** (.deb) | [NoCom_0.6.0_amd64.deb](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_amd64.deb) |
+| **Linux** (.rpm) | [NoCom-0.6.0-1.x86_64.rpm](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom-0.6.0-1.x86_64.rpm) |
+| **Linux** (AppImage) | [NoCom_0.6.0_amd64.AppImage](https://github.com/Zheonatan/nocom/releases/download/v0.6.0/NoCom_0.6.0_amd64.AppImage) |
 
 Every version is always in [Releases](https://github.com/Zheonatan/nocom/releases).
 
@@ -309,7 +309,7 @@ PRs in English are just as welcome.
 
 ## Project status
 
-Version 0.5.0 — functional and in use, but not yet signed by Apple or
+Version 0.6.0 — functional and in use, but not yet signed by Apple or
 Microsoft, and the bundled icon is provisional. Found something odd?
 [Open an issue](https://github.com/Zheonatan/nocom/issues).
 

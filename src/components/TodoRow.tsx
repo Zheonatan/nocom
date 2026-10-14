@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/context-menu";
 import { soleDate, splitTitle } from "@/lib/dates";
 import { t, type MessageKey } from "@/lib/i18n";
+import { segmentLinks } from "@/lib/links";
 import { REMINDER_HOUR, stillAhead } from "@/lib/reminders";
 import {
   TITLE_MAX_LENGTH,
@@ -104,6 +105,13 @@ type TodoRowProps = {
    * alguém esquecer.
    */
   onSetReminder: (id: string, reminder: Reminder) => void;
+  /**
+   * Adendo 16: abrir o link escrito no título. **Sobe para o App** porque a
+   * falha precisa aparecer na faixa de aviso, e a faixa mora lá — a linha não
+   * tem `fail`. Identidade estável (`useCallback`), como todos os outros
+   * handlers desta lista: um wrapper inline anularia o `memo`.
+   */
+  onOpenLink: (url: string) => void;
 };
 
 /**
@@ -172,6 +180,84 @@ function DatePill({
   );
 }
 
+/**
+ * Um endereço clicável na linha (Adendo 16).
+ *
+ * **`preventDefault` sempre.** O `href` está ali para o navegador conhecer o
+ * destino, mas quem abre é o sistema, pelo backend; sem ele a webview tentaria
+ * NAVEGAR, e a janela de 360px viraria a página — o pior desfecho possível.
+ *
+ * **`e.detail > 1` ignora o segundo clique do duplo.** O título inteiro edita no
+ * duplo clique; sem a guarda, um duplo clique no link abriria o navegador duas
+ * vezes. O `stopPropagation` do duplo clique deixa o gesto pertencer ao link —
+ * para editar, fica o `F2` da linha, ou o duplo clique em qualquer ponto do
+ * título que não seja o link.
+ *
+ * `title` com a URL, e nome acessível que MANTÉM a palavra e diz o destino: a
+ * WCAG 2.5.3 pede que o texto visível esteja no nome (senão o controle de voz
+ * não acha "google"), e o leitor de tela ganha o endereço que o olho lê do lado.
+ */
+function Link({
+  href,
+  label,
+  onOpen,
+}: {
+  href: string;
+  label: string;
+  onOpen: (url: string) => void;
+}) {
+  return (
+    <a
+      href={href}
+      title={href}
+      aria-label={t("task.openLink", { word: label, url: href })}
+      // O sublinhado é a única pista de que é clicável: o app é monocromático
+      // (Regra do Pigmento Único), e uma cor de link seria uma terceira tinta.
+      // Herda a cor da linha, então a Regra do Desbotamento vale sozinha na
+      // concluída — o link esmaece junto e continua clicável.
+      className="underline underline-offset-2"
+      onClick={(e) => {
+        e.preventDefault();
+        if (e.detail > 1) return;
+        onOpen(href);
+      }}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      {label}
+    </a>
+  );
+}
+
+/**
+ * O texto de um pedaço da linha, com os links que houver dentro dele.
+ *
+ * **Devolve a string crua quando não há link**, e isso não é economia: a linha
+ * normal tem que continuar com o DOM que sempre teve — um nó de texto, sem
+ * elemento nenhum em volta. Os `LinkText` que envolvem os segmentos de
+ * `splitTitle` não acrescentam caixa, então o arranjo de antes segue igual.
+ */
+function LinkText({
+  text,
+  onOpen,
+}: {
+  text: string;
+  onOpen: (url: string) => void;
+}) {
+  const partes = segmentLinks(text);
+  if (partes.every((parte) => parte.href === null)) return text;
+  return (
+    <>
+      {partes.map((parte, i) =>
+        parte.href === null ? (
+          parte.text
+        ) : (
+          <Link key={i} href={parte.href} label={parte.text} onOpen={onOpen} />
+        ),
+      )}
+    </>
+  );
+}
+
 export const TodoRow = memo(function TodoRow({
   todo,
   tabs,
@@ -187,6 +273,7 @@ export const TodoRow = memo(function TodoRow({
   onMove,
   onSetRepeat,
   onSetReminder,
+  onOpenLink,
 }: TodoRowProps) {
   // As abas para onde esta tarefa PODE ir. A própria fica de fora: um item de
   // "mover" que não move nada só ensinaria desconfiança do menu.
@@ -360,7 +447,7 @@ export const TodoRow = memo(function TodoRow({
           title={todo.title}
         >
           {partes.segments.length === 0
-            ? partes.rest
+            ? <LinkText text={partes.rest} onOpen={onOpenLink} />
             : // **`key` por índice, e aqui ele é identidade de verdade.** É a única
               // `key` do arquivo que não é um id, num arquivo escrito com identidade
               // de nó de propósito (ver a Regra da Chegada que Sobrevive à Troca de
@@ -375,7 +462,7 @@ export const TodoRow = memo(function TodoRow({
                 segment.date ? (
                   <DatePill key={i} text={segment.text} today={segment.today} />
                 ) : (
-                  segment.text
+                  <LinkText key={i} text={segment.text} onOpen={onOpenLink} />
                 ),
               )}
         </span>

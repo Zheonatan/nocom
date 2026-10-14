@@ -71,6 +71,14 @@ tauri-plugin-autostart = "2"
 # existiria aqui para expor a mesma funcao uma segunda vez.
 tauri-plugin-updater = "2"
 
+# Abrir links no navegador do sistema (Adendo 16). O plugin e a via padrao e
+# cobre as tres plataformas de uma vez -- inclusive o `start` do Windows, onde
+# uma URL com `&` numa chamada de shell e o tipo de aresta que ninguem lembra de
+# escapar. Desktop pela mesma razao dos vizinhos: em mobile quem abre link e o
+# sistema, mas o app inteiro entraria na compilacao mobile para nao poder ser
+# usado aqui.
+tauri-plugin-opener = "2"
+
 # O binario e tambem o tamanho de cada download de atualizacao (Adendo 10): sem
 # este perfil, o release sai com os defaults do cargo (sem LTO, 16 unidades de
 # codegen, simbolos inclusos). Os valores sao os recomendados pelo guia de

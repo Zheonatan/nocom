@@ -17,12 +17,20 @@ import { EmptyList } from "@/components/EmptyList";
 import { ShortcutSettings } from "@/components/ShortcutSettings";
 import { TabStrip } from "@/components/TabStrip";
 import { TodoRow } from "@/components/TodoRow";
+import { WhatsNew } from "@/components/WhatsNew";
 import { useFlipRows } from "@/hooks/use-flip-rows";
 import { useToday } from "@/hooks/use-today";
 import { soleDate } from "@/lib/dates";
 import { t, type MessageKey } from "@/lib/i18n";
 import { hasAddedTask, markTaskAdded } from "@/lib/onboarding";
 import { compareDated, withDates } from "@/lib/order";
+import {
+  releaseFor,
+  rememberVersion,
+  seenVersion,
+  shouldAnnounce,
+  type Release,
+} from "@/lib/releases";
 import { dueIds } from "@/lib/recurrence";
 import { remindAt, sameDate, stillAhead } from "@/lib/reminders";
 import { DEFAULT_SHORTCUT_LABEL } from "@/lib/shortcut";
@@ -33,6 +41,7 @@ import {
   clearCompleted,
   closeTab,
   createTab,
+  currentVersion,
   dateDayFirst,
   deleteTodo,
   errorDetail,
@@ -51,6 +60,7 @@ import {
   moveTodo,
   neighbourTabId,
   nextTabName,
+  openLink,
   renameTab,
   renameTodo,
   restoreTab,
@@ -335,6 +345,13 @@ function App() {
    */
   const [settingsOpen, setSettingsOpen] = useState(false);
   /**
+   * As novidades da versão instalada, quando ela é nova para quem abriu (Adendo
+   * 17). `null` é o normal: quase toda abertura não tem o que anunciar. Guarda a
+   * nota inteira, e não um booleano, porque a tela precisa do texto — e é a
+   * presença dele que diz que a vista está aberta. Ver `lib/releases.ts`.
+   */
+  const [whatsNew, setWhatsNew] = useState<Release | null>(null);
+  /**
    * Busca local por substring no título. Sem IPC, sem persistência, sem custo de
    * altura permanente: a banda mede 0 fechada e 40px aberta (a mesma animação da
    * faixa de aviso, `grid-rows`), então a Regra do Custo de Altura continua valendo.
@@ -581,6 +598,22 @@ function App() {
   }, []);
 
   /**
+   * Fecha as novidades e grava a versão como vista (Adendo 17).
+   *
+   * **A gravação acontece AQUI, e não quando a tela aparece.** Quem fecha a
+   * janela sem ler precisa vê-la de novo na próxima abertura; marcar como vista
+   * no instante em que ela aparece perderia a nota para sempre no primeiro
+   * Escape. E o foco volta para o campo, como ao fechar o painel da engrenagem —
+   * o ciclo do app é teclado, e uma vista que sai deixando o teclado sem destino
+   * quebra o gesto seguinte.
+   */
+  const dismissWhatsNew = useCallback(() => {
+    if (whatsNew !== null) rememberVersion(whatsNew.version);
+    setWhatsNew(null);
+    focusDraft();
+  }, [whatsNew, focusDraft]);
+
+  /**
    * Põe o foco no checkbox da n-ésima linha da lista, presa aos limites dela.
    * Devolve se conseguiu — quem chama usa isso para decidir se engole a tecla.
    *
@@ -689,7 +722,7 @@ function App() {
     let alive = true;
     (async () => {
       try {
-        const [list, saved, rescue, combinacao, diaPrimeiro] = await Promise.all([
+        const [list, saved, rescue, combinacao, diaPrimeiro, versao] = await Promise.all([
           listTabs(),
           getActiveTab(),
           getStartupRescue(),
@@ -708,6 +741,11 @@ function App() {
           // custa um destaque que não acende, e não uma tarefa que não aparece.
           // `null` aqui significa "fica com o palpite inicial".
           dateDayFirst().catch(() => null),
+          // Novidades da versão (Adendo 17): a versão instalada, lida junto das
+          // outras pela mesma razão — a tela tem que decidir antes de a lista
+          // pintar —, e com `catch` local: uma falha aqui custa uma tela que não
+          // aparece, e não as tarefas do usuário na tela.
+          currentVersion().catch(() => null),
         ]);
         if (!alive) return;
         if (combinacao !== null) setShortcut(combinacao);
@@ -725,6 +763,33 @@ function App() {
             detail: rescue,
             sticky: true,
           });
+        }
+        // --- novidades da versão (Adendo 17) ---
+        //
+        // `versao` nula é uma leitura que falhou: sem saber a versão atual não há
+        // o que comparar, e a tela não aparece — silêncio, e não alarme, porque
+        // nada aconteceu com os dados e não há gesto do usuário a repetir.
+        //
+        // **Instalação nova (`vista === null`) grava a versão e segue.**: não há
+        // "antes" para comparar, e o estado vazio de primeira execução é quem
+        // apresenta o app — uma tela de novidades ali seria novidade nenhuma.
+        //
+        // **Versão nova sem nota aqui também grava na hora.** O app não guarda a
+        // promessa de contar algo que não tem, e sem gravar a comparação se
+        // repetiria em toda abertura.
+        //
+        // A versão só NÃO é gravada quando há o que mostrar: aí quem grava é o
+        // `dismissWhatsNew`, no gesto de fechar — fechar a janela sem ler precisa
+        // reencontrar a nota na próxima vez.
+        if (versao !== null) {
+          const vista = seenVersion();
+          if (vista === null) {
+            rememberVersion(versao);
+          } else if (shouldAnnounce(vista, versao)) {
+            const release = releaseFor(versao);
+            if (release !== null) setWhatsNew(release);
+            else rememberVersion(versao);
+          }
         }
         const ordered = [...list].sort(byCreatedAt);
         setTabs(ordered);
@@ -1009,6 +1074,14 @@ function App() {
         }
         return;
       }
+      // As novidades são a última vista que ocupa a área da lista (Adendo 17):
+      // com elas na tela, Escape as fecha em vez de esconder a janela — a mesma
+      // regra do painel e da busca, para não mandar a janela embora por baixo de
+      // uma tela que a pessoa estava lendo.
+      if (whatsNew !== null) {
+        dismissWhatsNew();
+        return;
+      }
       // Lido do DOM (o campo é controlado, o valor espelha o estado) para o
       // `draft` ficar FORA das dependências: com ele lá, este listener era
       // removido e reassinado a cada tecla digitada — o padrão que o listener
@@ -1027,7 +1100,7 @@ function App() {
     // do React, com o estado que valia quando a tecla foi apertada.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [editing, editingTab, fail, settingsOpen, searchOpen, searchQuery]);
+  }, [editing, editingTab, fail, settingsOpen, searchOpen, searchQuery, whatsNew, dismissWhatsNew]);
 
   // `⌘F` / `Ctrl+F` abre e foca a busca. É o atalho de buscar que já se
   // sabe (mesma razão do `⌘T` nas abas), e sem ele a busca só teria caminho de
@@ -1077,6 +1150,12 @@ function App() {
     // e nesse caso o erro dela já está na tela.
     if (activeTabId === null) return;
     const tabId = activeTabId;
+
+    // **Escrever é voltar ao trabalho.** As novidades ocupam o lugar da lista
+    // (Adendo 17), e deixá-las abertas esconderia a tarefa que acabou de entrar —
+    // justamente no gesto mais frequente do app. Fechá-las aqui é o que faz a
+    // novidade sair sozinha, sem cobrar um clique de quem já passou da leitura.
+    if (whatsNew !== null) dismissWhatsNew();
 
     setNotice(null);
     setDraft("");
@@ -1490,6 +1569,22 @@ function App() {
       });
     },
     [todos, alarmeDe, mutateTodos, applyUpdated],
+  );
+
+  /**
+   * Abrir o link escrito no título (Adendo 16). **Não passa por `mutateTodos`**:
+   * nenhum dado do usuário muda, e não há estado otimista a desfazer — o que
+   * existe é um gesto que pode falhar (o sistema recusou o endereço, ou não há
+   * navegador), e a faixa é quem conta isso, como em todo erro do app.
+   *
+   * Estável (`useCallback` cujo único insumo, `fail`, também é estável) para o
+   * `memo` do `TodoRow` continuar valendo.
+   */
+  const handleOpenLink = useCallback(
+    (url: string) => {
+      void openLink(url).catch((err: unknown) => fail(err, "error.openLink"));
+    },
+    [fail],
   );
 
   /**
@@ -2273,18 +2368,6 @@ function App() {
                 {t("list.loading")}
               </p>
             )
-          ) : todos.length === 0 ? (
-            // A lista vazia é o único lugar com espaço de sobra na janela: o bloco
-            // aparece aqui e some assim que houver uma tarefa, sem custar altura
-            // permanente. Quem escolhe entre os dois estados vazios é o
-            // componente — ver `EmptyList`.
-            <EmptyList
-              firstRun={firstRun}
-              shortcut={shortcutLabel}
-              // Com o atalho morto, o estado vazio inverte a hierarquia e ensina
-              // a bandeja (Adendo 12) — nunca uma tecla que não faz nada.
-              shortcutActive={shortcutActive}
-            />
           ) : isSearching ? (
             <>
               {filtered.length === 0 ? (
@@ -2317,6 +2400,7 @@ function App() {
                       onMove={handleMove}
                       onSetRepeat={handleSetRepeat}
                       onSetReminder={handleSetReminder}
+                      onOpenLink={handleOpenLink}
                     />
                   ))}
                 </ul>
@@ -2397,6 +2481,23 @@ function App() {
                 </div>
               )}
             </>
+          ) : whatsNew !== null ? (
+            // Novidades da versão (Adendo 17). Vêm ANTES da lista vazia de
+            // propósito: quem atualizou com a lista vazia ainda tem o que ler, e
+            // uma atualização sem tarefas não deveria engolir a nota.
+            <WhatsNew release={whatsNew} onDismiss={dismissWhatsNew} />
+          ) : todos.length === 0 ? (
+            // A lista vazia é o único lugar com espaço de sobra na janela: o bloco
+            // aparece aqui e some assim que houver uma tarefa, sem custar altura
+            // permanente. Quem escolhe entre os dois estados vazios é o
+            // componente — ver `EmptyList`.
+            <EmptyList
+              firstRun={firstRun}
+              shortcut={shortcutLabel}
+              // Com o atalho morto, o estado vazio inverte a hierarquia e ensina
+              // a bandeja (Adendo 12) — nunca uma tecla que não faz nada.
+              shortcutActive={shortcutActive}
+            />
           ) : (
             <ul
               ref={listRef}
@@ -2420,6 +2521,7 @@ function App() {
                   onMove={handleMove}
                   onSetRepeat={handleSetRepeat}
                   onSetReminder={handleSetReminder}
+                  onOpenLink={handleOpenLink}
                 />
               ))}
             </ul>

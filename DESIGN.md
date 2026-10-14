@@ -1368,6 +1368,35 @@ texto da linha igual ao texto que o editor inline abre no duplo clique.
 - **Não se anima.** Aparece com a linha e troca de cor à meia-noite, quando ninguém está
   olhando.
 
+### Link no título (`palavra::endereço`)
+
+Uma tarefa escrita como "ver google::google.com" mostra **google como um link
+sublinhado**, e o endereço sai da tela — ele reaparece no `title` da linha (tooltip)
+e inteiro na edição inline. A leitura (o que é link, o que não é, a normalização do
+endereço) está no Adendo 16 do `CONTRACT.md`; aqui está só a forma.
+
+**Sublinhado, e não cor.** O app é monocromático — ver a Regra do Pigmento Único — e
+uma cor de link seria uma terceira tinta. O sublinhado (`underline`, `offset` de 2px)
+é a única pista de que é clicável, e basta: é o que todo mundo já reconhece como link.
+
+**O link herda a cor da linha.** Na concluída ele esmaece junto com o texto (Regra do
+Desbotamento) e continua clicável — um endereço não expira porque a tarefa foi feita.
+Forçar a tinta de destaque na concluída poria realce aceso dentro de uma linha
+riscada, as duas coisas opostas na mesma linha.
+
+**Divisão de gestos — três, ainda.** Um clique abre o link; o **duplo clique no link
+é do link** (não edita) e **editar fica com o `F2`**, ou com o duplo clique em
+qualquer trecho do título que não seja o link. O link não cria um quarto gesto: ele
+intercepta o duplo clique só sobre si mesmo, onde abrir é o que se espera.
+
+- **Custo de altura: zero.** O link mora dentro de uma linha que já existia, e não
+  muda a métrica do texto — nada foi empurrado para fora da dobra.
+- **Sem animação.** Aparece com a linha, como a pílula de data; nada nele se mexe
+  sozinho, então a Regra do Movimento que se Paga não tem o que pagar aqui.
+- **Acessível.** O `title` traz a URL (o que o olho lê ao passar o mouse) e o nome
+  acessível mantém a palavra **e** diz o destino — a WCAG 2.5.3 exige o texto visível
+  dentro do nome, senão o controle de voz não acha "google".
+
 ### Edição inline
 - Um campo de 24px de altura substitui o texto **no lugar dele** — mesma linha, mesma
   posição, sem diálogo. `Enter` confirma, `Escape` cancela, blur confirma, e o texto
@@ -1433,6 +1462,29 @@ mesma regra: **nenhuma superfície anuncia uma tecla que não faz nada.** No rod
 o inverso também — em "Tudo em dia", com o atalho vivo, a frase pendura a combinação
 ("Tudo em dia — ⌃⌥T esconde"): o único lugar permanente onde ela fica legível depois
 dos 6 segundos da faixa, a custo zero de altura.
+
+### Novidades da versão (a vista que aparece uma vez)
+
+Quando a versão instalada muda — isto é, quando o app se atualiza —, a área da lista
+mostra o que mudou antes de voltar às tarefas (Adendo 17). É a mesma família do painel
+da engrenagem e dos estados vazios: **entra onde a lista estava**, com a animação
+`arrive`, e não gasta altura permanente (Regra do Custo de Altura).
+
+- **Uma vez por versão, e nunca na primeira.** Quem instalou agora não tem um "antes"
+  com que comparar, e o estado vazio de primeira execução já apresenta o app;
+  "novidades" para quem nunca teve o velho seriam novidade nenhuma.
+- **Não trava o trabalho.** Ao contrário do painel do atalho — que escuta teclas e por
+  isso tira o campo de `inert` —, ela é só informação: o campo de nova tarefa continua
+  vivo, e **escrever nela faz a tela sair sozinha** (a tarefa nova nasceria escondida
+  atrás da nota). É o oposto de uma tela que cobra um clique antes do primeiro gesto.
+- **Aceita o Escape** como as outras vistas: com ela na tela, o Escape a fecha em vez
+  de esconder a janela, e devolve o foco ao campo.
+- **A hierarquia é a de sempre — peso e cinza, sem tinta nova.** A manchete em tinta e
+  peso 500, os tópicos em névoa com um marcador `foreground/40`. Uma cor a mais para
+  uma tela que aparece uma vez por versão seria a terceira tinta que a Regra do
+  Pigmento Único proíbe.
+- **A busca tem passagem.** `⌘F` mostra os resultados por cima da nota em vez de ficar
+  escondido atrás dela; fechada a busca, a nota continua ali até ser dispensada.
 
 ### Menu de contexto da tarefa (a única superfície flutuante do app)
 

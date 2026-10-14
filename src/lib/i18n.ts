@@ -98,6 +98,11 @@ const pt = {
   // parênteses ao lado do trecho — "pagar boleto 20/08 (hoje)" —, que é como
   // alguém diria a mesma coisa em voz alta.
   "task.today": "hoje",
+  // Nome acessível de um link escrito no título (Adendo 16). **Mantém a palavra
+  // visível** — a WCAG 2.5.3 exige que o texto na tela esteja dentro do nome,
+  // senão o controle de voz não acha "google" — e acrescenta o destino, que o
+  // olho lê no `title`.
+  "task.openLink": "{word} — abrir {url}",
 
   // --- menu de contexto (Adendo 13) ---
   //
@@ -227,6 +232,15 @@ const pt = {
   // No Linux, a barra de tarefas primeiro — a bandeja pode nem existir lá.
   "onboarding.roundTripTrayLinux":
     "A janela volta pela barra de tarefas ou pelo ícone {place}.",
+
+  // --- novidades da versão (Adendo 17) ---
+  //
+  // A tela que aparece UMA vez, quando a versão instalada muda. Ela fala do app,
+  // e não da lista — como o painel da engrenagem —, então as frases dizem
+  // "novidades" e o número da versão, nunca "o que você perdeu".
+  "whatsNew.title": "Novidades",
+  "whatsNew.version": "Versão {version}",
+  "whatsNew.dismiss": "Entendi",
 
   "notice.dismiss": "Dispensar aviso",
   "notice.undo": "Desfazer",
@@ -413,6 +427,9 @@ const pt = {
   "error.move": "Não foi possível mover. A tarefa continua onde estava.",
   "error.repeat": "Não foi possível trocar a repetição. Nada mudou.",
   "error.remind": "Não foi possível trocar o lembrete. Nada mudou.",
+  // Abrir o link falhou: nenhum dado mudou, e o endereço continua escrito no
+  // título — é isto que a segunda metade da frase diz.
+  "error.openLink": "Não foi possível abrir o link. Ele continua no título.",
   // A volta da recorrência falhou: a rotina continua concluída, e a informação
   // de que nada se perdeu é a metade que importa.
   "error.revive": "Não foi possível repetir as tarefas do período. Nada foi perdido.",
@@ -481,6 +498,7 @@ const en: Record<MessageKey, Entry> = {
   "task.pasteTruncated":
     "The pasted text went past {max} characters and was cut at the limit.",
   "task.today": "today",
+  "task.openLink": "{word} — open {url}",
 
   "menu.moveTo": "Move to",
   "menu.repeat": "Repeat",
@@ -528,6 +546,10 @@ const en: Record<MessageKey, Entry> = {
   "onboarding.roundTripTray": "The window comes back from the icon {place}.",
   "onboarding.roundTripTrayLinux":
     "The window comes back from the taskbar or the icon {place}.",
+
+  "whatsNew.title": "What's new",
+  "whatsNew.version": "Version {version}",
+  "whatsNew.dismiss": "Got it",
 
   "notice.dismiss": "Dismiss notice",
   "notice.undo": "Undo",
@@ -629,6 +651,7 @@ const en: Record<MessageKey, Entry> = {
   "error.move": "Couldn't move it. The task stayed where it was.",
   "error.repeat": "Couldn't change the repeat. Nothing changed.",
   "error.remind": "Couldn't change the reminder. Nothing changed.",
+  "error.openLink": "Couldn't open the link. It's still in the task title.",
   "error.revive": "Couldn't bring back this period's repeating tasks. Nothing was lost.",
   "error.autostartRead": "Couldn't read the start-with-system setting.",
   "error.autostart": "Couldn't change start with the system. Nothing changed.",

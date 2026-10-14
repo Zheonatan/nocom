@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { t } from "@/lib/i18n";
 import { isMac } from "@/lib/platform";
 import type { Repeat } from "@/lib/recurrence";
@@ -490,6 +491,25 @@ export function installUpdate(): Promise<void> {
 
 export function hideWindow(): Promise<void> {
   return invoke<void>("hide_window");
+}
+
+/**
+ * Abre um endereço no navegador do sistema (Adendo 16).
+ *
+ * **Não é uma requisição de rede do app**, e a promessa do `SECURITY.md` segue
+ * de pé: quem acessa a rede é o navegador, e que acesse o endereço que a pessoa
+ * escreveu é decisão dela — o app só entrega a URL ao sistema operacional. Fica
+ * ao lado de `hideWindow` porque as duas são gestos que saem da webview para o
+ * sistema, e não comandos do `CONTRACT.md`.
+ *
+ * O endereço já chega normalizado e restrito a `http(s)` por `lib/links.ts`: a
+ * validação mora antes do IPC de propósito, para a superfície de propósito não
+ * ter nada a recusar no caminho normal. O backend e o escopo da capability
+ * recusam de novo (`editar` o `default.json`), que é a mesma defesa em duas
+ * camadas do `maxLength` e do limite de 200 no backend.
+ */
+export function openLink(url: string): Promise<void> {
+  return openUrl(url);
 }
 
 // `quit_app` existe no backend e é acionado pelo item "Sair" do tray icon, do

@@ -942,6 +942,11 @@ pub fn run() {
         // Os diálogos de salvar/abrir do exportar e importar (Adendo 13). O
         // frontend só pede o caminho; ler e gravar continuam sendo do backend.
         .plugin(tauri_plugin_dialog::init())
+        // Abrir links no navegador do sistema (Adendo 16). O frontend chama
+        // `openUrl` do plugin; quem decide o que E um link e a webview
+        // (`lib/links.ts`), e o escopo da capability recusa o resto -- as duas
+        // camadas do maxLength/limite de 200, so que para o endereco.
+        .plugin(tauri_plugin_opener::init())
         // O caminho só existe com o `AppHandle` na mão, então o estado nasce aqui
         // e não em `default()`.
         .setup(|app| {

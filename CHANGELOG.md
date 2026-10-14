@@ -9,6 +9,18 @@ Este arquivo também é a fonte das notas de release: o
 o corpo da release no GitHub, e o `npm run publicar` se recusa a publicar uma
 versão que ainda não tenha seção aqui.
 
+## 0.7.0 — 2026-10-14
+
+**Links dentro do título.** Escreva `palavra::endereço` — por exemplo
+`google::google.com` — e a palavra vira um link sublinhado que abre no seu
+navegador; o endereço sai da linha e volta no tooltip e na edição. Sem esquema, o
+app usa `https://`; só `http` e `https` abrem, e `std::vector` continua sendo
+`std::vector`.
+
+**Tela de novidades.** Na primeira abertura depois de uma atualização, o app conta
+o que mudou naquela versão, na área da lista — e a tela sai sozinha quando você
+volta a escrever (ou no Escape, ou em "Entendi").
+
 ## 0.6.0 — 2026-09-14
 
 **Tarefas com data sobem na lista.** Entre as pendentes, as que têm data no

@@ -2288,3 +2288,215 @@ ao PRODUCT.md antes de voltar ao código.
 - `31/02` e "de 19/10 a 25/10" contam como sem data (fixado em teste).
 - Renomear trocando a data move a linha com a viagem FLIP, sem salto seco.
 - À meia-noite, com o app aberto, a lista reordena sozinha junto das pílulas.
+
+# Adendo 16 — links escritos no título (`palavra::endereço`) (2026-10-14)
+
+Pedido pelo usuário nestas palavras: *"adicionar links em uma palavra … algo
+como `google::google.com`"*. A sintaxe sugerida foi aceita como estava.
+
+É a **mesma família do Adendo 11**: não existe campo de link, nem coluna nova,
+nem nada no `todos.json`. O que existe é o que a pessoa escreveu no título, e o
+frontend só LÊ. `palavra::endereço` faz a palavra virar o link e o endereço sair
+da tela — ele volta no `title` da linha e inteiro na edição inline.
+
+## A sintaxe, e por que `::`
+
+`rótulo::endereço`, com o rótulo **colado** no `::` e espaço opcional depois.
+`google::google.com` vira o link *google*, e abre `https://google.com`.
+
+- **`::`, e não `[texto](url)` nem `texto -> url`.** `::` é barato de digitar, não
+  tem segundo significado na língua e não exige memorizar colchetes. O `//` de
+  `://` quebra o par em dois, o que separa a leitura sem ambiguidade.
+- **Espaço antes do `::` não vale.** `google :: x.com` continua sendo texto: a
+  colagem é o que distingue a sintaxe de pontuação solta. Depois do `::` o espaço
+  é tolerado (`google:: google.com`).
+- **O rótulo é UMA palavra** — letras (com acento), números, `_` e `-`. O resto da
+  frase fica onde está: em "meu site::site.com" o link é o *site*.
+
+## O que é link, e o que não é
+
+Duas guardas, e é nelas que mora a diferença entre um atalho útil e um app que
+reescreve o que a pessoa escreveu:
+
+1. **O rótulo tem que começar um token.** A guarda da esquerda recusa rótulo
+   encostado em letra, número, `_`, `-` ou `:` — a mesma ideia da guarda de
+   `dates.ts`. Sem ela, `meu-atalho::x.com` seria o link do "atalho".
+2. **O endereço tem que PARECER um endereço.** Sem esquema, ganha `https://`; com
+   esquema, só `http` e `https` passam (o resto é recusado antes de qualquer
+   clique, inclusive `javascript:` e `file:`); o host precisa ter um PONTO; e o
+   que tenha `usuário@host` é recusado.
+
+**O ponto no host é a guarda contra código, e é o teste que justifica o resto.**
+Numa lista de tarefas de quem programa, o segundo significado de `palavra::palavra`
+é `std::vector`, `Foo::bar`. Sem o ponto, `std::vector` daria um link para
+`https://vector/` — a regex aceitaria e o `new URL` também. Um host sem ponto é
+válido (uma intranet, um `localhost`), e é justamente por ser válido que a recusa
+precisa ser explícita. **Na dúvida, não mexer no texto.**
+
+A pontuação que a frase cola no fim (`google.com.`, `(google.com)`) fica de fora
+do endereço: ela é da frase, não do domínio.
+
+## A tela, e o que ela custa
+
+- **Sublinhado, e nunca cor.** O app é monocromático (Regra do Pigmento Único na
+  forma do DESIGN.md); uma cor de link seria uma terceira tinta. O sublinhado é a
+  única pista de que é clicável — e ele herda a cor da linha, então a Regra do
+  Desbotamento vale sozinha: na concluída o link esmaece junto (e continua
+  clicável; um endereço não expira porque a tarefa foi feita).
+- **O endereço sai da tela e volta no `title`.** A linha mostra só a palavra; o
+  endereço aparece no tooltip, e **inteiro** na edição inline — como a data, mover
+  nunca pode virar apagar.
+- **`<a href>` de verdade**, com o `default` sempre prevenido e `e.detail > 1`
+  ignorado: quem abre é o sistema, não a webview; sem o `preventDefault` a janela
+  de 360px viraria a página, e sem a guarda do `detail` o duplo clique no link
+  abriria o navegador duas vezes.
+- **A divisão de gestos continua de três.** Um clique no link abre; o duplo clique
+  no link é dele (não edita), e **editar fica com o `F2`** da linha — ou com o
+  duplo clique em qualquer trecho do título que não seja o link. Não é gesto novo
+  empilhado em gesto antigo; é o mesmo gesto do título, que o link intercepta só
+  sobre si mesmo.
+- **Custo de altura: zero.** O link mora dentro de uma linha que já existia.
+
+## Onde mora
+
+`src/lib/links.ts`, puro e sem `@/` — `linkHref` (normaliza e valida um endereço)
+e `segmentLinks` (reparte o texto em trechos comuns e rótulos de link), testados
+em `links.test.ts`, no padrão de `dates.ts`. A renderização é o `LinkText`/`Link`
+do `TodoRow`; o gesto sobe para o `App` (`handleOpenLink`) porque a falha precisa
+da faixa de aviso, e a ponte é `openLink` em `lib/todos.ts`.
+
+## Abrir o endereço (`tauri-plugin-opener`)
+
+A abertura passa pelo **plugin oficial `opener`** do Tauri (registrado em
+`lib.rs`, permissão `opener:default` na capability da janela), que cobre as três
+plataformas — inclusive o `start` do Windows, onde uma URL com `&` numa chamada
+de shell é a aresta que ninguém lembra de escapar.
+
+**Não é uma requisição de rede do app**, e a promessa do `SECURITY.md` segue de
+pé: quem acessa a rede é o navegador, e o app só entrega ao sistema operacional o
+endereço que a pessoa escreveu e clicou. A validação de esquema e host acontece
+**antes do IPC**, em `lib/links.ts`; a capability recusa o resto, como o backend
+recusa por cima do `maxLength` — a mesma defesa em duas camadas.
+
+## O que NÃO muda
+
+- **Modelo de dados e comandos:** nenhum campo em `Todo`, nenhum comando nosso no
+  `CONTRACT.md`. O endereço é lido do título na renderização e descartado no mesmo
+  quadro, como a data.
+- **Ordem:** links não entram na ordenação do Adendo 15.
+- **Busca:** filtra pelo título cru, então acha tanto o rótulo quanto o endereço.
+- **Limite de 200:** o `palavra::endereço` inteiro conta, porque é o que está
+  gravado. Um link longo come o orçamento de texto como qualquer outra palavra.
+
+## Limites conhecidos, ditos e não escondidos
+
+- **`mailto:`/`tel:` não são suportados.** Se um dia fizerem falta, entram com
+  validação própria — e não colados nesta.
+- **Data dentro de URL por query.** `site::x.com?d=21/08` ainda faz o `dates.ts`
+  enxergar `21/08` (o `=` é guarda válida à esquerda) e ganhar pílula/lembrete. Um
+  caminho (`x.com/21/08`) **não**: a barra não é guarda válida, então a regex de
+  data já não casa ali. É raro e a pílula não reescreve nada; fica registrado.
+
+## Definição de pronto (adicional)
+
+- `npm run build` e `npm test` passam limpos (25 testes novos em `links.test.ts`).
+- `google::google.com` mostra *google* sublinhado e abre `https://google.com`.
+- `std::vector`, `google :: x.com` e `x::javascript:alert(1)` continuam texto puro
+  (fixado em teste).
+- Sem esquema, ganha `https://`; `http`/`https` explícitos são preservados
+  (fixado em teste).
+- Clique abre pelo navegador do sistema; falha vira aviso na faixa, sem mexer em
+  nenhum dado.
+- `cargo check` limpo com o plugin novo.
+
+# Adendo 17 — a tela de novidades ao atualizar (2026-10-14)
+
+Pedido pelo usuário nestas palavras: *"crie uma tela de novidades ao atualizar o
+app"*. É a primeira superfície do app que fala dele mesmo depois de uma mudança
+de versão.
+
+## Quando aparece
+
+Comparação de **texto exato** entre a versão instalada e a última que esta pessoa
+viu:
+
+- **Instalação nova não anuncia.** Sem "antes" com que comparar, e o estado vazio
+  de primeira execução já apresenta o app; "novidades" para quem nunca teve o
+  velho seriam novidade nenhuma.
+- **Versão diferente anuncia.** Inclusive uma reinstalação de uma versão ANTIGA —
+  a comparação é de igualdade, não de ordem. Um `>` silenciaria o downgrade sem
+  que ninguém soubesse que era esperado (fixado em teste).
+- **A versão só é gravada no GESTO de fechar** (`dismissWhatsNew`), nunca no
+  instante em que a tela aparece: quem fecha a janela sem ler precisa reencontrar
+  a nota na próxima abertura. Uma versão nova **sem nota** aqui é gravada na hora —
+  o app não guarda a promessa de contar o que não tem, e sem gravar a comparação se
+  repetiria em toda abertura.
+
+## Onde mora o que é "visto"
+
+`localStorage`, chave `nocom.lastSeenVersion` — a mesma decisão de
+`lib/onboarding.ts`, pela mesma razão: é estado da TELA, não do produto, e não vale
+reabrir o contrato do `todos.json` por ele. **Falha para o lado de não anunciar:**
+uma webview com armazenamento bloqueado faz `localStorage` lançar, e tratar isso
+como "primeira vez" mostraria a tela em toda abertura, para sempre. Não anunciar é
+recuperável uma vez; repetir a mesma tela toda vez não é.
+
+## Onde mora o texto
+
+`src/lib/releases.ts` — um `Release` por versão (`version`, `date`, `copy` nos dois
+idiomas, com manchete e tópicos), da mais nova para a mais antiga. É puro e testável
+sob `node --test`; as funções de armazenamento vivem no mesmo módulo, guardadas por
+`try/catch`, e o teste importa só as puras.
+
+**Por que um módulo, e não o `CHANGELOG.md` lido direto.** Dois motivos decisivos: o
+`CHANGELOG.md` é markdown e é português, enquanto a interface é bilíngue
+(PRODUCT.md) — o mesmo motivo de o resto da cópia viver no dicionário. O que mora
+aqui é a versão de LEITURA RÁPIDA da mesma nota; o `CHANGELOG.md` continua sendo o
+texto da release, e é ele que este módulo acompanha quando uma versão sai. As duas
+escritas são mantidas em sincronia à mão, e o teste guarda a integridade do dado
+(dois idiomas, sem texto vazio, sem versão repetida, ordem decrescente).
+
+A versão instalada chega pelo `currentVersion()` (`@tauri-apps/api/app`, o mesmo do
+painel), lido junto das outras no `Promise.all` da carga inicial, com `catch` local:
+uma falha ali custa uma tela que não aparece, e não as tarefas do usuário.
+
+## A tela (`WhatsNew`)
+
+- **Ocupa o lugar da lista**, como o painel da engrenagem e os estados vazios, com a
+  animação `arrive`; zero de altura permanente (Regra do Custo de Altura).
+- **Não trava o trabalho.** Ao contrário do painel do atalho, o campo de nova tarefa
+  NÃO fica `inert` — a tela é só informação. **Escrever dispensa a tela**
+  (`handleAdd` chama `dismissWhatsNew`): deixá-la aberta esconderia a tarefa que
+  acabou de entrar, no gesto mais frequente do app.
+- **Escape a fecha** em vez de esconder a janela (a mesma camada do painel e da
+  busca) e devolve o foco ao campo.
+- **A busca tem passagem:** `isSearching` é avaliado antes dela na cadeia de vistas,
+  então `⌘F` mostra os resultados por cima da nota.
+- **Peso e cinza, sem tinta nova:** manchete em tinta e peso 500, tópicos em névoa
+  com marcador `foreground/40` — uma cor a mais seria a terceira tinta que a Regra
+  do Pigmento Único proíbe. `role="region"` com `aria-labelledby` na manchete.
+
+## O que NÃO muda
+
+- Nenhum campo novo em `Todo`, nenhum comando novo no `CONTRACT.md`. Estado da tela
+  mora no `localStorage`, como o onboarding.
+- A versão NÃO é alterada por este adendo: a nota de uma versão que ainda não saiu
+  fica em `releases.ts` à espera de o `package.json` alcançá-la.
+
+## Limites, ditos e não escondidos
+
+- **Versão sem nota passa em silêncio.** Uma atualização para uma versão que a tela
+  não conhece não anuncia nada — e grava a versão, para não reavaliar toda abertura.
+- **Armazenamento bloqueado nunca anuncia**, e é o lado escolhido: nunca é melhor
+  que sempre quando o "sempre" é uma tela impossível de dispensar.
+- **Duas cópias da mesma nota** (aqui e no `CHANGELOG.md`), mantidas à mão. É o preço
+  de a tela ser bilíngue e lida de dados, e o teste cobre a forma, não o conteúdo.
+
+## Definição de pronto (adicional)
+
+- `npm run build` e `npm test` passam limpos (10 testes novos em `releases.test.ts`).
+- Instalação nova NÃO mostra a tela; versão diferente da vista mostra (fixado em teste).
+- Escrever uma tarefa, apertar Escape ou clicar em "Entendi" dispensa a tela e grava
+  a versão; fechar a janela sem dispensar a faz voltar na próxima abertura.
+- `⌘F` mostra a busca por cima da nota; fechada a busca, a nota continua.
+- Nenhuma requisição de rede nova: a versão instalada é o número embutido no binário.

@@ -242,9 +242,12 @@ works). The day/month order follows your **system's regional format**, not its
 language: someone using their system in English while living in Brazil keeps
 writing `20/08`.
 
+With no year, the app reads the **nearest date**: `01/10` written in December is
+next January, not the one already past.
+
 Two things it does **not** do: it doesn't alert you when the date passes, and
-yesterday's date keeps the same gray as tomorrow's — a past date rises in the
-list, but stays gray. It's not a deadline — see
+yesterday's date has the same gray as tomorrow's — the color marks coincidence,
+not lateness. It's not a deadline — see
 [What it isn't](#what-it-isnt).
 
 ### Nothing is lost by accident

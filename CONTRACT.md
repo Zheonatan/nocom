@@ -343,6 +343,11 @@ dados reais nele (o app roda). Na leitura:
   junto do estado que ele já guarda — não é posição de janela, que mora em
   `janela.json`. Se a aba ativa gravada não existir mais na abertura, cai na
   primeira aba em vez de falhar.
+  **É a única mutação que não passa pelo funil do `mutar`** (a troca de aba não
+  muda a contagem que o tooltip mostra, que soma todas as abas), e grava pela via
+  leve, sem `fsync` — a aba ativa é estado de visualização, como a posição da
+  janela (ver `persistencia.rs`). As duas coisas tiram disco e OS do caminho de
+  cada `Ctrl+Tab`.
 
 ## Comandos existentes que passam a ser por aba
 
@@ -766,6 +771,7 @@ estabeleceu que **todo gesto disponível no mouse tem caminho de teclado**; este
 | `⌘T` / `Ctrl+T` | nova aba |
 | `↓` no campo de nova tarefa | entra na lista |
 | `↑` / `↓` na lista | percorre as linhas; `↑` na primeira volta ao campo |
+| `Delete` / `Backspace` na lista | remove a linha focada — o `×` pelo teclado, com o desfazer de sempre |
 
 São idiomas de navegador **de propósito**: esta faixa é a coisa mais parecida com abas de
 navegador que existe na janela, e um atalho que já se sabe não precisa ser ensinado
@@ -1234,8 +1240,8 @@ passada começar a parecer diferente de uma futura, o app virou gerenciador de p
   quê.
 - **Ano de dois ou de quatro dígitos.** `26` é 2026: o século é assumido, não
   adivinhado, porque uma lista de tarefas fala de dias por vir e de dias que
-  acabaram de passar, nunca de 1926. Sem ano, a data é deste ano — é o que `20/08`
-  quer dizer em qualquer lista.
+  acabaram de passar, nunca de 1926. Sem ano, a data é a **ocorrência mais
+  próxima** de hoje — ver o Adendo 18, que moveu esta regra.
 - **Só a barra.** `20-08` também é data para muita gente, mas `20-08` também é
   intervalo, placar e código de peça; a barra é a única forma que quase não tem
   segundo significado. `20.08` fica de fora pela mesma razão, agravada por ser
@@ -1972,10 +1978,10 @@ no texto. Ela devolve `null` — e o submenu não abre — em três casos:
   avisaria num dia que ninguém escreveu. A validação não desmente quem digitou —
   a pílula fica; o que acontece é só o submenu não abrir.
 
-Sem ano, o ano é o corrente, como em `matchesToday`. A consequência assumida:
-`20/08` escrito em dezembro é uma data que já passou, e o lembrete não é
-oferecido. Rolar para o ano seguinte seria adivinhar intenção a partir de um dado
-que não está no texto.
+Sem ano, a data é a **ocorrência mais próxima** de hoje (Adendo 18). A primeira
+versão deste adendo usava o ano corrente, e a consequência era que `20/08`
+escrito em dezembro era lido como passado e o lembrete não era oferecido; a regra
+da ocorrência mais próxima corrige isso, e é ela que vale.
 
 ## O lembrete segue a data do título
 
@@ -2243,8 +2249,11 @@ ordem pedida, e está dito em voz alta porque o Adendo 11 prometia o contrário
 ("uma data passada fica igual a uma futura"). A promessa que continua valendo
 é a da tinta: a cor segue cinza igual, ontem e amanhã.
 
-**Sem ano, o ano é o de hoje** — a mesma definição de `soleDate`. `05/01`
-escrito em agosto é janeiro DESTE ano: passado, e portanto no topo.
+**Sem ano, a data é a ocorrência mais próxima** (Adendo 18): o ano corrente ou o
+seguinte, o que deixar `dia/mês` mais perto de hoje. Então uma data do passado
+**recente** (ontem) sobe ao topo, mas uma do passado **distante** (janeiro escrito
+em agosto é o janeiro que vem) não sobe. E uma tarefa que **repete** não ordena
+pela data — ela fica por criação, junto das sem data (Adendo 18).
 
 ## Onde mora
 
@@ -2468,6 +2477,11 @@ uma falha ali custa uma tela que não aparece, e não as tarefas do usuário.
   NÃO fica `inert` — a tela é só informação. **Escrever dispensa a tela**
   (`handleAdd` chama `dismissWhatsNew`): deixá-la aberta esconderia a tarefa que
   acabou de entrar, no gesto mais frequente do app.
+- **Trocar de aba também dispensa** (correção): a nota ocupa a área da lista, e
+  mantê-la aberta por cima da aba nova fazia a troca parecer que não funcionou.
+  `handleSelectTab`, `handleCreateTab` e `handleCloseTab` chamam `dismissWhatsNew` —
+  a mesma classe de gesto que escrever, que já dispensava. Pela mesma régua do
+  `⌘F`, `Ctrl+Tab` e `⌘1`–`9` (que passam por `handleSelectTab`) dispensam igual.
 - **Escape a fecha** em vez de esconder a janela (a mesma camada do painel e da
   busca) e devolve o foco ao campo.
 - **A busca tem passagem:** `isSearching` é avaliado antes dela na cadeia de vistas,
@@ -2500,3 +2514,78 @@ uma falha ali custa uma tela que não aparece, e não as tarefas do usuário.
   a versão; fechar a janela sem dispensar a faz voltar na próxima abertura.
 - `⌘F` mostra a busca por cima da nota; fechada a busca, a nota continua.
 - Nenhuma requisição de rede nova: a versão instalada é o número embutido no binário.
+
+---
+
+# Adendo 18 — a data sem ano vira a ocorrência mais próxima, e a recorrência sai da ordem (2026-10-16)
+
+Duas correções que a análise de outubro encontrou no cruzamento das features de
+data, ordem, lembrete e recorrência. As duas **movem linhas que os Adendos 11, 14
+e 15 tinham traçado**, e o registro é honesto: o que dizia "sem ano, a data é
+deste ano" e "a recorrência não ordena" fica mais estreito, e as seções abaixo
+dizem por quê.
+
+## 1. Data sem ano é a ocorrência mais próxima, não sempre o ano corrente
+
+**O defeito.** `soleDate` assumia o ano de hoje para toda data escrita sem ano.
+Em setembro–dezembro isso lia `10/01` como **janeiro que passou há onze meses** —
+e duas coisas saíam erradas de uma vez: pela ordem do Adendo 15 a tarefa subia ao
+topo (data vencida), e o submenu "Lembrar" ficava cinza (`stillAhead` falso),
+como se a data já tivesse acabado. Quem escrevia "comprar passagens 10/01" em
+dezembro queria o janeiro que vem.
+
+**A regra.** Sem ano, a data é a **ocorrência mais próxima** de hoje: entre o ano
+corrente e o seguinte, a que deixar `dia/mês` mais perto.
+
+| hoje | título | antes | agora |
+|---|---|---|---|
+| 21/08/2026 | `pagar 20/08` | 20/08/2026 (ontem) | 20/08/2026 — **igual**, é ontem |
+| 20/12/2026 | `comprar 10/01` | 10/01/2026 (há 11 meses) | 10/01/2027 (em 3 semanas) |
+
+O passado **recente** continua este ano — é o que impede o preço da regra de ser
+cobrado de quem escreveu uma data de ontem. O que ela conserta é o passado
+**distante**, que era lido como vencido quando quase sempre queria dizer o ano que
+vem.
+
+**O destaque não muda.** `matchesToday` (a pílula vermelha) já só comparava dia e
+mês quando não há ano, então `20/08` acende em todo 20 de agosto, em qualquer ano.
+O que a ocorrência decide é a **ordem** e o **lembrete**.
+
+Definido por `ocorrenciaMaisProxima` em `src/lib/dates.ts`. Dois anos bastam (o
+corrente cobre o passado recente e o futuro do ano; o seguinte, o começo de ano
+por vir); não se olha `anoHoje - 1` porque uma data do ano passado nunca é a mais
+próxima quando a do ano corrente existe. `29/02` num par de anos não bissextos
+continua `null` — a mesma recusa de calendário do Adendo 11.
+
+## 2. A recorrência não ordena nem lembra pela data do título
+
+**O defeito.** Uma tarefa podia ter recorrência **e** uma data fixa no título. Ao
+voltar a pendente, o título continuava com a data antiga — e ela, agora vencida,
+prendia a tarefa no topo para sempre pela ordem do Adendo 15, com um sino que só
+sabia dizer "o aviso já foi dado".
+
+**A regra.** Uma tarefa que **repete** conta como **sem data**, em dois lugares e
+pela mesma razão — a data escrita não avança com a recorrência, então tratá-la
+como a próxima ocorrência seria uma promessa que o período não cumpre:
+
+- **ordem** (`src/lib/order.ts`): a recorrente fica por criação, junto das sem
+  data, e não pela data do título;
+- **lembrete** (`TodoRow.tsx`, `handleSetReminder`): o submenu "Lembrar" fica
+  cinza nela, como numa tarefa sem data. Um lembrete **herdado** (armado antes de
+  a tarefa passar a repetir) continua cancelável — "Não lembrar" nunca desabilita.
+
+A pílula da data **continua na linha**: nada é apagado do título, e a data segue
+visível. O que muda é que ela deixa de ordenar e de agendar. É a linha do
+PRODUCT.md (a recorrência não ordena) ficando literal.
+
+## Definição de pronto (adicional)
+
+- `npm run build` e `npm test` passam limpos.
+- `10/01` escrito em 20/12 é lido como o janeiro que vem; `20/08` escrito em 21/08
+  continua sendo ontem (fixado em `dates.test.ts`).
+- Uma tarefa avulsa com `01/08` sobe ao topo; a MESMA data numa recorrente não
+  sobe — fica por criação (fixado em `order.test.ts`).
+- O submenu "Lembrar" fica cinza numa tarefa que repete, e continua abrindo para
+  cancelar um lembrete herdado.
+- Nada disto muda o modelo de dados: nenhum campo novo em `Todo`, nenhum comando
+  novo, e a data continua sendo lida do título a cada renderização.

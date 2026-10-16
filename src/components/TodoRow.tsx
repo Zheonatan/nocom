@@ -305,10 +305,18 @@ export const TodoRow = memo(function TodoRow({
   // Regra do Desbotamento desliga. O menu não é tinta: desligá-lo ali tiraria de
   // quem concluiu a única via de desmarcar um lembrete que ela já não quer.
   const dataUnica = soleDate(todo.title, today, dayFirst);
-  const podeAgendar = dataUnica !== null && stillAhead(dataUnica, Date.now());
+  // Uma tarefa que REPETE não oferece lembrete pela data do título: o período a
+  // devolve a pendente, mas a data escrita não avança com ele, então o aviso só
+  // valeria para a primeira volta. É a mesma linha da ordenação — ver
+  // `lib/order.ts`.
+  const podeAgendar =
+    todo.repeat === "none" &&
+    dataUnica !== null &&
+    stillAhead(dataUnica, Date.now());
   // O submenu abre também quando não dá mais para agendar, desde que haja um
   // lembrete marcado: é por ele que se cancela. Sem esta segunda metade, apagar a
-  // data do título trancaria o sino na linha para sempre.
+  // data do título trancaria o sino na linha para sempre — e é o que mantém o
+  // cancelamento alcançável numa recorrente com lembrete herdado.
   const abreLembrete = podeAgendar || todo.reminder !== "none";
 
   return (

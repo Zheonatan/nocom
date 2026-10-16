@@ -960,12 +960,19 @@ function App() {
   // está aberta: uma mutação (add/toggle) muda `todos` mas o `searchAllTodos`
   // carregado antes ficaria com a cópia velha daquela aba. Em vez de recarregar
   // todas as abas por um IPC extra, troca só a fatia.
+  //
+  // **Deduplica por id, com a lista da aba ativa mandando.** É o que faz o
+  // rollback de "mover" (que devolve a tarefa à aba ativa) não deixar uma cópia
+  // fantasma: `handleMove` reaponta o `tab_id` da tarefa no índice global antes
+  // do palpite, e sem esta fusão a versão antiga e a devolvida conviveriam.
   useEffect(() => {
     if (!isSearching || activeTabId === null) return;
     setSearchAllTodos((prev) => {
       if (prev === null) return prev;
-      const others = prev.filter((item) => item.tab_id !== activeTabId);
-      return [...others, ...todos];
+      const outras = prev.filter((item) => item.tab_id !== activeTabId);
+      const porId = new Map(outras.map((item) => [item.id, item]));
+      for (const item of todos) porId.set(item.id, item);
+      return [...porId.values()];
     });
   }, [todos, isSearching, activeTabId]);
 
@@ -1447,6 +1454,12 @@ function App() {
   const seguirDataDoTitulo = useCallback(
     async (renomeada: Todo, tituloAnterior: string) => {
       if (renomeada.reminder === "none") return;
+      // Uma tarefa que repete não segue a data do título: o período devolve a
+      // tarefa a pendente, mas a data escrita não avança com ele, então rearmar
+      // o aviso a partir dela seria uma promessa que a recorrência não cumpre
+      // (ver `lib/order.ts` e o `TodoRow`). Um lembrete herdado continua sendo do
+      // usuário — ele cancela pelo menu.
+      if (renomeada.repeat !== "none") return;
       const antes = soleDate(tituloAnterior, today, dayFirst);
       const depois = soleDate(renomeada.title, today, dayFirst);
       if (sameDate(antes, depois)) return;
@@ -1499,6 +1512,21 @@ function App() {
     (id: string, destinoId: string) => {
       if (activeTabId === null) return;
       const origem = activeTabId;
+      // **A busca global precisa saber para onde a tarefa foi.** Ela sai da
+      // `todos` da aba ativa (palpite abaixo), e o efeito que sincroniza o
+      // índice descarta tudo que era da aba ativa e não voltou em `todos` — o
+      // que faria a tarefa movida sumir de TODOS os resultados até a próxima
+      // releitura, como se mover a tivesse apagado. Reapontar o `tab_id` aqui,
+      // antes do palpite, a mantém no índice já na aba nova (a dedup por id do
+      // efeito cuida do rollback). Sem busca aberta, `prev` é `null` e isto é
+      // no-op.
+      setSearchAllTodos((prev) =>
+        prev === null
+          ? prev
+          : prev.map((item) =>
+              item.id === id ? { ...item, tab_id: destinoId } : item,
+            ),
+      );
       return mutateTodos({
         errorKey: "error.move",
         optimistic: (prev) => prev.filter((item) => item.id !== id),
@@ -1557,6 +1585,10 @@ function App() {
     (id: string, reminder: Reminder) => {
       const alvo = todos.find((item) => item.id === id);
       if (alvo === undefined) return;
+      // Uma tarefa que repete não arma lembrete pela data (o submenu já a
+      // desabilita — isto é a rede de segurança, como o `maxLength` sobre o
+      // limite de 200). Desmarcar continua valendo.
+      if (reminder !== "none" && alvo.repeat !== "none") return;
       const alarme = reminder === "none" ? null : alarmeDe(alvo.title, reminder);
       if (reminder !== "none" && alarme === null) return;
       return mutateTodos({
@@ -1693,6 +1725,11 @@ function App() {
   }, [notice, undoing, editing, editingTab, settingsOpen]);
 
   function handleSelectTab(id: string) {
+    // Trocar de aba é "voltar para a lista", a mesma classe de gesto que
+    // escrever uma tarefa — que já dispensa as novidades. Sem isto, a nota
+    // ocupa a área da lista por cima da aba nova e a troca parece não ter
+    // funcionado.
+    dismissWhatsNew();
     if (id === activeTabId) {
       focusDraft();
       return;
@@ -1718,6 +1755,8 @@ function App() {
    */
   async function handleCreateTab() {
     setNotice(null);
+    // Criar aba também é sair da leitura das novidades (ver `handleSelectTab`).
+    dismissWhatsNew();
     setEditingId(null);
     try {
       const created = await createTab(nextTabName(tabs));
@@ -1769,6 +1808,9 @@ function App() {
     if (tabs.length <= 1) return;
 
     setNotice(null);
+    // Fechar aba é o outro caminho que muda a lista por baixo da nota de
+    // novidades — mesma razão do `handleSelectTab`.
+    dismissWhatsNew();
     setEditingTabId(null);
     const beforeTabs = tabs;
     const beforeTodos = todos;
@@ -1833,14 +1875,32 @@ function App() {
    * Delegado na `ul` e não no `TodoRow`: uma prop nova em cada linha custaria o
    * `memo` que existe para as teclas digitadas no campo não re-renderizarem a
    * lista.
+   *
+   * **`Delete`/`Backspace` removem a linha focada.** É o gesto do `×` pelo
+   * teclado sem o `⇧Tab` até o botão, e o desfazer de sempre (`⌘Z`, e o lote de
+   * remoções que junta as seguidas) cobre o erro — não há confirmação, pela mesma
+   * decisão que rege todo gesto destrutivo do app. Dentro de um campo a guarda
+   * acima já saiu, então `Backspace` continua apagando texto na edição inline.
    */
   const handleListKeys = useCallback(
     (e: React.KeyboardEvent<HTMLUListElement>) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       const target = e.target as HTMLElement | null;
-      // Edição inline aberta: as setas são do cursor dentro do campo.
+      // Edição inline aberta: as teclas são do cursor dentro do campo.
       if (target?.closest("input, textarea")) return;
       const row = target?.closest<HTMLElement>("[data-todo-id]");
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (!row) return;
+        const id = row.dataset.todoId;
+        // Linha otimista ainda não existe no backend: apagá-la seria pedir a
+        // remoção de um id que ele não conhece.
+        if (id === undefined || id.startsWith(OPTIMISTIC_PREFIX)) return;
+        e.preventDefault();
+        handleDelete(id);
+        return;
+      }
+
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       if (!row) return;
 
       const rows = Array.from(
@@ -1857,7 +1917,7 @@ function App() {
       }
       focusRowAt(atual + (e.key === "ArrowDown" ? 1 : -1));
     },
-    [focusDraft, focusRowAt],
+    [focusDraft, focusRowAt, handleDelete],
   );
 
   /**
@@ -1954,17 +2014,19 @@ function App() {
     // trabalho por caractere no caminho mais frequente do app. Elas são estáveis no
     // comportamento e leem o estado que o efeito já traz nas dependências.
     //
-    // A condição que sustenta a omissão: as três só leem `tabs`, `activeTabId` e
-    // `todos` (o `handleCloseTab` guarda a lista para o rollback), que ESTÃO na
-    // lista. Se alguma delas passar a ler outro estado, ele precisa entrar aqui —
-    // ou o efeito vai agir sobre um valor velho.
+    // A condição que sustenta a omissão: as três leem `tabs`, `activeTabId`,
+    // `todos` (o `handleCloseTab` guarda a lista para o rollback) e `whatsNew`
+    // (`handleSelectTab`/`handleCreateTab`/`handleCloseTab` dispensam a tela de
+    // novidades ao trocar de aba), que ESTÃO na lista. Se alguma delas passar a
+    // ler outro estado, ele precisa entrar aqui — ou o efeito vai agir sobre um
+    // valor velho.
     //
     // Aqui havia um `eslint-disable-next-line react-hooks/exhaustive-deps`, e ele era
     // inerte: o projeto não tem ESLint configurado (nem Prettier — a árvore de
     // dependências é enxuta por decisão, a mesma que dispensou biblioteca de i18n).
     // Uma diretiva que aponta para uma ferramenta ausente promete uma verificação que
     // ninguém faz, e o que ela guardava de útil era o motivo, que agora está escrito.
-  }, [tabs, activeTabId, todos, editing, editingTab, settingsOpen]);
+  }, [tabs, activeTabId, todos, editing, editingTab, settingsOpen, whatsNew]);
 
   /**
    * Quantos caracteres ainda cabem no campo. Ver `DRAFT_COUNTER_AT`.
@@ -2413,39 +2475,48 @@ function App() {
                   <ul className="mt-1 flex flex-col gap-0.5">
                     {otherFiltered.slice(0, 8).map((todo) => {
                       const tab = tabs.find((item) => item.id === todo.tab_id);
+                      const nome = tab?.name ?? "";
                       return (
-                        <li
-                          key={todo.id}
-                          className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60"
-                        >
-                          <span
-                            dir="auto"
-                            title={todo.title}
-                            className="min-w-0 flex-1 truncate text-body text-muted-foreground"
-                          >
-                            {todo.title}
-                          </span>
-                          <span
-                            dir="auto"
-                            className="max-w-[7rem] shrink-0 truncate rounded-md bg-muted px-1.5 py-0.5 text-micro text-muted-foreground"
-                          >
-                            {tab?.name ?? ""}
-                          </span>
-                          <Button
+                        <li key={todo.id}>
+                          {/* **A LINHA INTEIRA é o alvo, e não só a seta.** Ir
+                              até a aba é a única coisa que este resultado faz, e
+                              um alvo de 24px no fim de uma linha de 32px cobrava
+                              pontaria por um gesto só. Pelo teclado é um `Tab`
+                              até ela e `Enter` — o mesmo caminho do resto do app.
+                              O `title` do botão diz a ação; o do título interno
+                              mantém o texto inteiro de quem trunca. */}
+                          <button
                             type="button"
-                            variant="ghost"
-                            size="xs"
-                            title={t("search.jumpToTab", { name: tab?.name ?? "" })}
-                            aria-label={t("search.jumpToTab", { name: tab?.name ?? "" })}
+                            title={t("search.jumpToTab", { name: nome })}
                             onClick={() => {
                               handleSelectTab(todo.tab_id);
-                              // Mantém a busca aberta e foca para refinar
+                              // Mantém a busca aberta e foca para refinar.
                               requestAnimationFrame(() => searchRef.current?.select());
                             }}
-                            className="shrink-0 text-xs"
+                            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring"
                           >
-                            →
-                          </Button>
+                            <span
+                              dir="auto"
+                              title={todo.title}
+                              className="min-w-0 flex-1 truncate text-body text-muted-foreground"
+                            >
+                              {todo.title}
+                            </span>
+                            <span
+                              dir="auto"
+                              className="max-w-[7rem] shrink-0 truncate rounded-md bg-muted px-1.5 py-0.5 text-micro text-muted-foreground"
+                            >
+                              {nome}
+                            </span>
+                            {/* Decorativo: a ação já está no `title`/nome do
+                                botão, e um "→" anunciado seria ruído. */}
+                            <span
+                              aria-hidden="true"
+                              className="shrink-0 text-xs text-muted-foreground"
+                            >
+                              →
+                            </span>
+                          </button>
                         </li>
                       );
                     })}

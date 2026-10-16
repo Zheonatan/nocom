@@ -98,12 +98,20 @@ async fn restore_tab(
 }
 
 /// Persiste qual aba a janela mostra, para a próxima execução abrir onde o
-/// usuário parou. Não muda contagem nenhuma, mas passa por `mutar` como as outras
-/// mutações: a regra "toda mutação funila por aqui" é fácil de manter certa, e
-/// "estas seis sim, aquela não" é a que alguém quebra ao acrescentar a próxima.
+/// usuário parou.
+///
+/// **Não passa por `mutar`, e é a única exceção ao funil — deliberada.** O
+/// tooltip do tray conta as pendentes de TODAS as abas (`pendentes`), então o
+/// número não muda ao trocar de aba: redesenhar o tooltip aqui seria trabalho por
+/// gesto (o `Ctrl+Tab` repetido de quem folheia as listas) para não mudar nada. O
+/// que muda é a lista na tela, e isso o `list_todos` já cobre.
+///
+/// E a troca de aba é estado de VISUALIZAÇÃO: `definir_aba_ativa` grava pela via
+/// leve, sem `fsync` (ver `store.rs`). As duas coisas tiram custo — disco e OS —
+/// do caminho mais repetido depois do de acrescentar tarefa.
 #[tauri::command]
-async fn set_active_tab(id: String, app: AppHandle, store: State<'_, Store>) -> Result<(), String> {
-    mutar(&app, || store.definir_aba_ativa(&id))
+async fn set_active_tab(id: String, store: State<'_, Store>) -> Result<(), String> {
+    store.definir_aba_ativa(&id)
 }
 
 #[tauri::command]

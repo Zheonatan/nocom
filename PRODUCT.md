@@ -48,7 +48,9 @@ não tem prazos, prioridades, subtarefas, etiquetas, colaboração nem sincroniz
 "repetir" **volta sozinha a pendente** no período seguinte, e é só isso. O que a mantém do
 lado de cá da linha dos prazos: não conta atraso, não ordena por vencimento e não marca
 "atrasada" — a tarefa reaparece pendente como se tivesse sido desmarcada, e a cor continua
-reservada a erro e a hoje. (A recorrência **também não notifica**: o Adendo 14 abriu
+reservada a erro e a hoje. E, desde o Adendo 18, a data que ela tenha no título **não a
+ordena nem a lembra**: uma tarefa que repete conta como sem data. (A recorrência **também
+não notifica**: o Adendo 14 abriu
 notificação para o lembrete pedido sobre a data do título, e não para o período da
 recorrência, que continua sendo uma tarefa que reaparece em silêncio.) O teste para trabalho futuro é o mesmo da data no
 título: se uma recorrência vencida começar a parecer diferente de uma por vencer, o app
@@ -112,6 +114,14 @@ amanhã), e **nada é derivado além da igualdade com hoje e da posição**. O t
 se uma data passada começar a parecer diferente de uma futura em COR, contador ou aviso —
 posição à parte, que é a ordem assumida do Adendo 15 —, o app virou gerenciador de
 prazo, e isso volta a este documento antes de voltar ao código.
+
+**Duas arestas desta leitura** (Adendo 18). A primeira é a data **sem ano**: ela é a
+ocorrência mais próxima de hoje, então `10/01` escrito em dezembro é o janeiro que vem, e
+não o que passou há onze meses — o que devolve ao lembrete e à ordem o sentido que quem
+escreveu queria. A segunda é que uma tarefa que **repete** conta como **sem data**: a data
+escrita não avança com a recorrência, então ordená-la por ela a prenderia no topo para
+sempre, e um aviso armado a partir dela valeria só para a primeira volta. A pílula continua
+na linha; o que sai é a ordenação e o lembrete.
 
 ## Positioning
 

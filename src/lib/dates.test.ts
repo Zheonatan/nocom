@@ -579,9 +579,36 @@ describe("soleDate", () => {
     });
   });
 
-  it("sem ano, o ano é o de hoje — e vem de `today`, não de um relógio próprio", () => {
+  it("sem ano, o ano é o mais PRÓXIMO de hoje — não sempre o corrente", () => {
+    // 2 de janeiro de 2031: agosto está à frente ainda neste ano, então é este.
     assert.deepEqual(soleDate("20/08", "2031-01-02", DIA), {
       year: 2031,
+      month: 8,
+      day: 20,
+    });
+  });
+
+  it("data sem ano que já passou há muito rola para o ano que vem", () => {
+    // 20 de dezembro de 2026: `10/01` é o janeiro QUE VEM (21 dias à frente), e
+    // não o que passou há onze meses. É o defeito que a ocorrência mais próxima
+    // corrige — e o mesmo vale para o lembrete, que volta a ser oferecido.
+    assert.deepEqual(soleDate("comprar 10/01", "2026-12-20", DIA), {
+      year: 2027,
+      month: 1,
+      day: 10,
+    });
+    assert.deepEqual(soleDate("buy 01/10", "2026-12-20", MES), {
+      year: 2027,
+      month: 1,
+      day: 10,
+    });
+  });
+
+  it("data sem ano do passado RECENTE continua neste ano", () => {
+    // 21 de agosto de 2026: `20/08` é ONTEM, e não o agosto do ano que vem — o
+    // preço que a regra NÃO cobra de quem escreveu uma data de ontem.
+    assert.deepEqual(soleDate("pagar 20/08", "2026-08-21", DIA), {
+      year: 2026,
       month: 8,
       day: 20,
     });

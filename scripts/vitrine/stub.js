@@ -188,10 +188,14 @@ const COMANDOS = {
     return t;
   },
   delete_todo: ({ id }) => void tarefas.splice(tarefas.indexOf(acha(id)), 1),
+  // Devolve o que RESTA na aba, como o contrato do backend — e não o que saiu.
+  // Era uma divergência silenciosa: quem abrisse a vitrine e clicasse em "Limpar
+  // concluídas" via a lista virar exatamente as tarefas apagadas. O backend ainda
+  // preserva as recorrentes; a vitrine não tem nenhuma, então isso não muda aqui.
   clear_completed: ({ tabId }) => {
     const fora = tarefas.filter((t) => t.tab_id === tabId && t.done);
     fora.forEach((t) => tarefas.splice(tarefas.indexOf(t), 1));
-    return fora;
+    return tarefas.filter((t) => t.tab_id === tabId);
   },
   // O desfazer devolve as tarefas como estavam, e o backend as regrava inteiras.
   restore_todos: ({ todos }) => {

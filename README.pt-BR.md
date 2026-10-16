@@ -238,9 +238,12 @@ Vale `20/08`, `20/08/26` e `20/08/2026`, com um ou dois dígitos (`6/9` funciona
 de dia e mês é a do **formato regional do seu sistema**, não a do idioma: quem usa o
 sistema em inglês morando no Brasil continua escrevendo `20/08`.
 
-Duas coisas que ele **não** faz: não avisa quando a data passa, e uma data de ontem fica
-com a mesma cor de uma de amanhã — a data passada sobe na lista, mas continua cinza.
-Não é prazo — ver [O que ele não é](#o-que-ele-não-é).
+Sem ano, o app entende a **data mais próxima**: `10/01` escrito em dezembro é o janeiro
+que vem, e não o que já passou.
+
+Duas coisas que ele **não** faz: não avisa quando a data passa, e a data de ontem tem a
+mesma cor da de amanhã — a cor marca coincidência, não atraso. Não é prazo — ver
+[O que ele não é](#o-que-ele-não-é).
 
 ### Nada se perde por acidente
 

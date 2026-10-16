@@ -1,4 +1,5 @@
 import { soleDate } from "./dates.ts";
+import type { Repeat } from "./recurrence.ts";
 
 /**
  * Ordem de exibição por data do título (Adendo 15).
@@ -14,6 +15,11 @@ import { soleDate } from "./dates.ts";
  * contam como sem data — a mesma régua do lembrete, pelo mesmo motivo: este
  * módulo lê caracteres, não português.
  *
+ * **E uma tarefa que REPETE também conta como sem data** (`Orderable.repeat`): a
+ * data escrita não avança com a recorrência, então ordená-la por ela prenderia a
+ * tarefa no topo para sempre, sem que nada no texto tivesse mudado. Ela fica por
+ * criação, com as sem data — a mesma decisão que tira o lembrete dela.
+ *
  * **Sobe vencida, por construção.** Crescente põe o passado antes do futuro,
  * então uma data de ontem fica acima de uma de amanhã. É o preço assumido da
  * ordem pedida — e o que a mantém tinta: a cor continua cinza igual.
@@ -24,8 +30,21 @@ import { soleDate } from "./dates.ts";
  * Puro e sem `@/`, como `dates.ts`: é o que deixa o `node --test` carregar.
  */
 
-/** O mínimo que a ordenação lê de uma tarefa — `Todo` satisfaz sem import. */
-export type Orderable = { title: string; done: boolean; created_at: number };
+/**
+ * O mínimo que a ordenação lê de uma tarefa — `Todo` satisfaz sem import.
+ */
+export type Orderable = {
+  title: string;
+  done: boolean;
+  created_at: number;
+  /**
+   * A recorrência. **Uma tarefa que REPETE não ordena pela data do título.** O
+   * período devolve a tarefa a pendente, mas a data escrita não avança junto —
+   * ordená-la por uma data fixa a prenderia no topo (ou a faria viajar) sem que
+   * nada no texto tivesse mudado. Ela fica com as sem data, por criação.
+   */
+  repeat: Repeat;
+};
 
 /**
  * A data do título como número comparável (`20260821`), ou `null` quando
@@ -47,6 +66,19 @@ export function dateKey(
 export type Dated<T> = { todo: T; date: number | null };
 
 /**
+ * A chave de ordenação de uma tarefa: `null` quando não há data única e válida
+ * **ou quando a tarefa repete** (ver `Orderable.repeat`).
+ */
+function chaveDe(
+  todo: Orderable,
+  today: string,
+  dayFirst: boolean,
+): number | null {
+  if (todo.repeat !== "none") return null;
+  return dateKey(todo.title, today, dayFirst);
+}
+
+/**
  * Resolve a chave UMA vez por tarefa. A ordenação chama o comparador O(n log n)
  * vezes, e cada `soleDate` é uma varredura com regex no título — recalcular por
  * comparação é trabalho repetido em todo render que muda a lista.
@@ -58,7 +90,7 @@ export function withDates<T extends Orderable>(
 ): Dated<T>[] {
   return todos.map((todo) => ({
     todo,
-    date: dateKey(todo.title, today, dayFirst),
+    date: chaveDe(todo, today, dayFirst),
   }));
 }
 
@@ -93,7 +125,7 @@ export function byDisplayOrder(
   dayFirst: boolean,
 ): number {
   return compareDated(
-    { todo: a, date: dateKey(a.title, today, dayFirst) },
-    { todo: b, date: dateKey(b.title, today, dayFirst) },
+    { todo: a, date: chaveDe(a, today, dayFirst) },
+    { todo: b, date: chaveDe(b, today, dayFirst) },
   );
 }

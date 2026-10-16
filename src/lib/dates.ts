@@ -289,10 +289,13 @@ export function splitTitle(
  *   **A validação não desmente quem digitou**: a pílula continua lá, e o que
  *   acontece é só o submenu "Lembrar" não abrir.
  *
- * Sem ano, o ano é o de `today` — a mesma definição de `matchesToday`, e a mesma
- * consequência assumida: `20/08` escrito em dezembro é 20 de agosto **deste**
- * ano, uma data que já passou, e o lembrete não é oferecido. Rolar para o ano
- * seguinte seria adivinhar a intenção a partir de um dado que não está no texto.
+ * Sem ano, a data é a **ocorrência mais próxima** de hoje: entre o ano corrente e
+ * o seguinte, o que deixar `mes/dia` mais perto. `10/01` escrito em dezembro é o
+ * janeiro que vem (três semanas à frente), e não o que passou há onze meses;
+ * `20/08` escrito em 21/08 continua sendo ontem, e não o agosto do ano que vem.
+ * O destaque (`matchesToday`) não depende disto: sem ano ele só compara dia e
+ * mês, então a pílula acende no dia certo em qualquer ano — o que a ocorrência
+ * decide é a ORDEM e o LEMBRETE.
  */
 export type SoleDate = { year: number; month: number; day: number };
 
@@ -320,16 +323,56 @@ export function soleDate(
   const [, , primeiro = "", segundo = "", ano] = unico;
   const day = Number(dayFirst ? primeiro : segundo);
   const month = Number(dayFirst ? segundo : primeiro);
-  const year =
-    ano === undefined
-      ? // O ano corrente vem de `today` (`2026-08-25`), e não de um `new Date()`
-        // aqui: é a mesma leitura de "hoje" que o resto do módulo usa, e um
-        // relógio próprio daria respostas diferentes na virada da meia-noite.
-        Number(today.slice(0, 4))
-      : // `26` é 2026 — o mesmo século assumido em `matchesToday`.
-        Number(ano.length === 2 ? `20${ano}` : ano);
-
   if (month < 1 || month > 12) return null;
-  if (day < 1 || day > diasNoMes(year, month)) return null;
-  return { year, month, day };
+
+  // Com ano escrito, é ele: `26` é 2026 — o mesmo século assumido em
+  // `matchesToday`. E o dia precisa existir nesse mês DAQUELE ano (`29/02` só
+  // vale em bissexto).
+  if (ano !== undefined) {
+    const year = Number(ano.length === 2 ? `20${ano}` : ano);
+    if (day < 1 || day > diasNoMes(year, month)) return null;
+    return { year, month, day };
+  }
+
+  // Sem ano, a data é a ocorrência mais próxima de hoje (ver `ocorrenciaMaisProxima`).
+  return ocorrenciaMaisProxima(today, month, day);
+}
+
+/** O dia como número absoluto (`Date.UTC`), para medir distância sem fuso nem DST. */
+function diaAbsoluto(year: number, month: number, day: number): number {
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+}
+
+/**
+ * Entre o ano corrente e o seguinte, o que deixa `mes/dia` mais perto de `today`.
+ * `null` quando o dia não existe em nenhum dos dois (ex.: `31/02` ou `29/02` em
+ * dois anos não bissextos) — a mesma recusa de calendário do resto do módulo.
+ *
+ * Dois anos bastam: o corrente cobre o passado recente e o futuro do ano, e o
+ * seguinte cobre o começo de ano ainda por vir. Não se considera `anoHoje - 1`
+ * porque uma data do ano passado nunca é a mais próxima quando a do ano corrente
+ * também existe (a distância é sempre menor).
+ */
+function ocorrenciaMaisProxima(
+  today: string,
+  month: number,
+  day: number,
+): SoleDate | null {
+  const anoHoje = Number(today.slice(0, 4));
+  const hoje = diaAbsoluto(
+    anoHoje,
+    Number(today.slice(5, 7)),
+    Number(today.slice(8, 10)),
+  );
+  let melhor: SoleDate | null = null;
+  let menorDistancia = Infinity;
+  for (const year of [anoHoje, anoHoje + 1]) {
+    if (day < 1 || day > diasNoMes(year, month)) continue;
+    const distancia = Math.abs(diaAbsoluto(year, month, day) - hoje);
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+      melhor = { year, month, day };
+    }
+  }
+  return melhor;
 }

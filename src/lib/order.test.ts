@@ -34,7 +34,7 @@ let relogio = 0;
 /** Uma tarefa qualquer, com `created_at` crescente por construção. */
 function tarefa(parcial: Partial<Linha>): Linha {
   relogio += 1;
-  return { title: "sem data", done: false, created_at: relogio, ...parcial };
+  return { title: "sem data", done: false, created_at: relogio, repeat: "none", ...parcial };
 }
 
 /** Ordena como o App ordena: chaves resolvidas uma vez, depois o comparador. */
@@ -157,6 +157,24 @@ describe("byDisplayOrder", () => {
       "boleto 19/10",
       "de 19/10 a 25/10",
       "prazo 31/02",
+    ]);
+  });
+
+  it("tarefa que REPETE não ordena pela data — fica por criação", () => {
+    // O contraste é o teste: a data de 01/08 está no passado, então uma tarefa
+    // avulsa sobe ao topo; a MESMA data numa recorrente não sobe — a data não
+    // avança com a recorrência, e ordenar por ela prenderia a tarefa no topo sem
+    // nada no texto ter mudado (decisão B2).
+    const avulsa = tarefa({ title: "avulso 01/08" });
+    const datada = tarefa({ title: "boleto 19/10" });
+    assert.equal(titulos(visivel([avulsa, datada]))[0], "avulso 01/08");
+
+    const recorrente = tarefa({ title: "mensal 01/08", repeat: "monthly" });
+    const semData = tarefa({ title: "sem data" });
+    assert.deepEqual(titulos(visivel([recorrente, datada, semData])), [
+      "boleto 19/10",
+      "mensal 01/08",
+      "sem data",
     ]);
   });
 

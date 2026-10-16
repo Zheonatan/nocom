@@ -428,8 +428,14 @@ impl Store {
 
     /// Persiste qual aba a janela mostra, para a próxima execução abrir onde o
     /// usuário parou.
+    ///
+    /// **Grava pela via LEVE** (`transacao_leve`, sem `sync_all`): a aba ativa é
+    /// estado de VISUALIZAÇÃO, como a posição da janela — perdê-la numa queda de
+    /// energia custa abrir o app numa aba vizinha, não perder tarefa. É o mesmo
+    /// corte que `janela.json` já faz (ver `persistencia.rs`), e o que tira um
+    /// `fsync` do caminho de cada `Ctrl+Tab`.
     pub fn definir_aba_ativa(&self, id: &str) -> Result<(), String> {
-        self.transacao(|estado| {
+        self.transacao_leve(|estado| {
             exigir_aba(estado, id)?;
             estado.active_tab = id.to_owned();
             Ok(())
@@ -989,6 +995,25 @@ impl Store {
         // de qualquer escrita, e nem o disco nem a memória são tocados.
         let devolucao = alterar(&mut copia)?;
         persistencia::gravar(&self.arquivo, &copia)?;
+        *guard = copia;
+        Ok(devolucao)
+    }
+
+    /// Igual a `transacao`, mas a gravação **não passa pelo `sync_all`**
+    /// (`persistencia::gravar_descartavel`). É para estado de VISUALIZAÇÃO, que
+    /// não vale acordar o disco a cada gesto — a mesma divisão que `janela.json`
+    /// já faz. A garantia de tudo-ou-nada continua inteira: o erro sai antes de
+    /// qualquer escrita, e a gravação segue atômica pelo temporário e o `rename`;
+    /// o que se abre mão é só a durabilidade contra queda de energia, que aqui
+    /// custa uma aba em vez da lista.
+    fn transacao_leve<T>(
+        &self,
+        alterar: impl FnOnce(&mut Estado) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let mut guard = self.travar()?;
+        let mut copia = guard.clone();
+        let devolucao = alterar(&mut copia)?;
+        persistencia::gravar_descartavel(&self.arquivo, &copia)?;
         *guard = copia;
         Ok(devolucao)
     }

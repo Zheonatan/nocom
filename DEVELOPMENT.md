@@ -56,11 +56,12 @@ npm run publicar -- 0.7.0
 
 Ele sobe o número nos sete arquivos que o citam (`package.json`, `Cargo.toml`,
 `Cargo.lock`, `tauri.conf.json`, os links de download dos dois READMEs e os
-exemplos deste documento — o IPC falso da vitrine lê a versão do `package.json`
-em tempo de execução), comita, cria a tag `v0.7.0` e empurra. Se qualquer
-arquivo tiver mudado de forma, ele para antes de comitar em vez de subir uma
-versão pela metade — e ele se recusa a publicar uma versão sem seção no
-[`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
+exemplos deste documento) e regera o `site/`, porque o HTML da landing page é
+estático e embute a versão nos links de download — subir o manifesto sozinho não
+move a página (ver `scripts/site.mjs`). Depois comita, cria a tag `v0.7.0` e
+empurra. Se qualquer arquivo tiver mudado de forma, ele para antes de comitar em
+vez de subir uma versão pela metade — e ele se recusa a publicar uma versão sem
+seção no [`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
 `--sem-push` para antes de empurrar, para conferir o commit.
 
 **As versões do npm e dos crates do Tauri andam em pares de MENOR.** O

@@ -10,9 +10,13 @@ name: CI
 # Não empacota nada: instalador é assunto do `release.yml`. Por isso não há
 # tauri-action, não há assinatura, e os jobs correm em paralelo — o `max-parallel`
 # do release existe por causa do `latest.json`, que aqui nem é gerado.
-# O que NÃO dispara a matriz: mudança que nenhum dos quatro comandos alcança —
-# o site, os assets da marca e os documentos. (Os .md daqui são lidos por gente,
-# não pelo build; o site tem workflow próprio com o `--check` dele.) E `push`
+# O que NÃO dispara a matriz: mudança que nenhum dos comandos alcança — os
+# assets da marca e os documentos. (Os .md daqui são lidos por gente, não pelo
+# build.) O site tem workflow próprio (site.yml, que o publica e confere), mas o
+# `--check` dele roda também aqui, num sistema só: o espécime que a landing page
+# embute é derivado de `src/`, então mexer na interface sem regerar precisa
+# falhar num push — foi o que passou em branco nas 0.6.0 e 0.7.0, que levaram a
+# página da 0.5.0 junto. E `push`
 # fica restrito ao main: branch com PR aberto já roda pelo `pull_request`, e sem
 # o filtro cada push rodava a matriz de três sistemas DUAS vezes.
 # (As duas listas são cópia uma da outra porque o GitHub Actions não aceita
@@ -89,6 +93,16 @@ jobs:
 
       - name: Testes do front
         run: npm test
+
+      # O `site/` é gerado por `scripts/site.mjs`, e o espécime que ele embute
+      # retrata `src/` — mexer na interface sem rodar `npm run vitrine && npm run
+      # site` deixa a página anunciando uma janela que o app não tem mais. Foi
+      # assim que a 0.6.0 e a 0.7.0 publicaram uma página da 0.5.0. O `--check` é
+      # barato (não sobe navegador, só lê `assets/especime/` e compara) e roda num
+      # sistema só, porque o resultado não depende da plataforma.
+      - name: O site ainda retrata este src?
+        if: matrix.platform == 'ubuntu-22.04'
+        run: node scripts/site.mjs --check
 
       # Antes do cargo de propósito: `tauri::generate_context!` embute o
       # `frontendDist` (../dist) no binário, e sem `dist/` o cargo nem compila.

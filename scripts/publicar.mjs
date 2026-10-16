@@ -12,6 +12,14 @@
 // release nova não tem. Aqui ou todos sobem, ou o comando falha sem tocar em
 // nada.
 //
+// **E o `site/` entrou por essa mesma porta.** O HTML da landing page é gerado
+// por `scripts/site.mjs` e embute a versão nos links de download, mas é um
+// arquivo ESTÁTICO: subir o `package.json` não move a página. Nas 0.6.0 e 0.7.0
+// o gerador não rodou no commit da release, e a página ficou oferecendo a 0.5.0.
+// Então o `--check` do site roda ANTES de qualquer escrita (o espécime ainda
+// retrata o `src/`?) e o gerador roda DEPOIS da troca (os links passam a apontar
+// para a versão nova), com o resultado entrando no mesmo commit.
+//
 // **Cada arquivo tem sua própria regra de busca, de propósito.** Trocar todo
 // `0.3.0` do `Cargo.lock` acertaria duas dependências que por acaso estão nessa
 // versão; no `Cargo.toml`, um `version = "..."` de dependência. Então cada
@@ -72,12 +80,13 @@ function regras(antiga) {
       busca: solta,
       vezes: null,
     },
-    // **A vitrine e a landing page não entram aqui, e não é esquecimento.**
-    // `scripts/vitrine/stub.js` e `scripts/site.mjs` leem a versão do
-    // `package.json` em tempo de execução, então não há número para trocar —
-    // e uma regra para eles falharia com "não achei a versão", que é o que
-    // acontecia quando a única menção restante no `stub.js` era um número
-    // dentro de um comentário.
+    // **A landing page não entra aqui, e a razão mudou.** Antes este comentário
+    // dizia que `scripts/site.mjs` lia a versão do `package.json` em tempo de
+    // execução — verdade para o GERADOR, falso para o HTML que ele produz, que é
+    // estático e commitado. O `site/` passou a ser regerado por este script (ver
+    // "a troca"), o que é mais robusto que uma regra de busca: o gerador escreve
+    // a versão em sete pontos de cada língua, e uma regex que acertasse todos
+    // seria uma segunda cópia da mesma lógica, livre para divergir.
   ]
 }
 
@@ -133,6 +142,18 @@ if (!new RegExp(`^## ${escapar(nova)} `, 'm').test(readFileSync(join(RAIZ, 'CHAN
   morrer(`o CHANGELOG.md não tem a seção "## ${nova} — <data>" — escreva as notas da versão antes de publicar`)
 }
 
+// O `site/` é gerado, e o `--check` dele responde duas perguntas antes de
+// qualquer escrita: o espécime ainda retrata o `src/` atual, e o `site/` em
+// disco está em sincronia com o gerador. As duas têm de ser "sim" ANTES da
+// troca — depois dela o `package.json` já mudou e o `--check` acusaria a
+// própria troca como divergência. Rodar aqui preserva a promessa do cabeçalho:
+// nada é escrito se algo estiver fora de lugar.
+try {
+  execFileSync('node', ['scripts/site.mjs', '--check'], { cwd: RAIZ, stdio: 'inherit' })
+} catch {
+  morrer('o `site/` não está em sincronia com o gerador — rode `npm run vitrine` e `npm run site` antes de publicar')
+}
+
 // ------------------------------------------------------------------- a troca
 
 const escritas = []
@@ -166,9 +187,23 @@ for (const { arquivo } of escritas.filter((e) => SEM_SOBRA.includes(e.arquivo)))
 for (const { arquivo, achados } of escritas) console.log(`  ${arquivo} — ${achados}×`)
 console.log(`\n  ${antiga} → ${nova}`)
 
+// O gerador do `site/` roda DEPOIS da troca: com a versão nova já no manifesto,
+// os links de download passam a apontar para ela. É o que impede a página de
+// continuar oferecendo a versão anterior — o defeito que passou nas 0.6.0 e
+// 0.7.0. O `--check` lá em cima já garantiu que o espécime retrata o `src/`,
+// então este passo não encontra surpresa.
+execFileSync('node', ['scripts/site.mjs'], { cwd: RAIZ, stdio: 'inherit' })
+const SITE_GERADO = ['site/index.html', 'site/en/index.html']
+
+for (const arquivo of SITE_GERADO) {
+  if (readFileSync(join(RAIZ, arquivo), 'utf8').includes(antiga)) {
+    morrer(`${arquivo} ainda menciona a ${antiga} depois da troca — confira à mão (nada foi comitado)`)
+  }
+}
+
 // ------------------------------------------------------------ commit e tag
 
-git('add', ...escritas.map((e) => e.arquivo))
+git('add', ...escritas.map((e) => e.arquivo), ...SITE_GERADO)
 git('commit', '-m', `Publica a ${nova}`)
 git('tag', '-a', tag, '-m', `NoCom ${nova}`)
 

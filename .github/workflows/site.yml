@@ -22,6 +22,14 @@ on:
       - "site/**"
       - "scripts/site.mjs"
       - ".github/workflows/site.yml"
+      # O que a página EMBUTE além do próprio gerador: o espécime é derivado de
+      # `src/` e de `scripts/vitrine/`, e a versão dos links vem do
+      # `package.json`. Sem estas linhas, mexer na interface não revalida nem
+      # republica a página — foi o furo que deixou a 0.5.0 no ar depois da 0.7.0.
+      - "src/**"
+      - "package.json"
+      - "scripts/vitrine/**"
+      - "assets/especime/**"
       - "assets/telas/**"
       - "assets/marca/nocom.svg"
       - "assets/marca/card-social.png"

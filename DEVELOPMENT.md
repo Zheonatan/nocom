@@ -63,6 +63,17 @@ versão pela metade — e ele se recusa a publicar uma versão sem seção no
 [`CHANGELOG.md`](CHANGELOG.md), que é de onde saem as notas da release.
 `--sem-push` para antes de empurrar, para conferir o commit.
 
+**As versões do npm e dos crates do Tauri andam em pares de MENOR.** O
+`tauri build` recusa a build quando o menor não bate (`tauri` 2.11.x ↔
+`@tauri-apps/api` 2.11.x, e o mesmo para cada plugin, ex.: `tauri-plugin-opener`
+2.5.x ↔ `@tauri-apps/plugin-opener` 2.5.x). É a única checagem que não aparece nem
+em `npm run build` nem em `cargo check` — só no build da CLI, que é o que o CI
+roda. Como os crates ficam presos pelo `Cargo.lock`, `@tauri-apps/api` e
+`@tauri-apps/plugin-opener` usam `~` e não `^`: um `npm install` que puxe o menor
+seguinte derruba a release sem que nada falhe na máquina de quem desenvolve. Ao
+acrescentar um plugin do Tauri, confira o par npm/crate antes de publicar (foi
+exatamente isto que derrubou a 0.7.0 na primeira tentativa).
+
 Da tag em diante o [workflow](.github/workflows/release.yml) faz o resto sozinho:
 
 | Workflow / job | O que faz |
